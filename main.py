@@ -10,6 +10,8 @@ from secret_info import TOKEN
 from livecoinwatch import get_coin_price
 
 def cmd_price():
+    result = "sorry.. livecoinwatch won't tell me :sob: [<https://bit.ly/2w6Q0P0>]"
+
     try:
         price_in_usd, price_in_eth, eth_price = get_coin_price('0xBTC')
     except TimeoutError:
@@ -17,6 +19,8 @@ def cmd_price():
     except ConnectionResetError:
         pass
     except socket.gaierror:
+        pass
+    except socket.timeout:
         pass
     #except websocket._exceptions.WebSocketAddressException:
     #    pass
@@ -26,8 +30,11 @@ def cmd_price():
         pass
     except KeyError:
         pass
+    else:
+        fmt_str = "latest: **${:.3f}** ({:.5f} Ξ) (ETH: **${:.0f}**) [<https://bit.ly/2w6Q0P0>]"
+        result = fmt_str.format(price_in_usd, price_in_eth, eth_price)
 
-    return "latest: **${:.3f}** ({:.5f} Ξ) (ETH: **${:.0f}**) [<https://bit.ly/2w6Q0P0>]".format(price_in_usd, price_in_eth, eth_price)
+    return result
 
 
 def main():
