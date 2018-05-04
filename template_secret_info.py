@@ -1,0 +1,7 @@
+
+# to add bot to a server:
+# https://discordapp.com/oauth2/authorize?client_id=XXXXXXXXXXXXXXXXXX&scope=bot
+
+CLIENT_ID = "XXXXXXXXXXXXXXXXXX"
+TOKEN = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
