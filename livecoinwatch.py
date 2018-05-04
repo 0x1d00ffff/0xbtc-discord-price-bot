@@ -36,7 +36,7 @@ _SERVER_URL = "https://www.livecoinwatch.com/api"
 def get_coin_price(coin_symbol):
     method = "/coin/{}".format(coin_symbol)
 
-    response = urlopen(_SERVER_URL+method, timeout=3.0)
+    response = urlopen(_SERVER_URL+method, timeout=10.0)
     data = json.loads(response.read())
 
     #pprint.pprint(data)
@@ -50,4 +50,7 @@ def get_coin_price(coin_symbol):
 
 if __name__ == "__main__":
     price = get_coin_price('0xBTC')
-    print('price', price)
+    print('0xbtc price', price)
+
+    price = get_coin_price('BTC')
+    print('btc price', price)
