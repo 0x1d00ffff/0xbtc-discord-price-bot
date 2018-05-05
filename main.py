@@ -82,7 +82,7 @@ async def update_price_task():
             bitcoin_price, _, _ = get_coin_price('BTC')
             last_updated = time.time()
         except Exception as e:
-            logging.warning('failed to update prices ({})'.format(e))
+            logging.exception('failed to update prices')
             #await update_status(client, "???")
 
         # wait until at least one successful update to show status
