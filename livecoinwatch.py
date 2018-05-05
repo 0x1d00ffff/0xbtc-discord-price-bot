@@ -37,7 +37,8 @@ def get_coin_price(coin_symbol):
     method = "/coin/{}".format(coin_symbol)
 
     response = urlopen(_SERVER_URL+method, timeout=10.0)
-    data = json.loads(response.read())
+    response = response.read().decode("utf-8") 
+    data = json.loads(response)
 
     #pprint.pprint(data)
     
