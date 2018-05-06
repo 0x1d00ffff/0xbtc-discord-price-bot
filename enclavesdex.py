@@ -32,15 +32,15 @@ class EnclavesAPI():
         self.oxbtc_24h_change = None
 
     def update(self):
-        print('connecting to', self.websocket_url)
+        #print('connecting to', self.websocket_url)
 
         ws = websocket.create_connection(self.websocket_url)
-        print('connected')
+        #print('connected')
         # TMP forks read session id etc first so we do the same
         #print('rcv')
         result = ws.recv()
         #print('result:')
-        pprint.pprint(result)
+        #pprint.pprint(result)
         #print('rcv')
         result = ws.recv()
         #print('result:')
@@ -59,8 +59,6 @@ class EnclavesAPI():
                 self.oxbtc_volume_eth = wei_to_ether(token['volumeEther'])
                 self.oxbtc_24h_change = float(token['change'])
 
-
-        pprint.pprint(all_data)
 
 if __name__ == "__main__":
     e = EnclavesAPI()

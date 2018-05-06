@@ -16,4 +16,5 @@ Todo:
  - ATH announcements
  - 24h high/low/average
  - ascii chart?
+ - combine prices from multiple sources
  - ~~0xBTC - BTC ratio~~
