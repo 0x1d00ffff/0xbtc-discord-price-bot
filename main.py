@@ -214,4 +214,4 @@ if __name__ == "__main__":
             raise
         except:
             logging.exception('bot ded:')
-            time.sleep(5)  # wait a little time to prevent cpu spins
+            time.sleep(10)  # wait a little time to prevent cpu spins
