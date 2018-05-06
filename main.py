@@ -39,9 +39,9 @@ def percent_change_to_emoji(percent_change):
         # [-0.3, ":arrow_lower_right:"],
         # [-1, ":arrow_down:"],
         [0.3, ":chart_with_upwards_trend:"],
-        [0.1, ":chart_with_upwards_trend:"],
+        [0.1, ""],
         [-0.1, ""],
-        [-0.3, ":chart_with_downwards_trend:"],
+        [-0.3, ""],
         [-1, ":chart_with_downwards_trend:"],
     ]
     for v in values:
@@ -85,7 +85,7 @@ def cmd_price():
     result = fmt_str.format(seconds_to_readable_time(time.time()-last_updated),
                             enclaves.oxbtc_price_eth * eth_price, 
                             enclaves.oxbtc_price_eth, 
-                            enclaves.oxbtc_24h_change,
+                            100.0 * enclaves.oxbtc_24h_change,
                             percent_change_to_emoji(enclaves.oxbtc_24h_change),
                             eth_price)
     return result
