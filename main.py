@@ -79,30 +79,30 @@ def cmd_lambo():
 
 def cmd_price():
     if last_updated == 0:
-        return "not sure yet... waiting on my APIs... [<https://bit.ly/2rnYA7b>]"
+        return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2rnYA7b>]"
 
-    fmt_str = "latest: **${:.3f}** ({:.5f} Ξ) **{:+.2f}**%{} (ETH: **${:.0f}**) [<https://bit.ly/2rnYA7b>] ({})"
-    result = fmt_str.format(enclaves.oxbtc_price_eth * eth_price, 
+    fmt_str = "{}: **${:.3f}** ({:.5f} Ξ) **{:+.2f}**%24h {} (ETH: **${:.0f}**) [<https://bit.ly/2rnYA7b>]"
+    result = fmt_str.format(seconds_to_readable_time(time.time()-last_updated),
+                            enclaves.oxbtc_price_eth * eth_price, 
                             enclaves.oxbtc_price_eth, 
                             enclaves.oxbtc_24h_change,
                             percent_change_to_emoji(enclaves.oxbtc_24h_change),
-                            eth_price, 
-                            seconds_to_readable_time(time.time()-last_updated))
+                            eth_price)
     return result
 
 
 def cmd_bitcoinprice():
     if last_updated == 0:
-        return "not sure yet... waiting on my APIs... [<https://bit.ly/2w6Q0P0>]"
+        return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2w6Q0P0>]"
 
-    fmt_str = "latest: **${:.0f}** ({})"
-    result = fmt_str.format(bitcoin_price, seconds_to_readable_time(time.time()-last_updated))
+    fmt_str = "{}: **${:.0f}**"
+    result = fmt_str.format(seconds_to_readable_time(time.time()-last_updated), bitcoin_price)
     return result
 
 
 def cmd_ratio():
     if last_updated == 0:
-        return ":shrug:"
+        return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2w6Q0P0>]"
 
     return "1 BTC : {:,.0f} 0xBTC".format(bitcoin_price / (enclaves.oxbtc_price_eth * eth_price))
 
