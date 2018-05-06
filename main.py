@@ -14,6 +14,7 @@ from secret_info import TOKEN
 from livecoinwatch import get_coin_price
 
 _VERSION = "0.0.1"
+_UPDATE_RATE = 120
 
 # todo: encapsulate these
 bitcoin_price = 0
@@ -32,6 +33,14 @@ def seconds_to_readable_time(seconds):
         return "{:.0f}m ago".format(minutes)
 
     return "{:.0f}h ago".format(minutes / 60)
+
+def cmd_whitehouse():
+    WHITEHOUSE_PRICE_USD = 398.8*1000*1000
+    if last_updated == 0:
+        return ":shrug:"
+
+    return "1 whitehouse = {:,.0f} 0xBTC".format(WHITEHOUSE_PRICE_USD / price_in_usd)
+
 
 def cmd_lambo():
     LAMBO_PRICE_USD = 200000
@@ -92,10 +101,10 @@ async def update_price_task():
                                                        price_in_eth,
                                                        seconds_to_readable_time(time.time()-last_updated)))
 
-        await asyncio.sleep(60) # task runs every 60 seconds
+        await asyncio.sleep(_UPDATE_RATE)
 
 
-def main():
+def configure_client():
     #client = discord.Client()
 
     @client.event
@@ -127,9 +136,14 @@ def main():
             msg = cmd_lambo()
             await client.send_message(message.channel, msg)
 
+        if message.content.startswith('!whitehouse'):
+            logging.info('got !whitehouse')
+            msg = cmd_whitehouse()
+            await client.send_message(message.channel, msg)
+
         if message.content.startswith('!help'):
             logging.info('got !help')
-            msg = "available commands: `price ratio bitcoinprice lambo`"
+            msg = "available commands: `price ratio bitcoinprice lambo whitehouse`"
             await client.send_message(message.channel, msg)
 
         #if message.content.startswith('!volume'):
@@ -146,7 +160,6 @@ def main():
                                                    client.user.id))
 
     client.loop.create_task(update_price_task())
-    client.run(TOKEN)
 
 
 if __name__ == "__main__":
@@ -155,14 +168,17 @@ if __name__ == "__main__":
         format= '[%(asctime)s.%(msecs)03d] %(levelname)s - %(message)s',
         datefmt='%H:%M:%S')
     logging.info('0xbtc-price-bot start v{}'.format(_VERSION))
+    loop = asyncio.get_event_loop()
+    client = discord.Client()
+    configure_client()
     while True:
         try:
-            client = discord.Client()
-            main()
+            loop.run_until_complete(client.start(TOKEN))
+            # client.run(TOKEN)
         except SystemExit:
             pass
         except KeyboardInterrupt:
             pass
-        except Exception as e:
-            logging.error('bot ded: {}'.format(e))
+        except:
+            logging.exception('bot ded:')
             time.sleep(5)  # wait a little time to prevent cpu spins
