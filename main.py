@@ -18,9 +18,10 @@ import discord
 from secret_info import TOKEN
 from livecoinwatch import get_coin_price
 from enclavesdex import EnclavesAPI
+from reconnecting_bot import keep_running
 
-_VERSION = "0.0.2"
-_UPDATE_RATE = 120
+_VERSION = "0.0.3"
+_UPDATE_RATE = 60
 
 # todo: encapsulate these
 bitcoin_price = 0
@@ -206,7 +207,8 @@ if __name__ == "__main__":
     configure_client()
     while True:
         try:
-            loop.run_until_complete(client.start(TOKEN))
+            asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
+            # loop.run_until_complete(client.start(TOKEN))
             # client.run(TOKEN)
         except SystemExit:
             raise
