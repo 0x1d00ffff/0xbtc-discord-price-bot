@@ -132,7 +132,7 @@ async def update_price_task():
     while not client.is_closed:
         try:
             apis.update()
-            last_updated = time.time()
+            #last_updated = time.time()
         except Exception as e:
             logging.exception('failed to update prices')
             #await update_status(client, "???")
@@ -142,7 +142,7 @@ async def update_price_task():
             fmt_str = "${:.2f}  |  {:.5f} Ξ ({})"
             await update_status(client, fmt_str.format(apis.price_eth('0xBTC') * apis.eth_price_usd(),
                                                        apis.price_eth('0xBTC'),
-                                                       seconds_to_readable_time(time.time()-last_updated)))
+                                                       seconds_to_readable_time(time.time()-apis.last_updated_time())))
 
         await asyncio.sleep(_UPDATE_RATE)
 
