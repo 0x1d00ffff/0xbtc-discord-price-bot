@@ -16,18 +16,19 @@ import urllib
 
 import discord
 from secret_info import TOKEN
-from livecoinwatch import get_coin_price
-from enclavesdex import EnclavesAPI
 from reconnecting_bot import keep_running
+from enclavesdex import EnclavesAPI
+from livecoinwatch import LiveCoinWatchAPI
+from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.3"
-_UPDATE_RATE = 60
+_VERSION = "0.0.4"
+_UPDATE_RATE = 120
 
 # todo: encapsulate these
-bitcoin_price = 0
-price_in_usd, price_in_eth, eth_price = 0, 0, 0
+#bitcoin_price = 0
+#price_in_usd, price_in_eth, apis.eth_price_usd() = 0, 0, 0
 last_updated = 0
-enclaves = EnclavesAPI()
+#enclaves = EnclavesAPI()
 
 client = None
 
@@ -67,7 +68,7 @@ def cmd_whitehouse():
     if last_updated == 0:
         return ":shrug:"
 
-    return "1 whitehouse = {:,.0f} 0xBTC".format(WHITEHOUSE_PRICE_USD / (enclaves.oxbtc_price_eth * eth_price))
+    return "1 whitehouse = {:,.0f} 0xBTC".format(WHITEHOUSE_PRICE_USD / (apis.price_eth('0xBTC') * apis.eth_price_usd()))
 
 
 def cmd_lambo():
@@ -75,20 +76,25 @@ def cmd_lambo():
     if last_updated == 0:
         return ":shrug:"
 
-    return "1 lambo = {:,.0f} 0xBTC".format(LAMBO_PRICE_USD / (enclaves.oxbtc_price_eth * eth_price))
+    return "1 lambo = {:,.0f} 0xBTC".format(LAMBO_PRICE_USD / (apis.price_eth('0xBTC') * apis.eth_price_usd()))
 
 
 def cmd_price():
     if last_updated == 0:
         return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2rnYA7b>]"
 
-    fmt_str = "{}: **${:.3f}** ({:.5f} Ξ) **{:+.2f}**%24h {} (ETH: **${:.0f}**) [<https://bit.ly/2rnYA7b>]"
+    if apis.change_24h('0xBTC') == None:
+        percent_change_str = ""
+    else:
+        percent_change_str = "**{:+.2f}**%24h {} ".format(100.0 * apis.change_24h('0xBTC'),
+                                                          percent_change_to_emoji(apis.change_24h('0xBTC')),)
+
+    fmt_str = "{}: **${:.3f}** ({:.5f} Ξ) {}(ETH: **${:.0f}**) [<https://bit.ly/2rnYA7b>]"
     result = fmt_str.format(seconds_to_readable_time(time.time()-last_updated),
-                            enclaves.oxbtc_price_eth * eth_price, 
-                            enclaves.oxbtc_price_eth, 
-                            100.0 * enclaves.oxbtc_24h_change,
-                            percent_change_to_emoji(enclaves.oxbtc_24h_change),
-                            eth_price)
+                            apis.price_eth('0xBTC') * apis.eth_price_usd(), 
+                            apis.price_eth('0xBTC'), 
+                            percent_change_str,
+                            apis.eth_price_usd())
     return result
 
 
@@ -97,7 +103,7 @@ def cmd_bitcoinprice():
         return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2w6Q0P0>]"
 
     fmt_str = "{}: **${:.0f}**"
-    result = fmt_str.format(seconds_to_readable_time(time.time()-last_updated), bitcoin_price)
+    result = fmt_str.format(seconds_to_readable_time(time.time()-last_updated), apis.btc_price_usd())
     return result
 
 
@@ -105,7 +111,7 @@ def cmd_ratio():
     if last_updated == 0:
         return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2w6Q0P0>]"
 
-    return "1 BTC : {:,.0f} 0xBTC".format(bitcoin_price / (enclaves.oxbtc_price_eth * eth_price))
+    return "1 BTC : {:,.0f} 0xBTC".format(apis.btc_price_usd() / (apis.price_eth('0xBTC') * apis.eth_price_usd()))
 
 
 async def update_status(client, stat_str):
@@ -116,13 +122,11 @@ async def update_status(client, stat_str):
 
 
 async def update_price_task():
-    global price_in_usd, price_in_eth, eth_price, bitcoin_price, last_updated
+    global last_updated
     await client.wait_until_ready()
     while not client.is_closed:
         try:
-            price_in_usd, price_in_eth, eth_price = get_coin_price('0xBTC')
-            bitcoin_price, _, _ = get_coin_price('BTC')
-            enclaves.update()
+            apis.update()
             last_updated = time.time()
         except Exception as e:
             logging.exception('failed to update prices')
@@ -131,8 +135,8 @@ async def update_price_task():
         # wait until at least one successful update to show status
         if last_updated != 0:
             fmt_str = "${:.2f}  |  {:.5f} Ξ ({})"
-            await update_status(client, fmt_str.format(enclaves.oxbtc_price_eth * eth_price,
-                                                       enclaves.oxbtc_price_eth,
+            await update_status(client, fmt_str.format(apis.price_eth('0xBTC') * apis.eth_price_usd(),
+                                                       apis.price_eth('0xBTC'),
                                                        seconds_to_readable_time(time.time()-last_updated)))
 
         await asyncio.sleep(_UPDATE_RATE)
@@ -205,6 +209,12 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     client = discord.Client()
     configure_client()
+    apis = MultiApiManager(
+    [
+        EnclavesAPI('0xBTC'), 
+        LiveCoinWatchAPI('0xBTC'),
+        LiveCoinWatchAPI('ETH'),
+    ])
     while True:
         try:
             asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
