@@ -97,7 +97,9 @@ class MultiApiManager():
                 continue
             if api_name == 'all' or a.api_name == api_name:
                 # use the lowest last_updated time
-                if result == 0 or a.last_updated_time < result:
+                #if result == 0 or a.last_updated_time < result:
+                # use the highest last_updated time as a hack for how
+                if result == 0 or a.last_updated_time > result:
                     result = a.last_updated_time
         return result
 
