@@ -24,7 +24,7 @@ class MultiApiManager():
                 continue
             if a.price_eth == None:
                 continue
-            if api_name == 'all' or self.api_name == api_name:
+            if api_name == 'all' or a.api_name == api_name:
                 result.add(a.price_eth, a.volume_eth)
         return result.average()
 
@@ -35,7 +35,7 @@ class MultiApiManager():
                 continue
             if a.price_usd == None:
                 continue
-            if api_name == 'all' or self.api_name == api_name:
+            if api_name == 'all' or a.api_name == api_name:
                 result.add(a.price_usd, a.volume_eth)
         return result.average()
 
@@ -46,7 +46,7 @@ class MultiApiManager():
                 continue
             if a.volume_usd == None:
                 continue
-            if api_name == 'all' or self.api_name == api_name:
+            if api_name == 'all' or a.api_name == api_name:
                 result += a.volume_usd
         return result
 
@@ -57,7 +57,7 @@ class MultiApiManager():
                 continue
             if a.volume_eth == None:
                 continue
-            if api_name == 'all' or self.api_name == api_name:
+            if api_name == 'all' or a.api_name == api_name:
                 result += a.volume_eth
         return result
 
@@ -68,7 +68,7 @@ class MultiApiManager():
                 continue
             if a.change_24h == None:
                 continue
-            if api_name == 'all' or self.api_name == api_name:
+            if api_name == 'all' or a.api_name == api_name:
                 result.add(a.change_24h, a.volume_eth)
         return result.average()
 
@@ -77,7 +77,7 @@ class MultiApiManager():
         for a in self.api_obj_list:
             if a.eth_price_usd == None:
                 continue
-            if api_name == 'all' or self.api_name == api_name:
+            if api_name == 'all' or a.api_name == api_name:
                 result.add(a.eth_price_usd, a.volume_eth)
         return result.average()
 
@@ -86,9 +86,20 @@ class MultiApiManager():
         for a in self.api_obj_list:
             if a.btc_price_usd == None:
                 continue
-            if api_name == 'all' or self.api_name == api_name:
+            if api_name == 'all' or a.api_name == api_name:
                 result.add(a.btc_price_usd, a.volume_eth)
         return result.average()
+
+    def last_updated_time(self, api_name='all'):
+        result = 0
+        for a in self.api_obj_list:
+            if a.last_updated_time == None or a.last_updated_time == 0:
+                continue
+            if api_name == 'all' or a.api_name == api_name:
+                # use the lowest last_updated time
+                if result == 0 or a.last_updated_time < result:
+                    result = a.last_updated_time
+        return result
 
 if __name__ == "__main__":
     from enclavesdex import EnclavesAPI

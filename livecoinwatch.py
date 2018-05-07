@@ -49,7 +49,8 @@ class LiveCoinWatchAPI():
     def __init__(self, currency_symbol="0xBTC"):
         self._SERVER_URL = "https://www.livecoinwatch.com/api"
         self.currency_symbol = currency_symbol
-        self.api_name = "LiveCoinWatch"
+        self.api_name = "Live Coin Watch"
+        self.last_updated_time = 0
 
         self.price_eth = None
         self.price_usd = None

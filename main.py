@@ -21,7 +21,7 @@ from enclavesdex import EnclavesAPI
 from livecoinwatch import LiveCoinWatchAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.4"
+_VERSION = "0.0.5"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -65,7 +65,7 @@ def seconds_to_readable_time(seconds):
 
 def cmd_whitehouse():
     WHITEHOUSE_PRICE_USD = 398.8*1000*1000
-    if last_updated == 0:
+    if apis.last_updated_time() == 0:
         return ":shrug:"
 
     return "1 whitehouse = {:,.0f} 0xBTC".format(WHITEHOUSE_PRICE_USD / (apis.price_eth('0xBTC') * apis.eth_price_usd()))
@@ -73,42 +73,47 @@ def cmd_whitehouse():
 
 def cmd_lambo():
     LAMBO_PRICE_USD = 200000
-    if last_updated == 0:
+    if apis.last_updated_time() == 0:
         return ":shrug:"
 
     return "1 lambo = {:,.0f} 0xBTC".format(LAMBO_PRICE_USD / (apis.price_eth('0xBTC') * apis.eth_price_usd()))
 
 
-def cmd_price():
-    if last_updated == 0:
+def cmd_price(source='all'):
+    if apis.last_updated_time(api_name=source) == 0:
         return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2rnYA7b>]"
+    
+    percent_change_str = ""
 
-    if apis.change_24h('0xBTC') == None:
+    if apis.change_24h('0xBTC', api_name=source) == None:
         percent_change_str = ""
     else:
-        percent_change_str = "**{:+.2f}**%24h {} ".format(100.0 * apis.change_24h('0xBTC'),
-                                                          percent_change_to_emoji(apis.change_24h('0xBTC')),)
+        # TODO: enable percentage once enclaves is stable
+        # percent_change_str = "**{:+.2f}**%24h {} ".format(100.0 * apis.change_24h('0xBTC'),
+        #                                                   percent_change_to_emoji(apis.change_24h('0xBTC')),)
+        pass
 
-    fmt_str = "{}: **${:.3f}** ({:.5f} Ξ) {}(ETH: **${:.0f}**) [<https://bit.ly/2rnYA7b>]"
-    result = fmt_str.format(seconds_to_readable_time(time.time()-last_updated),
-                            apis.price_eth('0xBTC') * apis.eth_price_usd(), 
-                            apis.price_eth('0xBTC'), 
+    fmt_str = "{}{}: **${:.3f}** ({:.5f} Ξ) {}(ETH: **${:.0f}**) [<https://bit.ly/2rnYA7b>]"
+    result = fmt_str.format('' if source == 'all' else '**{}** '.format(source),
+                            seconds_to_readable_time(time.time()-apis.last_updated_time(api_name=source)),
+                            apis.price_eth('0xBTC', api_name=source) * apis.eth_price_usd(), 
+                            apis.price_eth('0xBTC', api_name=source), 
                             percent_change_str,
-                            apis.eth_price_usd())
+                            apis.eth_price_usd(api_name=source))
     return result
 
 
 def cmd_bitcoinprice():
-    if last_updated == 0:
+    if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2w6Q0P0>]"
 
     fmt_str = "{}: **${:.0f}**"
-    result = fmt_str.format(seconds_to_readable_time(time.time()-last_updated), apis.btc_price_usd())
+    result = fmt_str.format(seconds_to_readable_time(time.time()-apis.last_updated_time()), apis.btc_price_usd())
     return result
 
 
 def cmd_ratio():
-    if last_updated == 0:
+    if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2w6Q0P0>]"
 
     return "1 BTC : {:,.0f} 0xBTC".format(apis.btc_price_usd() / (apis.price_eth('0xBTC') * apis.eth_price_usd()))
@@ -133,7 +138,7 @@ async def update_price_task():
             #await update_status(client, "???")
 
         # wait until at least one successful update to show status
-        if last_updated != 0:
+        if apis.last_updated_time() != 0:
             fmt_str = "${:.2f}  |  {:.5f} Ξ ({})"
             await update_status(client, fmt_str.format(apis.price_eth('0xBTC') * apis.eth_price_usd(),
                                                        apis.price_eth('0xBTC'),
@@ -155,8 +160,18 @@ def configure_client():
             return
 
         if message.content.startswith('!price'):
-            logging.info('got !price')
-            msg = cmd_price()
+            logging.info('got !price ({})'.format(message.content))
+            if any(s in message.content.lower() for s in [
+                    'enclaves']):
+                msg = cmd_price(source="Enclaves DEX")
+            elif any(s in message.content.lower() for s in [
+                    'lcw', 
+                    'livecoinwatch', 
+                    'live coin watch']):
+                msg = cmd_price(source="Live Coin Watch")
+            else:
+                msg = cmd_price()
+            
             await client.send_message(message.channel, msg)
 
         if message.content.startswith('!ratio'):
