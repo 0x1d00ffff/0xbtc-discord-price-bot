@@ -33,6 +33,7 @@ data =
 """
 import time
 import logging
+import socket
 try:
     from urllib.request import urlopen
 except:
@@ -129,6 +130,14 @@ class LiveCoinWatchAPI():
         try:
             self._update(timeout=timeout)
         except TimeoutError:
+            logging.warning('api timeout {}'.format(self.api_name))
+        except ConnectionResetError:
+            logging.warning('api timeout {}'.format(self.api_name))
+        except ConnectionRefusedError:
+            logging.warning('api timeout {}'.format(self.api_name))
+        except socket.timeout:
+            logging.warning('api timeout {}'.format(self.api_name))
+        except socket.gaierror:
             logging.warning('api timeout {}'.format(self.api_name))
         else:
             self.last_updated_time = time.time()

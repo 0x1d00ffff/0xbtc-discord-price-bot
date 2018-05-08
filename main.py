@@ -21,7 +21,7 @@ from enclavesdex import EnclavesAPI
 from livecoinwatch import LiveCoinWatchAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.5"
+_VERSION = "0.0.6"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
