@@ -1,9 +1,12 @@
 """ Manage multiple apis at once - allows calculating better values by
 incorporating multiple sources. """
 
+import time
 import logging
 from weighted_average import WeightedAverage
 
+# data older than this is completely ignored
+_OLDEST_ALLOWED_DATA_SECONDS = 600
 
 class MultiApiManager():
     def __init__(self, api_obj_list):
@@ -17,9 +20,21 @@ class MultiApiManager():
             except:
                 logging.exception('Unhandled Exception updating {}'.format(api_obj.api_name))
 
+    @property
+    def alive_apis(self):
+        time_now = time.time()
+        for a in self.api_obj_list:
+            # skip apis that have never been updated
+            if a.last_updated_time == None or a.last_updated_time == 0:
+                continue
+            # skip apis that have too old/stale data
+            if time_now - a.last_updated_time > _OLDEST_ALLOWED_DATA_SECONDS:
+                continue
+            yield a
+
     def price_eth(self, currency_symbol='0xBTC', api_name='all'):
         result = WeightedAverage()
-        for a in self.api_obj_list:
+        for a in self.alive_apis:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.price_eth == None:
@@ -30,7 +45,7 @@ class MultiApiManager():
 
     def price_usd(self, currency_symbol='0xBTC', api_name='all'):
         result = WeightedAverage()
-        for a in self.api_obj_list:
+        for a in self.alive_apis:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.price_usd == None:
@@ -41,7 +56,7 @@ class MultiApiManager():
 
     def volume_usd(self, currency_symbol='0xBTC', api_name='all'):
         result = 0
-        for a in self.api_obj_list:
+        for a in self.alive_apis:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.volume_usd == None:
@@ -52,7 +67,7 @@ class MultiApiManager():
 
     def volume_eth(self, currency_symbol='0xBTC', api_name='all'):
         result = 0
-        for a in self.api_obj_list:
+        for a in self.alive_apis:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.volume_eth == None:
@@ -63,7 +78,7 @@ class MultiApiManager():
 
     def change_24h(self, currency_symbol='0xBTC', api_name='all'):
         result = WeightedAverage()
-        for a in self.api_obj_list:
+        for a in self.alive_apis:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.change_24h == None:
@@ -74,7 +89,7 @@ class MultiApiManager():
 
     def eth_price_usd(self, api_name='all'):
         result = WeightedAverage()
-        for a in self.api_obj_list:
+        for a in self.alive_apis:
             if a.eth_price_usd == None:
                 continue
             if api_name == 'all' or a.api_name == api_name:
@@ -83,7 +98,7 @@ class MultiApiManager():
 
     def btc_price_usd(self, api_name='all'):
         result = WeightedAverage()
-        for a in self.api_obj_list:
+        for a in self.alive_apis:
             if a.btc_price_usd == None:
                 continue
             if api_name == 'all' or a.api_name == api_name:
@@ -92,9 +107,7 @@ class MultiApiManager():
 
     def last_updated_time(self, api_name='all'):
         result = 0
-        for a in self.api_obj_list:
-            if a.last_updated_time == None or a.last_updated_time == 0:
-                continue
+        for a in self.alive_apis:
             if api_name == 'all' or a.api_name == api_name:
                 # use the lowest last_updated time
                 #if result == 0 or a.last_updated_time < result:
