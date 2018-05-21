@@ -21,7 +21,7 @@ from enclavesdex import EnclavesAPI
 from livecoinwatch import LiveCoinWatchAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.6"
+_VERSION = "0.0.7"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -63,49 +63,51 @@ def seconds_to_readable_time(seconds):
 
     return "{:.0f}h ago".format(minutes / 60)
 
-def cmd_whitehouse():
-    WHITEHOUSE_PRICE_USD = 398.8*1000*1000
+def cmd_compare_price_vs(item_name="lambo", item_price=200000):
     if apis.last_updated_time() == 0:
         return ":shrug:"
 
-    return "1 whitehouse = {:,.0f} 0xBTC".format(WHITEHOUSE_PRICE_USD / (apis.price_eth('0xBTC') * apis.eth_price_usd()))
+    token_price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
 
-
-def cmd_lambo():
-    LAMBO_PRICE_USD = 200000
-    if apis.last_updated_time() == 0:
+    if token_price_usd == 0:
         return ":shrug:"
 
-    return "1 lambo = {:,.0f} 0xBTC".format(LAMBO_PRICE_USD / (apis.price_eth('0xBTC') * apis.eth_price_usd()))
+    return "1 {} = {:,.0f} 0xBTC".format(item_name, item_price / token_price_usd)
 
 
 def cmd_price(source='all'):
     if apis.last_updated_time(api_name=source) == 0:
         return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2rnYA7b>]"
     
+    token_price = apis.price_eth('0xBTC', api_name=source) * apis.eth_price_usd()
+    eth_price = float(apis.eth_price_usd(api_name=source))
+
     percent_change_str = ""
 
     if apis.change_24h('0xBTC', api_name=source) == None:
         percent_change_str = ""
     else:
         # TODO: enable percentage once enclaves is stable
-        # percent_change_str = "**{:+.2f}**%24h {} ".format(100.0 * apis.change_24h('0xBTC'),
-        #                                                   percent_change_to_emoji(apis.change_24h('0xBTC')),)
+        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.change_24h('0xBTC'),
+                                                       percent_change_to_emoji(apis.change_24h('0xBTC')),)
         pass
 
-    fmt_str = "{}{}: **${:.3f}** ({:.5f} Ξ) {}(ETH: **${:.0f}**) [<https://bit.ly/2rnYA7b>]"
+    fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<https://bit.ly/2rnYA7b>]"
     result = fmt_str.format('' if source == 'all' else '**{}** '.format(source),
                             seconds_to_readable_time(time.time()-apis.last_updated_time(api_name=source)),
-                            apis.price_eth('0xBTC', api_name=source) * apis.eth_price_usd(), 
+                            '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
                             apis.price_eth('0xBTC', api_name=source), 
                             percent_change_str,
-                            apis.eth_price_usd(api_name=source))
+                            '' if eth_price == 0 else '(ETH: **${:.0f}**) '.format(eth_price))
     return result
 
 
 def cmd_bitcoinprice():
     if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2w6Q0P0>]"
+
+    if apis.btc_price_usd() == 0:
+        return ":shrug:"
 
     fmt_str = "{}: **${:.0f}**"
     result = fmt_str.format(seconds_to_readable_time(time.time()-apis.last_updated_time()), apis.btc_price_usd())
@@ -116,7 +118,12 @@ def cmd_ratio():
     if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2w6Q0P0>]"
 
-    return "1 BTC : {:,.0f} 0xBTC".format(apis.btc_price_usd() / (apis.price_eth('0xBTC') * apis.eth_price_usd()))
+    token_price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
+
+    if token_price_usd == 0:
+        return ":shrug:"
+
+    return "1 BTC : {:,.0f} 0xBTC".format(apis.btc_price_usd() / token_price_usd)
 
 
 async def update_status(client, stat_str):
@@ -137,10 +144,14 @@ async def update_price_task():
             logging.exception('failed to update prices')
             #await update_status(client, "???")
 
+        # price in usd is conritional - only show it if eth price is not 0 (an error)
+        price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
+        usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
+
         # wait until at least one successful update to show status
         if apis.last_updated_time() != 0:
-            fmt_str = "${:.2f}  |  {:.5f} Ξ ({})"
-            await update_status(client, fmt_str.format(apis.price_eth('0xBTC') * apis.eth_price_usd(),
+            fmt_str = "{}{:.5f} Ξ ({})"
+            await update_status(client, fmt_str.format(usd_str,
                                                        apis.price_eth('0xBTC'),
                                                        seconds_to_readable_time(time.time()-apis.last_updated_time())))
 
@@ -184,19 +195,22 @@ def configure_client():
             msg = cmd_bitcoinprice()
             await client.send_message(message.channel, msg)
 
-        if message.content.startswith('!lambo'):
-            logging.info('got !lambo')
-            msg = cmd_lambo()
-            await client.send_message(message.channel, msg)
-
-        if message.content.startswith('!whitehouse'):
-            logging.info('got !whitehouse')
-            msg = cmd_whitehouse()
-            await client.send_message(message.channel, msg)
+        expensive_stuff = [
+            ('lambo',           200000),
+            ('whitehouse',      398.8*1000*1000),
+            ('thousandaire',    1e3),
+            ('millionaire',     1e6),
+            ('billionaire',     1e9),
+        ]
+        for name, price in expensive_stuff:
+            if message.content.startswith('!' + name):
+                logging.info('got !{}'.format(name))
+                msg = cmd_compare_price_vs(name, price)
+                await client.send_message(message.channel, msg)
 
         if message.content.startswith('!help'):
             logging.info('got !help')
-            msg = "available commands: `price ratio bitcoinprice lambo whitehouse`"
+            msg = "available commands: `price ratio bitcoinprice lambo whitehouse millionaire billionaire`"
             await client.send_message(message.channel, msg)
 
         #if message.content.startswith('!volume'):
