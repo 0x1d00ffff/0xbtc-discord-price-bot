@@ -66,7 +66,14 @@ class LiveCoinWatchAPI():
 
         response = urlopen(self._SERVER_URL+method, timeout=timeout)
         response = response.read().decode("utf-8") 
-        data = json.loads(response)
+        try:
+            data = json.loads(response)
+        except json.decoder.JSONDecodeError:
+            if "be right back" in response:
+                raise TimeoutError("api is down - got 404 page")
+            else:
+            	raise TimeoutError("api sent bad data ({})".format(repr(response)))
+            
 
         volume_usd = 0
 
@@ -129,16 +136,12 @@ class LiveCoinWatchAPI():
     def update(self, timeout=10.0):
         try:
             self._update(timeout=timeout)
-        except TimeoutError:
-            logging.warning('api timeout {}'.format(self.api_name))
-        except ConnectionResetError:
-            logging.warning('api timeout {}'.format(self.api_name))
-        except ConnectionRefusedError:
-            logging.warning('api timeout {}'.format(self.api_name))
-        except socket.timeout:
-            logging.warning('api timeout {}'.format(self.api_name))
-        except socket.gaierror:
-            logging.warning('api timeout {}'.format(self.api_name))
+        except (TimeoutError,
+                ConnectionResetError,
+                ConnectionRefusedError,
+                socket.timeout,
+                socket.gaierror) as e:
+            logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
         else:
             self.last_updated_time = time.time()
 
