@@ -68,7 +68,16 @@ class EnclavesAPI():
         result = ws.recv()
         #print('result:')
         #pprint.pprint(result)
-        all_data = json.loads(result[2:])
+
+        try:
+            all_data = json.loads(result[2:])
+        except json.decoder.JSONDecodeError:
+            if "be right back" in response:
+                raise TimeoutError("api is down - got 404 page")
+            else:
+            	raise TimeoutError("api sent bad data ({})".format(repr(response)))
+         
+
         #pprint.pprint(all_data)
         tokens = all_data[1]['tokens']
         for token in tokens:
