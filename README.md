@@ -17,4 +17,7 @@ Todo:
  - 24h high/low/average
  - ascii chart?
  - combine prices from multiple sources
+ - new exchanges
+   - tokenjar
+   - tokenstore
  - ~~0xBTC - BTC ratio~~
