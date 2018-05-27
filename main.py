@@ -163,9 +163,9 @@ def cmd_convert(message):
 
     if dest == '0xbtc':
         result = usd_value / token_price_usd
-    elif src == 'eth':
+    elif dest == 'eth':
         result = usd_value / apis.eth_price_usd()
-    elif src == 'btc':
+    elif dest == 'btc':
         result = usd_value / apis.btc_price_usd()
     else:
         return "Bad destination currency ({}). 0xbtc, eth, and btc are supported.".format(dest)
