@@ -22,7 +22,7 @@ from livecoinwatch import LiveCoinWatchAPI
 from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.11"
+_VERSION = "0.0.12"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -245,7 +245,8 @@ def configure_client():
         if message.content.startswith('!price'):
             logging.info('got !price ({})'.format(message.content))
             if any(s in message.content.lower() for s in [
-                    'enclaves']):
+                    'enclaves',
+                    'encalves']):
                 msg = cmd_price(source="Enclaves DEX")
             elif any(s in message.content.lower() for s in [
                     'lcw', 
@@ -254,8 +255,15 @@ def configure_client():
                 msg = cmd_price(source="Live Coin Watch")
             elif any(s in message.content.lower() for s in [
                     'merc', 
-                    'mercatox']):
+                    'mercatox', 
+                    'meractox', 
+                    'mecratox']):
                 msg = cmd_price(source="Mercatox")
+            elif any(s in message.content.lower() for s in [
+                    'all']):
+                msg = '\n'.join([cmd_price(source="Enclaves DEX"),
+                                 cmd_price(source="Live Coin Watch"),
+                                 cmd_price(source="Mercatox")])
             else:
                 msg = cmd_price()
             
