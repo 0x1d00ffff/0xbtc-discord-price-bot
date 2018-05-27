@@ -59,7 +59,7 @@ def to_readable_thousands(value):
 
     for unit in units:
         if value < 1000:
-            return "{:.0f}{}".format(value, unit)
+            return "{:.1f}{}".format(value, unit)
         value /= 1000
 
     return "{:.1f}{}".format(value, 't')
