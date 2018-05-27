@@ -99,8 +99,8 @@ def cmd_price(source='all'):
         percent_change_str = ""
     else:
         # TODO: enable percentage once enclaves is stable
-        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.change_24h('0xBTC'),
-                                                       percent_change_to_emoji(apis.change_24h('0xBTC')),)
+        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.change_24h('0xBTC', api_name=source),
+                                                       percent_change_to_emoji(apis.change_24h('0xBTC', api_name=source)),)
         pass
 
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
