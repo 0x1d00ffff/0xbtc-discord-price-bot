@@ -22,7 +22,7 @@ from livecoinwatch import LiveCoinWatchAPI
 from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.10"
+_VERSION = "0.0.11"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -137,6 +137,41 @@ def cmd_ratio():
 
     return "1 BTC : {:,.0f} 0xBTC".format(apis.btc_price_usd() / token_price_usd)
 
+def cmd_convert(message):
+    if apis.last_updated_time() == 0:
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
+
+    try:
+        _, amount, src, _, dest = message.split(' ')
+        src = src.lower()
+        dest = dest.lower()
+        amount = float(amount)
+    except:
+        return "Bad formatting? try this : `!convert 1 eth to 0xbtc`"
+
+    token_price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
+
+
+    if src == '0xbtc':
+        usd_value = token_price_usd * amount
+    elif src == 'eth':
+        usd_value = apis.eth_price_usd() * amount
+    elif src == 'btc':
+        usd_value = apis.btc_price_usd() * amount
+    else:
+        return "Bad source currency ({}). 0xbtc, eth, and btc are supported.".format(src)
+
+    if dest == '0xbtc':
+        result = usd_value / token_price_usd
+    elif src == 'eth':
+        result = usd_value / apis.eth_price_usd()
+    elif src == 'btc':
+        result = usd_value / apis.btc_price_usd()
+    else:
+        return "Bad destination currency ({}). 0xbtc, eth, and btc are supported.".format(dest)
+
+    return "{} {} = **{}** {}".format(amount, src, result, dest)
+
 
 async def update_status(client, stat_str):
     logging.info('changing status to {}'.format(repr(stat_str)))
@@ -211,6 +246,11 @@ def configure_client():
             msg = cmd_bitcoinprice()
             await client.send_message(message.channel, msg)
 
+        if message.content.lower().startswith('!convert'):
+            logging.info('got !convert ({})'.format(message.content))
+            msg = cmd_convert(message.content)
+            await client.send_message(message.channel, msg)
+
         expensive_stuff = [
             ('lambo',           400000),
             ('used_lambo',      200000),
@@ -230,7 +270,7 @@ def configure_client():
 
         if message.content.lower().startswith('!help'):
             logging.info('got !help')
-            msg = "available commands: `price ratio bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
+            msg = "available commands: `price ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
             await client.send_message(message.channel, msg)
 
         #if message.content.startswith('!volume'):
