@@ -32,6 +32,16 @@ class MultiApiManager():
                 continue
             yield a
 
+    def short_url(self, api_name='all'):
+        default_url = "http://bitly.com/2LvDE6u"
+        if api_name == "all":
+            return default_url
+
+        for a in self.api_obj_list:
+            if a.api_name == api_name:
+                return a.short_url
+        return default_url
+
     def price_eth(self, currency_symbol='0xBTC', api_name='all'):
         result = WeightedAverage()
         for a in self.alive_apis:
