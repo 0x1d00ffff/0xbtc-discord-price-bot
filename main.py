@@ -174,8 +174,10 @@ def cmd_convert(message):
         usd_value = apis.btc_price_usd() * amount
     elif src == 'mbtc':
         usd_value = apis.btc_price_usd() * amount / 1000.0
+    elif src == 'usd':
+        usd_value = amount
     else:
-        return "Bad source currency ({}). 0xbtc, eth, mbtc and btc are supported.".format(src)
+        return "Bad source currency ({}). 0xbtc, eth, mbtc, btc, and usd are supported.".format(src)
 
     if dest == '0xbtc':
         result = usd_value / token_price_usd
@@ -185,8 +187,10 @@ def cmd_convert(message):
         result = usd_value / apis.btc_price_usd()
     elif dest == 'mbtc':
         result = usd_value * 1000.0 / apis.btc_price_usd()
+    elif dest == 'usd':
+        result = usd_value
     else:
-        return "Bad destination currency ({}). 0xbtc, eth, mbtc and btc are supported.".format(dest)
+        return "Bad destination currency ({}). 0xbtc, eth, mbtc, btc, and usd are supported.".format(src)
 
     amount = prettify_decimals(amount)
     result = prettify_decimals(result)
