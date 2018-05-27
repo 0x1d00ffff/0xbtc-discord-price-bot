@@ -54,6 +54,20 @@ def percent_change_to_emoji(percent_change):
     return values[-1:][0][1]
 
 
+def prettify_decimals(number):
+    if number < 0.00001:
+        return "{:.8f}".format(number)
+    elif number < 0.001:
+        return "{:.5f}".format(number)
+    elif number < 1.0:
+        return "{:.3f}".format(number)
+    elif number < 1000.0:
+        return "{:.2f}".format(number)
+    elif number < 100000.0:
+        return "{:.1f}".format(number)
+
+    return "{:.0f}".format(number)
+
 def to_readable_thousands(value):
     units = ['', 'k', 'm', 'b'];
 
@@ -158,8 +172,10 @@ def cmd_convert(message):
         usd_value = apis.eth_price_usd() * amount
     elif src == 'btc':
         usd_value = apis.btc_price_usd() * amount
+    elif src == 'mbtc':
+        usd_value = apis.btc_price_usd() * amount / 1000.0
     else:
-        return "Bad source currency ({}). 0xbtc, eth, and btc are supported.".format(src)
+        return "Bad source currency ({}). 0xbtc, eth, mbtc and btc are supported.".format(src)
 
     if dest == '0xbtc':
         result = usd_value / token_price_usd
@@ -167,8 +183,13 @@ def cmd_convert(message):
         result = usd_value / apis.eth_price_usd()
     elif dest == 'btc':
         result = usd_value / apis.btc_price_usd()
+    elif dest == 'mbtc':
+        result = usd_value * 1000.0 / apis.btc_price_usd()
     else:
-        return "Bad destination currency ({}). 0xbtc, eth, and btc are supported.".format(dest)
+        return "Bad destination currency ({}). 0xbtc, eth, mbtc and btc are supported.".format(dest)
+
+    amount = prettify_decimals(amount)
+    result = prettify_decimals(result)
 
     return "{} {} = **{}** {}".format(amount, src, result, dest)
 
