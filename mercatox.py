@@ -112,7 +112,7 @@ class MercatoxAPI():
                 self.volume_btc = float(pair_info['quoteVolume'])
 
                 # TODO: this should be tracked per-base pair
-                self.change_24h = float(pair_info['percentChange'])
+                //self.change_24h = float(pair_info['percentChange']) / 100.0
 
             if base_pair == "ETH":
                 self.price_eth = float(pair_info['last'])
