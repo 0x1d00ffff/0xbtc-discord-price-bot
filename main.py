@@ -249,7 +249,7 @@ if __name__ == "__main__":
         EnclavesAPI('0xBTC'), 
         LiveCoinWatchAPI('0xBTC'),
         LiveCoinWatchAPI('ETH'),
-        MercatoxAPI('ETH'),
+        MercatoxAPI('0xBTC'),
     ])
     while True:
         try:
