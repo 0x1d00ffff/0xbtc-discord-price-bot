@@ -39,6 +39,7 @@ class EnclavesAPI():
 
         self.currency_symbol = currency_symbol
         self.api_name = "Enclaves DEX"
+        self.short_url = "https://bit.ly/2rnYA7b"
 
         self.price_eth = None
         self.price_usd = None

@@ -22,7 +22,7 @@ from livecoinwatch import LiveCoinWatchAPI
 from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.8"
+_VERSION = "0.0.9"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -54,6 +54,16 @@ def percent_change_to_emoji(percent_change):
     return values[-1:][0][1]
 
 
+def to_readable_thousands(value):
+    units = ['', 'k', 'm', 'b'];
+
+    for unit in units:
+        if value < 1000:
+            return "{:.0f}{}".format(value, unit)
+        value /= 1000
+
+    return "{:.1f}{}".format(value, 't')
+
 def seconds_to_readable_time(seconds):
     if seconds < 60:
         return 'now'
@@ -73,12 +83,12 @@ def cmd_compare_price_vs(item_name="lambo", item_price=200000):
     if token_price_usd == 0:
         return ":shrug:"
 
-    return "1 {} = {:,.0f} 0xBTC".format(item_name, item_price / token_price_usd)
+    return "1 {} = **{:,.0f}** 0xBTC (${})".format(item_name, item_price / token_price_usd, to_readable_thousands(item_price))
 
 
 def cmd_price(source='all'):
     if apis.last_updated_time(api_name=source) == 0:
-        return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2rnYA7b>]"
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url(api_name=source))
     
     token_price = apis.price_eth('0xBTC', api_name=source) * apis.eth_price_usd()
     eth_price = float(apis.eth_price_usd(api_name=source))
@@ -93,19 +103,20 @@ def cmd_price(source='all'):
                                                        percent_change_to_emoji(apis.change_24h('0xBTC')),)
         pass
 
-    fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<https://bit.ly/2rnYA7b>]"
+    fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
     result = fmt_str.format('' if source == 'all' else '**{}** '.format(source),
                             seconds_to_readable_time(time.time()-apis.last_updated_time(api_name=source)),
                             '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
                             apis.price_eth('0xBTC', api_name=source), 
                             percent_change_str,
-                            '' if eth_price == 0 else '(ETH: **${:.0f}**) '.format(eth_price))
+                            '' if eth_price == 0 else '(ETH: **${:.0f}**) '.format(eth_price), 
+                            apis.short_url(api_name=source))
     return result
 
 
 def cmd_bitcoinprice():
     if apis.last_updated_time() == 0:
-        return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2w6Q0P0>]"
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
 
     if apis.btc_price_usd() == 0:
         return ":shrug:"
@@ -117,7 +128,7 @@ def cmd_bitcoinprice():
 
 def cmd_ratio():
     if apis.last_updated_time() == 0:
-        return "not sure yet... waiting on my APIs :sob: [<https://bit.ly/2w6Q0P0>]"
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
 
     token_price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
 
@@ -202,8 +213,10 @@ def configure_client():
 
         expensive_stuff = [
             ('lambo',           400000),
+            ('used_lambo',      200000),
             ('privateisland',   500000),
             ('whitehouse',      398.8*1000*1000),
+            ('tesla',           101500),
             ('thousandaire',    1e3),
             ('millionaire',     1e6),
             ('billionaire',     1e9),

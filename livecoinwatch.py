@@ -51,6 +51,7 @@ class LiveCoinWatchAPI():
         self._SERVER_URL = "https://www.livecoinwatch.com/api"
         self.currency_symbol = currency_symbol
         self.api_name = "Live Coin Watch"
+        self.short_url = "https://bit.ly/2w6Q0P0"
         self.last_updated_time = 0
 
         self.price_eth = None

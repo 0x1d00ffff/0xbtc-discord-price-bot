@@ -58,6 +58,7 @@ class MercatoxAPI():
         self._SERVER_URL = "https://mercatox.com/public"
         self.currency_symbol = currency_symbol
         self.api_name = "Mercatox"
+        self.short_url = "http://bitly.com/2LvDE6u"
         self.last_updated_time = 0
 
         self.price_eth = None
