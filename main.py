@@ -19,9 +19,10 @@ from secret_info import TOKEN
 from reconnecting_bot import keep_running
 from enclavesdex import EnclavesAPI
 from livecoinwatch import LiveCoinWatchAPI
+from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.7"
+_VERSION = "0.0.8"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -180,37 +181,42 @@ def configure_client():
                     'livecoinwatch', 
                     'live coin watch']):
                 msg = cmd_price(source="Live Coin Watch")
+            elif any(s in message.content.lower() for s in [
+                    'merc', 
+                    'mercatox']):
+                msg = cmd_price(source="Mercatox")
             else:
                 msg = cmd_price()
             
             await client.send_message(message.channel, msg)
 
-        if message.content.startswith('!ratio'):
+        if message.content.lower().startswith('!ratio'):
             logging.info('got !ratio')
             msg = cmd_ratio()
             await client.send_message(message.channel, msg)
 
-        if message.content.startswith('!bitcoinprice'):
+        if message.content.lower().startswith('!bitcoinprice'):
             logging.info('got !bitcoinprice')
             msg = cmd_bitcoinprice()
             await client.send_message(message.channel, msg)
 
         expensive_stuff = [
-            ('lambo',           200000),
+            ('lambo',           400000),
+            ('privateisland',   500000),
             ('whitehouse',      398.8*1000*1000),
             ('thousandaire',    1e3),
             ('millionaire',     1e6),
             ('billionaire',     1e9),
         ]
         for name, price in expensive_stuff:
-            if message.content.startswith('!' + name):
+            if message.content.lower().startswith('!' + name):
                 logging.info('got !{}'.format(name))
                 msg = cmd_compare_price_vs(name, price)
                 await client.send_message(message.channel, msg)
 
-        if message.content.startswith('!help'):
+        if message.content.lower().startswith('!help'):
             logging.info('got !help')
-            msg = "available commands: `price ratio bitcoinprice lambo whitehouse millionaire billionaire`"
+            msg = "available commands: `price ratio bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
             await client.send_message(message.channel, msg)
 
         #if message.content.startswith('!volume'):
@@ -243,6 +249,7 @@ if __name__ == "__main__":
         EnclavesAPI('0xBTC'), 
         LiveCoinWatchAPI('0xBTC'),
         LiveCoinWatchAPI('ETH'),
+        MercatoxAPI('ETH'),
     ])
     while True:
         try:
