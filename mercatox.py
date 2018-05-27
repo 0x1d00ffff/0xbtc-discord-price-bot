@@ -107,18 +107,18 @@ class MercatoxAPI():
             #pprint.pprint(pair_info)
 
             if base_pair == "BTC":
-                self.price_btc = pair_info['last']
-                self.volume_btc = pair_info['quoteVolume']
+                self.price_btc = float(pair_info['last'])
+                self.volume_btc = float(pair_info['quoteVolume'])
 
                 # TODO: this should be tracked per-base pair
-                self.change_24h = pair_info['percentChange']
+                self.change_24h = float(pair_info['percentChange'])
 
             if base_pair == "ETH":
-                self.price_eth = pair_info['last']
-                self.volume_eth = pair_info['quoteVolume']
+                self.price_eth = float(pair_info['last'])
+                self.volume_eth = float(pair_info['quoteVolume'])
 
                 # TODO: this should be tracked per-base pair
-                self.change_24h = pair_info['percentChange']
+                self.change_24h = float(pair_info['percentChange']) / 100.0
 
 
         if self.currency_symbol == "ETH":
@@ -142,15 +142,15 @@ class MercatoxAPI():
             self.last_updated_time = time.time()
 
     def print_all_values(self):
-        print(self.api_name, self.currency_symbol, 'price_eth    ', self.price_eth)
-        print(self.api_name, self.currency_symbol, 'price_usd    ', self.price_usd)
-        print(self.api_name, self.currency_symbol, 'price_btc    ', self.price_btc)
-        print(self.api_name, self.currency_symbol, 'volume_usd   ', self.volume_usd)
-        print(self.api_name, self.currency_symbol, 'volume_eth   ', self.volume_eth)
-        print(self.api_name, self.currency_symbol, 'volume_btc   ', self.volume_btc)
-        print(self.api_name, self.currency_symbol, 'change_24h   ', self.change_24h)
-        print(self.api_name, self.currency_symbol, 'eth_price_usd', self.eth_price_usd)
-        print(self.api_name, self.currency_symbol, 'btc_price_usd', self.btc_price_usd)
+        print(self.api_name, self.currency_symbol, 'price_eth    ', repr(self.price_eth))
+        print(self.api_name, self.currency_symbol, 'price_usd    ', repr(self.price_usd))
+        print(self.api_name, self.currency_symbol, 'price_btc    ', repr(self.price_btc))
+        print(self.api_name, self.currency_symbol, 'volume_usd   ', repr(self.volume_usd))
+        print(self.api_name, self.currency_symbol, 'volume_eth   ', repr(self.volume_eth))
+        print(self.api_name, self.currency_symbol, 'volume_btc   ', repr(self.volume_btc))
+        print(self.api_name, self.currency_symbol, 'change_24h   ', repr(self.change_24h))
+        print(self.api_name, self.currency_symbol, 'eth_price_usd', repr(self.eth_price_usd))
+        print(self.api_name, self.currency_symbol, 'btc_price_usd', repr(self.btc_price_usd))
 
 if __name__ == "__main__":
 
