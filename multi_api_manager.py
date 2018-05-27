@@ -129,11 +129,13 @@ class MultiApiManager():
 if __name__ == "__main__":
     from enclavesdex import EnclavesAPI
     from livecoinwatch import LiveCoinWatchAPI
+    from mercatox import MercatoxAPI
 
     apis = [
         EnclavesAPI('0xBTC'), 
         LiveCoinWatchAPI('0xBTC'),
         LiveCoinWatchAPI('ETH'),
+        MercatoxAPI('0xBTC'),
     ]
 
     m = MultiApiManager(apis)
@@ -145,3 +147,13 @@ if __name__ == "__main__":
     print("m.volume_eth", m.volume_eth())
     print("m.change_24h", m.change_24h())
     print("m.eth_price_usd", m.eth_price_usd())
+
+    print("m.price_eth('0xBTC')", m.price_eth('0xBTC'))
+    print("m.price_usd('0xBTC')", m.price_usd('0xBTC'))
+    print("m.volume_usd('0xBTC')", m.volume_usd('0xBTC'))
+    print("m.volume_eth('0xBTC')", m.volume_eth('0xBTC'))
+    print("m.change_24h('0xBTC')", m.change_24h('0xBTC'))
+    print("m.eth_price_usd()", m.eth_price_usd())
+
+    print("m.change_24h('0xBTC', api_name='Mercatox')",      m.change_24h('0xBTC', api_name='Mercatox'))
+

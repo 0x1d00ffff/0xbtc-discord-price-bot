@@ -22,7 +22,7 @@ from livecoinwatch import LiveCoinWatchAPI
 from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.12"
+_VERSION = "0.0.13"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
