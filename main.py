@@ -100,7 +100,7 @@ def cmd_compare_price_vs(item_name="lambo", item_price=200000):
     return "1 {} = **{:,.0f}** 0xBTC (${})".format(item_name, item_price / token_price_usd, to_readable_thousands(item_price))
 
 
-def cmd_price(source='all'):
+def cmd_price(source='aggregate'):
     if apis.last_updated_time(api_name=source) == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url(api_name=source))
     
@@ -118,7 +118,7 @@ def cmd_price(source='all'):
         pass
 
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
-    result = fmt_str.format('' if source == 'all' else '**{}** '.format(source),
+    result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
                             seconds_to_readable_time(time.time()-apis.last_updated_time(api_name=source)),
                             '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
                             apis.price_eth('0xBTC', api_name=source), 
