@@ -217,6 +217,7 @@ def configure_client():
             ('privateisland',   500000),
             ('whitehouse',      398.8*1000*1000),
             ('tesla',           101500),
+            ('usedfordtaurus',  1700),
             ('thousandaire',    1e3),
             ('millionaire',     1e6),
             ('billionaire',     1e9),
