@@ -140,6 +140,24 @@ def cmd_bitcoinprice():
     return result
 
 
+def cmd_volume():
+    if apis.last_updated_time() == 0:
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
+
+    total_eth_volume = 0
+    response = ""
+
+    for source in ['Enclaves DEX', 'Live Coin Watch', 'Mercatox']:
+        volume = apis.volume_eth('0xBTC', api_name=source)
+        total_eth_volume += volume
+        response += "{}:$**{.0f}**({:.2f}Ξ) ".format(source, volume * apis.eth_price_usd(), volume)
+
+    response += "\n"
+    response += "Total: $**{.0f}**({:.2f}Ξ)".format(total_eth_volume * apis.eth_price_usd(), total_eth_volume)
+
+    return response
+
+
 def cmd_ratio():
     if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
@@ -269,6 +287,11 @@ def configure_client():
             
             await client.send_message(message.channel, msg)
 
+        if message.content.lower().startswith('!volume'):
+            logging.info('got !volume')
+            msg = cmd_volume()
+            await client.send_message(message.channel, msg)
+ 
         if message.content.lower().startswith('!ratio'):
             logging.info('got !ratio')
             msg = cmd_ratio()
