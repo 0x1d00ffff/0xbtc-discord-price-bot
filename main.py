@@ -22,7 +22,7 @@ from livecoinwatch import LiveCoinWatchAPI
 from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.13"
+_VERSION = "0.0.14"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -314,6 +314,7 @@ def configure_client():
             ('whitehouse',      398.8*1000*1000),
             ('tesla',           101500),
             ('usedfordtaurus',  1700),
+            ('newfordtaurus',   28400),
             ('thousandaire',    1e3),
             ('millionaire',     1e6),
             ('billionaire',     1e9),
@@ -326,7 +327,7 @@ def configure_client():
 
         if message.content.lower().startswith('!help'):
             logging.info('got !help')
-            msg = "available commands: `price ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
+            msg = "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
             await client.send_message(message.channel, msg)
 
         #if message.content.startswith('!volume'):
