@@ -63,10 +63,10 @@ def prettify_decimals(number):
         return "{:.3f}".format(number)
     elif number < 1000.0:
         return "{:.2f}".format(number)
-    elif number < 100000.0:
-        return "{:.1f}".format(number)
+    elif number < 10000.0:
+        return "{:,.1f}".format(number)
 
-    return "{:.0f}".format(number)
+    return "{:,.0f}".format(number)
 
 def to_readable_thousands(value):
     units = ['', 'k', 'm', 'b'];
@@ -150,10 +150,10 @@ def cmd_volume():
     for source in ['Enclaves DEX', 'Live Coin Watch', 'Mercatox']:
         volume = apis.volume_eth('0xBTC', api_name=source)
         total_eth_volume += volume
-        response += "{}:$**{.0f}**({:.2f}Ξ) ".format(source, volume * apis.eth_price_usd(), volume)
+        response += "{}: $**{}**({}Ξ) ".format(source, prettify_decimals(volume * apis.eth_price_usd()), prettify_decimals(volume))
 
     response += "\n"
-    response += "Total: $**{.0f}**({:.2f}Ξ)".format(total_eth_volume * apis.eth_price_usd(), total_eth_volume)
+    response += "Total: $**{}**({}Ξ)".format(prettify_decimals(total_eth_volume * apis.eth_price_usd()), prettify_decimals(total_eth_volume))
 
     return response
 
