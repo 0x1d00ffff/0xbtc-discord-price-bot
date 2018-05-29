@@ -88,6 +88,8 @@ class LiveCoinWatchAPI():
             # skip reverse-pairings
             if exchange_data['base'] != self.currency_symbol:
                 continue
+            if exchange_data['exchange'] == 'Mercatox':
+                continue
 
             # last_price_in_usd = data['data'][0]['usd']
             # last_price_in_eth = data['data'][0]['rate']
