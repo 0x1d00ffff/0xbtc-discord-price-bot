@@ -22,7 +22,7 @@ from livecoinwatch import LiveCoinWatchAPI
 from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.14"
+_VERSION = "0.0.15"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -55,6 +55,10 @@ def percent_change_to_emoji(percent_change):
 
 
 def prettify_decimals(number):
+    if number < 0.000000000001:
+        return "{:.2E}".format(number)
+    if number < 0.00000001:
+        return "{:.12f}".format(number)
     if number < 0.00001:
         return "{:.8f}".format(number)
     elif number < 0.001:
@@ -184,31 +188,43 @@ def cmd_convert(message):
     token_price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
 
 
-    if src == '0xbtc':
+    if src in ['0xbtc', '0xbitcoin']:
         usd_value = token_price_usd * amount
-    elif src == 'eth':
+    elif src in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti']:
+        usd_value = token_price_usd * amount / 10**8
+    elif src in ['eth', 'ethereum']:
         usd_value = apis.eth_price_usd() * amount
-    elif src == 'btc':
+    elif src == 'wei':
+        usd_value = apis.eth_price_usd() * amount / 10**18
+    elif src in ['btc', 'bitcoin']:
         usd_value = apis.btc_price_usd() * amount
-    elif src == 'mbtc':
+    elif src in ['satoshis', 'satoshi']:
+        usd_value = apis.btc_price_usd() * amount / 10**8
+    elif src in ['mbtc', 'millibtc', 'millibitcoin']:
         usd_value = apis.btc_price_usd() * amount / 1000.0
-    elif src == 'usd':
+    elif src in ['usd', 'dollar', 'dollars', 'buck', 'bucks']:
         usd_value = amount
     else:
-        return "Bad source currency ({}). 0xbtc, eth, mbtc, btc, and usd are supported.".format(src)
+        return "Bad currency ({}). 0xbtc, 0xsatoshis, eth, wei, btc, mbtc, satoshis, and usd are supported.".format(src)
 
-    if dest == '0xbtc':
+    if dest in ['0xbtc', '0xbitcoin']:
         result = usd_value / token_price_usd
-    elif dest == 'eth':
+    elif dest in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti']:
+        result = 10**8 * usd_value / token_price_usd
+    elif dest in ['eth', 'ethereum']:
         result = usd_value / apis.eth_price_usd()
-    elif dest == 'btc':
+    elif dest == 'wei':
+        result = 10**18 * usd_value / apis.eth_price_usd()
+    elif dest in ['btc', 'bitcoin']:
         result = usd_value / apis.btc_price_usd()
-    elif dest == 'mbtc':
+    elif dest in ['satoshis', 'satoshi']:
+        result = 10**8 * usd_value / apis.btc_price_usd()
+    elif dest in ['mbtc', 'millibtc', 'millibitcoin']:
         result = usd_value * 1000.0 / apis.btc_price_usd()
-    elif dest == 'usd':
+    elif dest in ['usd', 'dollar', 'dollars', 'buck', 'bucks']:
         result = usd_value
     else:
-        return "Bad destination currency ({}). 0xbtc, eth, mbtc, btc, and usd are supported.".format(src)
+        return "Bad currency ({}). 0xbtc, 0xsatoshis, eth, wei, btc, mbtc, satoshis, and usd are supported.".format(dest)
 
     amount = prettify_decimals(amount)
     result = prettify_decimals(result)
