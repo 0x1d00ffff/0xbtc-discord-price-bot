@@ -47,9 +47,10 @@ from weighted_average import WeightedAverage
 
 
 class LiveCoinWatchAPI():
-    def __init__(self, currency_symbol="0xBTC"):
+    def __init__(self, allowed_apis=['ForkDelta'], currency_symbol="0xBTC"):
         self._SERVER_URL = "https://www.livecoinwatch.com/api"
         self.currency_symbol = currency_symbol
+        self.allowed_apis = allowed_apis
         self.api_name = "Live Coin Watch"
         self.short_url = "https://bit.ly/2w6Q0P0"
         self.last_updated_time = 0
@@ -88,20 +89,19 @@ class LiveCoinWatchAPI():
             # skip reverse-pairings
             if exchange_data['base'] != self.currency_symbol:
                 continue
-            if exchange_data['exchange'] == 'Mercatox':
-                continue
+
+
 
             # last_price_in_usd = data['data'][0]['usd']
             # last_price_in_eth = data['data'][0]['rate']
             # last_eth_price = data['data'][0]['lastq']
             base_pair = exchange_data['quote']
-
             relative_volume = float(exchange_data['volumep'])
 
+            # NOTE: this entire if statement is ONLY to collect price of eth and btc
             if base_pair == "ETH":
                 # TODO: average price of base pairs (or something), they might all be the same
                 self.eth_price_usd = exchange_data['lastq']
-
                 wavg_price_eth.add(exchange_data['rate'], relative_volume)
             elif (base_pair in ["AUD", "CAD", "CNY", "DAI", "EUR", "EURO", "GBP", "JPY", "KRW", "RUB", "USDT", "USD"]):
                 # allow all fiat pairings to count towards volume
@@ -117,6 +117,11 @@ class LiveCoinWatchAPI():
                 # if base pair is unknown, don't use for calcualted volume/price
                 continue
 
+            # skip apis not listed in allowed_apis
+            if exchange_data['exchange'] not in self.allowed_apis:
+                continue
+
+
             wavg_price_usd.add(exchange_data['usd'], relative_volume)
             volume_usd += exchange_data['volume']
 
@@ -131,7 +136,9 @@ class LiveCoinWatchAPI():
             self.price_eth = wavg_price_eth.average()
 
         self.volume_usd = volume_usd
-        self.volume_eth = self.volume_usd / self.eth_price_usd
+
+        if self.eth_price_usd != None:
+            self.volume_eth = self.volume_usd / self.eth_price_usd
 
         if self.currency_symbol == "BTC":
             self.btc_price_usd = self.price_usd

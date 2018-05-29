@@ -49,6 +49,8 @@ class MultiApiManager():
                 continue
             if a.price_eth == None:
                 continue
+            if a.volume_eth == None:
+                continue
             if api_name == 'aggregate' or a.api_name == api_name:
                 result.add(a.price_eth, a.volume_eth)
         return result.average()
@@ -59,6 +61,8 @@ class MultiApiManager():
             if a.currency_symbol != currency_symbol:
                 continue
             if a.price_usd == None:
+                continue
+            if a.volume_eth == None:
                 continue
             if api_name == 'aggregate' or a.api_name == api_name:
                 result.add(a.price_usd, a.volume_eth)
@@ -129,12 +133,13 @@ class MultiApiManager():
 if __name__ == "__main__":
     from enclavesdex import EnclavesAPI
     from livecoinwatch import LiveCoinWatchAPI
+    from forkdelta import ForkDeltaAPI
     from mercatox import MercatoxAPI
 
     apis = [
         EnclavesAPI('0xBTC'), 
-        LiveCoinWatchAPI('0xBTC'),
         LiveCoinWatchAPI('ETH'),
+        ForkDeltaAPI('0xBTC'),
         MercatoxAPI('0xBTC'),
     ]
 
@@ -146,14 +151,15 @@ if __name__ == "__main__":
     print("m.volume_usd", m.volume_usd())
     print("m.volume_eth", m.volume_eth())
     print("m.change_24h", m.change_24h())
-    print("m.eth_price_usd", m.eth_price_usd())
+    
+    print("m.eth_price_usd()", m.eth_price_usd())
+    print("m.btc_price_usd()", m.btc_price_usd())
 
     print("m.price_eth('0xBTC')", m.price_eth('0xBTC'))
     print("m.price_usd('0xBTC')", m.price_usd('0xBTC'))
     print("m.volume_usd('0xBTC')", m.volume_usd('0xBTC'))
     print("m.volume_eth('0xBTC')", m.volume_eth('0xBTC'))
     print("m.change_24h('0xBTC')", m.change_24h('0xBTC'))
-    print("m.eth_price_usd()", m.eth_price_usd())
 
     print("m.change_24h('0xBTC', api_name='Mercatox')",      m.change_24h('0xBTC', api_name='Mercatox'))
 
