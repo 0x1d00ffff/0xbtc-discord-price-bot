@@ -22,7 +22,7 @@ from livecoinwatch import LiveCoinWatchAPI
 from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.15"
+_VERSION = "0.0.16"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -151,7 +151,7 @@ def cmd_volume():
     total_eth_volume = 0
     response = ""
 
-    for source in ['Enclaves DEX', 'Live Coin Watch', 'Mercatox']:
+    for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox']:
         volume = apis.volume_eth('0xBTC', api_name=source)
         total_eth_volume += volume
         response += "{}: $**{}**({}Ξ) ".format(source, prettify_decimals(volume * apis.eth_price_usd()), prettify_decimals(volume))
@@ -283,10 +283,10 @@ def configure_client():
                     'encalves']):
                 msg = cmd_price(source="Enclaves DEX")
             elif any(s in message.content.lower() for s in [
-                    'lcw', 
-                    'livecoinwatch', 
-                    'live coin watch']):
-                msg = cmd_price(source="Live Coin Watch")
+                    'fd', 
+                    'forkdelta',
+                    'fork delta']):
+                msg = cmd_price(source="Fork Delta")
             elif any(s in message.content.lower() for s in [
                     'merc', 
                     'mercatox', 
@@ -296,7 +296,7 @@ def configure_client():
             elif any(s in message.content.lower() for s in [
                     'all']):
                 msg = '\n'.join([cmd_price(source="Enclaves DEX"),
-                                 cmd_price(source="Live Coin Watch"),
+                                 cmd_price(source="Fork Delta"),
                                  cmd_price(source="Mercatox")])
             else:
                 msg = cmd_price()
@@ -374,8 +374,8 @@ if __name__ == "__main__":
     apis = MultiApiManager(
     [
         EnclavesAPI('0xBTC'), 
-        LiveCoinWatchAPI('0xBTC'),
         LiveCoinWatchAPI('ETH'),
+        ForkDeltaAPI('0xBTC'),
         MercatoxAPI('0xBTC'),
     ])
     while True:
