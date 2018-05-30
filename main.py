@@ -160,10 +160,10 @@ def cmd_volume():
         total_btc_volume += volume_btc
         response += "{}: $**{}**({}Ξ) ".format(source, prettify_decimals(volume_eth * apis.eth_price_usd()), prettify_decimals(volume_eth))
         if volume_btc != 0:
-            response += "+ $**{}**({}₿) ".format(source, prettify_decimals(volume_btc * apis.btc_price_usd()), prettify_decimals(volume_btc))
+            response += "+ $**{}**({}₿) ".format(prettify_decimals(volume_btc * apis.btc_price_usd()), prettify_decimals(volume_btc))
 
     response += "\n"
-    response += "Total: $**{}**({}Ξ+{}₿)".format(prettify_decimals((total_eth_volume * apis.eth_price_usd()) + (total_btc_volume * apis.btc_price_usd())), prettify_decimals(total_btc_volume))
+    response += "Total: $**{}**({}Ξ+{}₿)".format(prettify_decimals((total_eth_volume * apis.eth_price_usd()) + (total_btc_volume * apis.btc_price_usd())), prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume))
 
     return response
 
