@@ -90,6 +90,17 @@ class MultiApiManager():
                 result += a.volume_eth
         return result
 
+    def volume_btc(self, currency_symbol='0xBTC', api_name='aggregate'):
+        result = 0
+        for a in self.alive_apis:
+            if a.currency_symbol != currency_symbol:
+                continue
+            if a.volume_btc == None:
+                continue
+            if api_name == 'aggregate' or a.api_name == api_name:
+                result += a.volume_btc
+        return result
+
     def change_24h(self, currency_symbol='0xBTC', api_name='aggregate'):
         result = WeightedAverage()
         for a in self.alive_apis:
@@ -150,8 +161,9 @@ if __name__ == "__main__":
     print("m.price_usd", m.price_usd())
     print("m.volume_usd", m.volume_usd())
     print("m.volume_eth", m.volume_eth())
+    print("m.volume_btc", m.volume_btc())
     print("m.change_24h", m.change_24h())
-    
+
     print("m.eth_price_usd()", m.eth_price_usd())
     print("m.btc_price_usd()", m.btc_price_usd())
 
@@ -159,6 +171,7 @@ if __name__ == "__main__":
     print("m.price_usd('0xBTC')", m.price_usd('0xBTC'))
     print("m.volume_usd('0xBTC')", m.volume_usd('0xBTC'))
     print("m.volume_eth('0xBTC')", m.volume_eth('0xBTC'))
+    print("m.volume_btc('0xBTC')", m.volume_btc('0xBTC'))
     print("m.change_24h('0xBTC')", m.change_24h('0xBTC'))
 
     print("m.change_24h('0xBTC', api_name='Mercatox')",      m.change_24h('0xBTC', api_name='Mercatox'))
