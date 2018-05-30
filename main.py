@@ -19,10 +19,11 @@ from secret_info import TOKEN
 from reconnecting_bot import keep_running
 from enclavesdex import EnclavesAPI
 from livecoinwatch import LiveCoinWatchAPI
+from forkdelta import ForkDeltaAPI
 from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.16"
+_VERSION = "0.0.17"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -149,15 +150,20 @@ def cmd_volume():
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
 
     total_eth_volume = 0
+    total_btc_volume = 0
     response = ""
 
     for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox']:
-        volume = apis.volume_eth('0xBTC', api_name=source)
-        total_eth_volume += volume
-        response += "{}: $**{}**({}Ξ) ".format(source, prettify_decimals(volume * apis.eth_price_usd()), prettify_decimals(volume))
+        volume_eth = apis.volume_eth('0xBTC', api_name=source)
+        volume_btc = apis.volume_btc('0xBTC', api_name=source)
+        total_eth_volume += volume_eth
+        total_btc_volume += volume_btc
+        response += "{}: $**{}**({}Ξ) ".format(source, prettify_decimals(volume_eth * apis.eth_price_usd()), prettify_decimals(volume_eth))
+        if volume_btc != 0:
+            response += "+ $**{}**({}₿) ".format(source, prettify_decimals(volume_btc * apis.btc_price_usd()), prettify_decimals(volume_btc))
 
     response += "\n"
-    response += "Total: $**{}**({}Ξ)".format(prettify_decimals(total_eth_volume * apis.eth_price_usd()), prettify_decimals(total_eth_volume))
+    response += "Total: $**{}**({}Ξ+{}₿)".format(prettify_decimals((total_eth_volume * apis.eth_price_usd()) + (total_btc_volume * apis.btc_price_usd())), prettify_decimals(total_btc_volume))
 
     return response
 

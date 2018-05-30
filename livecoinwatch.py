@@ -57,8 +57,10 @@ class LiveCoinWatchAPI():
 
         self.price_eth = None
         self.price_usd = None
+        self.price_btc = None
         self.volume_usd = None
         self.volume_eth = None
+        self.volume_btc = None
         self.change_24h = None
         self.eth_price_usd = None
         self.btc_price_usd = None
