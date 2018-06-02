@@ -145,6 +145,18 @@ def cmd_bitcoinprice():
     return result
 
 
+def cmd_ethereumprice():
+    if apis.last_updated_time() == 0:
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
+
+    if apis.eth_price_usd() == 0:
+        return ":shrug:"
+
+    fmt_str = "{}: **${:.0f}**"
+    result = fmt_str.format(seconds_to_readable_time(time.time()-apis.last_updated_time()), apis.eth_price_usd())
+    return result
+
+
 def cmd_volume():
     if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
@@ -184,6 +196,7 @@ def cmd_convert(message):
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
 
     try:
+        # example: '!convert 1 usd to 0xbtc'
         _, amount, src, _, dest = message.split(' ')
         src = src.lower()
         dest = dest.lower()
@@ -194,7 +207,7 @@ def cmd_convert(message):
     token_price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
 
 
-    if src in ['0xbtc', '0xbitcoin']:
+    if src in ['0xbtc', '0xbitcoins', '0xbitcoin']:
         usd_value = token_price_usd * amount
     elif src in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti']:
         usd_value = token_price_usd * amount / 10**8
@@ -202,18 +215,20 @@ def cmd_convert(message):
         usd_value = apis.eth_price_usd() * amount
     elif src == 'wei':
         usd_value = apis.eth_price_usd() * amount / 10**18
-    elif src in ['btc', 'bitcoin']:
+    elif src in ['btc', 'bitcoins', 'bitcoin']:
         usd_value = apis.btc_price_usd() * amount
     elif src in ['satoshis', 'satoshi']:
         usd_value = apis.btc_price_usd() * amount / 10**8
-    elif src in ['mbtc', 'millibtc', 'millibitcoin']:
+    elif src in ['mbtc', 'millibtc', 'millibitcoins', 'millibitcoin']:
         usd_value = apis.btc_price_usd() * amount / 1000.0
-    elif src in ['usd', 'dollar', 'dollars', 'buck', 'bucks']:
+    elif src in ['usd', 'dollars', 'dollar', 'bucks', 'buck']:
         usd_value = amount
+    elif src in ['cents', 'cent']:
+        usd_value = amount / 100.0
     else:
         return "Bad currency ({}). 0xbtc, 0xsatoshis, eth, wei, btc, mbtc, satoshis, and usd are supported.".format(src)
 
-    if dest in ['0xbtc', '0xbitcoin']:
+    if dest in ['0xbtc', '0xbitcoins', '0xbitcoin']:
         result = usd_value / token_price_usd
     elif dest in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti']:
         result = 10**8 * usd_value / token_price_usd
@@ -221,14 +236,16 @@ def cmd_convert(message):
         result = usd_value / apis.eth_price_usd()
     elif dest == 'wei':
         result = 10**18 * usd_value / apis.eth_price_usd()
-    elif dest in ['btc', 'bitcoin']:
+    elif dest in ['btc', 'bitcoins', 'bitcoin']:
         result = usd_value / apis.btc_price_usd()
     elif dest in ['satoshis', 'satoshi']:
         result = 10**8 * usd_value / apis.btc_price_usd()
-    elif dest in ['mbtc', 'millibtc', 'millibitcoin']:
+    elif dest in ['mbtc', 'millibtc', 'millibitcoins', 'millibitcoin']:
         result = usd_value * 1000.0 / apis.btc_price_usd()
-    elif dest in ['usd', 'dollar', 'dollars', 'buck', 'bucks']:
+    elif dest in ['usd', 'dollars', 'dollar', 'bucks', 'buck']:
         result = usd_value
+    elif dest in ['cents', 'cent']:
+        result = usd_value * 100.0
     else:
         return "Bad currency ({}). 0xbtc, 0xsatoshis, eth, wei, btc, mbtc, satoshis, and usd are supported.".format(dest)
 
@@ -282,24 +299,34 @@ def configure_client():
         if message.author.bot:
             return
 
-        if message.content.startswith('!price'):
-            logging.info('got !price ({})'.format(message.content))
-            if any(s in message.content.lower() for s in [
+        command_str = message.content.lower()
+
+        if command_str.startswith('!price'):
+            logging.info('got !price ({})'.format(command_str))
+            if any(s in command_str for s in [
                     'enclaves',
                     'encalves']):
                 msg = cmd_price(source="Enclaves DEX")
-            elif any(s in message.content.lower() for s in [
+            elif any(s in command_str for s in [
                     'fd', 
                     'forkdelta',
                     'fork delta']):
                 msg = cmd_price(source="Fork Delta")
-            elif any(s in message.content.lower() for s in [
+            elif any(s in command_str for s in [
                     'merc', 
                     'mercatox', 
                     'meractox', 
                     'mecratox']):
                 msg = cmd_price(source="Mercatox")
-            elif any(s in message.content.lower() for s in [
+            elif any(s in command_str for s in [
+                    'btc',
+                    'bitcoin']):
+                msg = cmd_bitcoinprice()
+            elif any(s in command_str for s in [
+                    'eth',
+                    'ethereum']):
+                msg = cmd_ethereumprice()
+            elif any(s in command_str for s in [
                     'all']):
                 msg = '\n'.join([cmd_price(source="Enclaves DEX"),
                                  cmd_price(source="Fork Delta"),
@@ -309,54 +336,72 @@ def configure_client():
             
             await client.send_message(message.channel, msg)
 
-        if message.content.lower().startswith('!volume'):
+        if command_str.startswith('!volume'):
             logging.info('got !volume')
             msg = cmd_volume()
             await client.send_message(message.channel, msg)
  
-        if message.content.lower().startswith('!ratio'):
+        if command_str.startswith('!ratio'):
             logging.info('got !ratio')
             msg = cmd_ratio()
             await client.send_message(message.channel, msg)
 
-        if message.content.lower().startswith('!bitcoinprice'):
-            logging.info('got !bitcoinprice')
+        if command_str.startswith('!bitcoinprice') or command_str.startswith('!btcprice'):
+            logging.info('got !bitcoinprice ({})'.format(command_str))
             msg = cmd_bitcoinprice()
             await client.send_message(message.channel, msg)
 
-        if message.content.lower().startswith('!convert'):
-            logging.info('got !convert ({})'.format(message.content))
-            msg = cmd_convert(message.content)
+        if command_str.startswith('!ethereumprice') or command_str.startswith('!ethprice'):
+            logging.info('got !ethereumprice ({})'.format(command_str))
+            msg = cmd_ethereumprice()
+            await client.send_message(message.channel, msg)
+
+        if command_str.startswith('!convert'):
+            logging.info('got !convert ({})'.format(command_str))
+            msg = cmd_convert(command_str)
             await client.send_message(message.channel, msg)
 
         expensive_stuff = [
-            ('lambo',           400000),
-            ('used_lambo',      200000),
-            ('privateisland',   500000),
-            ('whitehouse',      398.8*1000*1000),
-            ('tesla',           101500),
-            ('usedfordtaurus',  1700),
-            ('newfordtaurus',   28400),
-            ('thousandaire',    1e3),
-            ('millionaire',     1e6),
-            ('billionaire',     1e9),
+            (400000,
+             ['lambo']),
+            (200000,
+             ['usedlambo', 'used_lambo']),
+            (500000,
+             ['privateisland', 'privareisland', 'pirvateisland']),
+            (398.8*1000*1000,
+             ['whitehouse']),
+            (101500, 
+             ['tesla', 'telsa']),
+            (1700,
+             ['usedfordtaurus', 'oldfordtaurus']),
+            (28400,
+             ['newfordtaurus', 'fordtaurus']),
+            (1e3,
+             ['thousandaire']),
+            (1e6,
+             ['millionaire']),
+            (1e9,
+             ['billionaire']),
         ]
-        for name, price in expensive_stuff:
-            if message.content.lower().startswith('!' + name):
-                logging.info('got !{}'.format(name))
-                msg = cmd_compare_price_vs(name, price)
-                await client.send_message(message.channel, msg)
+        for price, names in expensive_stuff:
+            if not any('!' + name in command_str for name in names):
+                continue
 
-        if message.content.lower().startswith('!help'):
+            correct_name = names[0]
+            logging.info('got !{} ({})'.format(correct_name, command_str))
+            msg = cmd_compare_price_vs(correct_name, price)
+            await client.send_message(message.channel, msg)
+
+        if command_str.startswith('!help'):
             logging.info('got !help')
             msg = "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
             await client.send_message(message.channel, msg)
 
-        #if message.content.startswith('!volume'):
+        #if command_str.startswith('!volume'):
         #    msg = cmd_price()
         #    await client.send_message(message.channel, msg)
 
-        #if message.content.startswith('!hello'):
+        #if command_str.startswith('!hello'):
         #    msg = 'Hello {0.author.mention}'.format(message)
         #    await client.send_message(message.channel, msg)
 
