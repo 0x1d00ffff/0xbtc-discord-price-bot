@@ -13,6 +13,10 @@ Requires:
  - discord
 
 Todo:
+ - multiple quick commands will run in parallel, causing some things like 
+   command counter to only count 1/2 commands. Results should really be pushed
+   to a queue instead.
+ - catch `discord.errors.Forbidden` when commands are run in forbidden channels
  - Need a new 'Pairing' class to handle pairings in a more generic way. This
    will allow easier integration of BTC pairings (ie mercatox)
  - ATH announcements
