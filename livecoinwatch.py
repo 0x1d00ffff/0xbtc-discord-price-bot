@@ -152,7 +152,8 @@ class LiveCoinWatchAPI():
                 ConnectionResetError,
                 ConnectionRefusedError,
                 socket.timeout,
-                socket.gaierror) as e:
+                socket.gaierror,
+                urllib.error.URLError) as e:
             logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
         else:
             self.last_updated_time = time.time()
