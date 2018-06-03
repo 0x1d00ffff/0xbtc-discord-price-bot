@@ -273,18 +273,25 @@ async def update_price_task():
             logging.exception('failed to update prices')
             #await update_status(client, "???")
 
-        # price in usd is conritional - only show it if eth price is not 0 (an error)
-        price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
-        usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
+        try:
+            # price in usd is conritional - only show it if eth price is not 0 (an error)
+            price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
+            usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
 
-        # wait until at least one successful update to show status
-        if apis.last_updated_time() != 0:
-            fmt_str = "{}{:.5f} Ξ ({})"
-            await update_status(client, fmt_str.format(usd_str,
-                                                       apis.price_eth('0xBTC'),
-                                                       seconds_to_readable_time(time.time()-apis.last_updated_time())))
+            # wait until at least one successful update to show status
+            if apis.last_updated_time() != 0:
+                fmt_str = "{}{:.5f} Ξ ({})"
+                await update_status(client, fmt_str.format(usd_str,
+                                                           apis.price_eth('0xBTC'),
+                                                           seconds_to_readable_time(time.time()-apis.last_updated_time())))
+        except:
+            logging.exception('failed to change status')
 
         await asyncio.sleep(_UPDATE_RATE)
+
+    # this throws an exception which causes the program to restart
+    # in normal operation, we should never reach this
+    raise RuntimeError('update_price_task loop stopped - something is wrong')
 
 
 def configure_client():
