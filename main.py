@@ -30,6 +30,7 @@ _UPDATE_RATE = 120
 #bitcoin_price = 0
 #price_in_usd, price_in_eth, apis.eth_price_usd() = 0, 0, 0
 last_updated = 0
+command_count = 0
 #enclaves = EnclavesAPI()
 
 client = None
@@ -396,9 +397,10 @@ def handle_command(command_str):
     # log anything starting with ! with debug messages
     if command_str.startswith('!'):
         if msg != None:
-            logging.debug('recognized cmd ({})'.format(repr(command_str)))
+            logging.debug('({} cmds) GOOD ({})'.format(command_count, repr(command_str)))
+            command_count += 1
         else:
-            logging.debug('---bad command ({})'.format(repr(command_str)))
+            logging.debug('({} cmds)  BAD ({})'.format(command_count, repr(command_str)))
 
 
 def configure_client():
@@ -424,12 +426,31 @@ def configure_client():
 
     client.loop.create_task(update_price_task())
 
+def setup_logging():
+    path = '.'
+    filename = 'debug.log'
+
+    # set up logging to file
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s, %(name)-12s, %(levelname)-8s, %(message)s',
+                        datefmt='%m-%d-%y %H:%M:%S',
+                        filename="{0}/{1}.log".format(path, filename),
+                        filemode='a')
+
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter('%(asctime)s [%(levelname)-5.5s] %(message)s',
+                                  datefmt='%H:%M:%S')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format= '[%(asctime)s.%(msecs)03d] %(levelname)s - %(message)s',
-        datefmt='%H:%M:%S')
+    setup_logging()
+
     logging.info('0xbtc-price-bot start v{}'.format(_VERSION))
     loop = asyncio.get_event_loop()
     client = discord.Client()
