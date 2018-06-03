@@ -209,7 +209,7 @@ def cmd_convert(message):
 
     if src in ['0xbtc', '0xbitcoins', '0xbitcoin']:
         usd_value = token_price_usd * amount
-    elif src in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti']:
+    elif src in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti', 'crumbs', 'crumb']:
         usd_value = token_price_usd * amount / 10**8
     elif src in ['eth', 'ethereum']:
         usd_value = apis.eth_price_usd() * amount
@@ -230,7 +230,7 @@ def cmd_convert(message):
 
     if dest in ['0xbtc', '0xbitcoins', '0xbitcoin']:
         result = usd_value / token_price_usd
-    elif dest in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti']:
+    elif dest in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti', 'crumbs', 'crumb']:
         result = 10**8 * usd_value / token_price_usd
     elif dest in ['eth', 'ethereum']:
         result = usd_value / apis.eth_price_usd()
