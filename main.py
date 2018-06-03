@@ -23,7 +23,7 @@ from forkdelta import ForkDeltaAPI
 from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.17"
+_VERSION = "0.0.18"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -280,7 +280,7 @@ def cmd_convert(message):
 
 
 async def update_status(client, stat_str):
-    logging.info('changing status to {}'.format(repr(stat_str)))
+    logging.info('changing status to %s', repr(stat_str))
     await client.change_presence(game=discord.Game(name=stat_str),
                                  status=discord.Status('online'),
                                  afk=False)
@@ -318,9 +318,10 @@ async def update_price_task():
     raise RuntimeError('update_price_task loop stopped - something is wrong')
 
 def handle_command(command_str):
+    global command_count
     msg = None
     if command_str.startswith('!price'):
-        logging.info('got !price ({})'.format(command_str))
+        #logging.info('got !price ({})'.format(command_str))
         if any(s in command_str for s in [
                 'enclaves',
                 'encalves']):
@@ -353,24 +354,24 @@ def handle_command(command_str):
             msg = cmd_price()
 
     if command_str.startswith('!volume'):
-        logging.info('got !volume')
+        #logging.info('got !volume')
         msg = cmd_volume()
 
     if command_str.startswith('!ratio'):
-        logging.info('got !ratio')
+        #logging.info('got !ratio')
         msg = cmd_ratio()
 
     if command_str.startswith('!bitcoinprice') or command_str.startswith('!btcprice'):
-        logging.info('got !bitcoinprice ({})'.format(command_str))
+        #logging.info('got !bitcoinprice ({})'.format(command_str))
         msg = cmd_bitcoinprice()
 
 
     if command_str.startswith('!ethereumprice') or command_str.startswith('!ethprice'):
-        logging.info('got !ethereumprice ({})'.format(command_str))
+        #logging.info('got !ethereumprice ({})'.format(command_str))
         msg = cmd_ethereumprice()
 
     if command_str.startswith('!convert'):
-        logging.info('got !convert ({})'.format(command_str))
+        #logging.info('got !convert ({})'.format(command_str))
         msg = cmd_convert(command_str)
 
     for price, names in _EXPENSIVE_STUFF:
@@ -378,29 +379,26 @@ def handle_command(command_str):
             continue
 
         correct_name = names[0]
-        logging.info('got !{} ({})'.format(correct_name, command_str))
+        #logging.info('got !{} ({})'.format(correct_name, command_str))
         msg = cmd_compare_price_vs(correct_name, price)
 
     if command_str.startswith('!help'):
-        logging.info('got !help')
+        #logging.info('got !help')
         msg = "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
 
     #if command_str.startswith('!hello'):
     #    msg = 'Hello {0.author.mention}'.format(message)
     #    await client.send_message(message.channel, msg)
 
-    # send responses if there is one
-    if msg != None:
-        await client.send_message(message.channel, msg)
-
-
     # log anything starting with ! with debug messages
     if command_str.startswith('!'):
         if msg != None:
-            logging.debug('({} cmds) GOOD ({})'.format(command_count, repr(command_str)))
             command_count += 1
+            logging.info('cmd: {} total, matched {}'.format(command_count, repr(command_str)))
         else:
-            logging.debug('({} cmds)  BAD ({})'.format(command_count, repr(command_str)))
+            logging.info('cmd: {} total, UNKNOWN {}'.format(command_count, repr(command_str)))
+
+    return msg
 
 
 def configure_client():
@@ -417,7 +415,16 @@ def configure_client():
 
         command_str = message.content.lower()
 
-        handle_command(command_str)
+        response = handle_command(command_str)
+        if response == None:
+            return
+
+        try:
+            await client.send_message(message.channel, response)
+        except discord.errors.Forbidden:
+            logging.debug('no permission in this channel ({} in {})'.format(message.channel.name, message.server.name))
+
+
 
     @client.event
     async def on_ready():
@@ -430,12 +437,17 @@ def setup_logging():
     path = '.'
     filename = 'debug.log'
 
+
     # set up logging to file
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s, %(name)-12s, %(levelname)-8s, %(message)s',
-                        datefmt='%m-%d-%y %H:%M:%S',
-                        filename="{0}/{1}.log".format(path, filename),
-                        filemode='a')
+
+    filehandler = logging.FileHandler("{0}/{1}.log".format(path, filename),
+                                      mode='a',
+                                      encoding='utf-8')
+    filehandler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s, %(name)-12s, %(levelname)-8s, %(message)s',
+                                  datefmt='%m-%d-%y %H:%M:%S')
+    filehandler.setFormatter(formatter)
+    #logging.getLogger('').addHandler(filehandler)
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
@@ -446,7 +458,17 @@ def setup_logging():
     # tell the handler to use this format
     console.setFormatter(formatter)
     # add the handler to the root logger
-    logging.getLogger('').addHandler(console)
+    #logging.getLogger('').addHandler(console)
+
+
+    logging.basicConfig(handlers=[filehandler, console],
+        level=logging.DEBUG)
+
+    # make websocket be quiet (no traces to log)
+    websocket.enableTrace(False)
+    logging.getLogger('websockets').setLevel(logging.WARNING)
+    # make discord be quiet
+    logging.getLogger('discord').setLevel(logging.WARNING)
 
 if __name__ == "__main__":
     setup_logging()
