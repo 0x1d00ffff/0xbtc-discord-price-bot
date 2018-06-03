@@ -95,6 +95,8 @@ class EnclavesAPI():
             self._update(timeout=timeout)
         except websocket._exceptions.WebSocketTimeoutException:
             logging.warning('api timeout {}'.format(self.api_name))
+        except websocket._exceptions.WebSocketBadStatusException:
+            logging.warning('api timeout {}'.format(self.api_name))
         else:
             self.last_updated_time = time.time()
 
