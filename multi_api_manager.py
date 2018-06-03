@@ -16,7 +16,7 @@ class MultiApiManager():
         for api_obj in self.api_obj_list:
             try:
                 api_obj.update()
-                logging.debug('updated {} successfully'.format(api_obj.api_name))
+                #logging.debug('updated {} successfully'.format(api_obj.api_name))
             except:
                 logging.exception('Unhandled Exception updating {}'.format(api_obj.api_name))
 
