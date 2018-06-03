@@ -34,6 +34,29 @@ last_updated = 0
 
 client = None
 
+_EXPENSIVE_STUFF = [
+    (400000,
+     ['lambo']),
+    (200000,
+     ['usedlambo', 'used_lambo']),
+    (500000,
+     ['privateisland', 'privareisland', 'pirvateisland']),
+    (398.8*1000*1000,
+     ['whitehouse']),
+    (101500, 
+     ['tesla', 'telsa']),
+    (1700,
+     ['usedfordtaurus', 'oldfordtaurus']),
+    (28400,
+     ['newfordtaurus', 'fordtaurus']),
+    (1e3,
+     ['thousandaire']),
+    (1e6,
+     ['millionaire']),
+    (1e9,
+     ['billionaire']),
+]
+
 
 def percent_change_to_emoji(percent_change):
     values = [
@@ -294,6 +317,7 @@ async def update_price_task():
     raise RuntimeError('update_price_task loop stopped - something is wrong')
 
 def handle_command(command_str):
+    msg = None
     if command_str.startswith('!price'):
         logging.info('got !price ({})'.format(command_str))
         if any(s in command_str for s in [
@@ -326,73 +350,55 @@ def handle_command(command_str):
                              cmd_price(source="Mercatox")])
         else:
             msg = cmd_price()
-        
-        await client.send_message(message.channel, msg)
 
     if command_str.startswith('!volume'):
         logging.info('got !volume')
         msg = cmd_volume()
-        await client.send_message(message.channel, msg)
 
     if command_str.startswith('!ratio'):
         logging.info('got !ratio')
         msg = cmd_ratio()
-        await client.send_message(message.channel, msg)
 
     if command_str.startswith('!bitcoinprice') or command_str.startswith('!btcprice'):
         logging.info('got !bitcoinprice ({})'.format(command_str))
         msg = cmd_bitcoinprice()
-        await client.send_message(message.channel, msg)
+
 
     if command_str.startswith('!ethereumprice') or command_str.startswith('!ethprice'):
         logging.info('got !ethereumprice ({})'.format(command_str))
         msg = cmd_ethereumprice()
-        await client.send_message(message.channel, msg)
 
     if command_str.startswith('!convert'):
         logging.info('got !convert ({})'.format(command_str))
         msg = cmd_convert(command_str)
-        await client.send_message(message.channel, msg)
 
-    expensive_stuff = [
-        (400000,
-         ['lambo']),
-        (200000,
-         ['usedlambo', 'used_lambo']),
-        (500000,
-         ['privateisland', 'privareisland', 'pirvateisland']),
-        (398.8*1000*1000,
-         ['whitehouse']),
-        (101500, 
-         ['tesla', 'telsa']),
-        (1700,
-         ['usedfordtaurus', 'oldfordtaurus']),
-        (28400,
-         ['newfordtaurus', 'fordtaurus']),
-        (1e3,
-         ['thousandaire']),
-        (1e6,
-         ['millionaire']),
-        (1e9,
-         ['billionaire']),
-    ]
-    for price, names in expensive_stuff:
+    for price, names in _EXPENSIVE_STUFF:
         if not any('!' + name in command_str for name in names):
             continue
 
         correct_name = names[0]
         logging.info('got !{} ({})'.format(correct_name, command_str))
         msg = cmd_compare_price_vs(correct_name, price)
-        await client.send_message(message.channel, msg)
 
     if command_str.startswith('!help'):
         logging.info('got !help')
         msg = "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
-        await client.send_message(message.channel, msg)
 
     #if command_str.startswith('!hello'):
     #    msg = 'Hello {0.author.mention}'.format(message)
     #    await client.send_message(message.channel, msg)
+
+    # send responses if there is one
+    if msg != None:
+        await client.send_message(message.channel, msg)
+
+
+    # log anything starting with ! with debug messages
+    if command_str.startswith('!'):
+        if msg != None:
+            logging.debug('recognized cmd ({})'.format(repr(command_str)))
+        else:
+            logging.debug('---bad command ({})'.format(repr(command_str)))
 
 
 def configure_client():
