@@ -24,7 +24,7 @@ from mercatox import MercatoxAPI
 from idex import IDEXAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.19"
+_VERSION = "0.0.20"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -48,9 +48,13 @@ _EXPENSIVE_STUFF = [
     (101500, 
      ['tesla', 'telsa']),
     (1700,
-     ['usedfordtaurus', 'oldfordtaurus']),
+     ['usedfordtaurus', 'usedtaurus', 'oldfordtaurus', 'oldtaurus']),
+    (17600,
+     ['likenewfordtaurus', 'likenewtaurus']),
     (28400,
      ['newfordtaurus', 'fordtaurus']),
+    (12,
+     ['avocadotoast', 'avocadoontoast']),
     (1e3,
      ['thousandaire']),
     (1e6,
@@ -388,8 +392,10 @@ def handle_command(command_str):
         msg = cmd_compare_price_vs(correct_name, price)
 
     if command_str.startswith('!help'):
-        #logging.info('got !help')
         msg = "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
+
+    if command_str.startswith('!zj'):
+        msg = "If you have to ask big man, you can't afford it."
 
     #if command_str.startswith('!hello'):
     #    msg = 'Hello {0.author.mention}'.format(message)
@@ -419,6 +425,10 @@ def configure_client():
             return
 
         command_str = message.content.lower()
+
+        # allow '! command' since some platforms autocorrect to add a space
+        if command_str.startswith('! '):
+            command_str = '!' + command_str[2:]
 
         response = handle_command(command_str)
         if response == None:
