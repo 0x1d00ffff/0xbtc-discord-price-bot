@@ -189,7 +189,7 @@ def cmd_volume():
     total_btc_volume = 0
     response = ""
 
-    for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox']:
+    for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX']:
         volume_eth = apis.volume_eth('0xBTC', api_name=source)
         volume_btc = apis.volume_btc('0xBTC', api_name=source)
         total_eth_volume += volume_eth
