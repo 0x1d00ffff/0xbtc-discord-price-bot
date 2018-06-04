@@ -21,6 +21,7 @@ from enclavesdex import EnclavesAPI
 from livecoinwatch import LiveCoinWatchAPI
 from forkdelta import ForkDeltaAPI
 from mercatox import MercatoxAPI
+from idex import IDEXAPI
 from multi_api_manager import MultiApiManager
 
 _VERSION = "0.0.19"
