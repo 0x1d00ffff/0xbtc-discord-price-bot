@@ -23,7 +23,7 @@ from forkdelta import ForkDeltaAPI
 from mercatox import MercatoxAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.18"
+_VERSION = "0.0.19"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -338,6 +338,9 @@ def handle_command(command_str):
                 'mecratox']):
             msg = cmd_price(source="Mercatox")
         elif any(s in command_str for s in [
+                'idex']):
+            msg = cmd_price(source="IDEX")
+        elif any(s in command_str for s in [
                 'btc',
                 'bitcoin']):
             msg = cmd_bitcoinprice()
@@ -483,6 +486,7 @@ if __name__ == "__main__":
         LiveCoinWatchAPI('ETH'),
         ForkDeltaAPI('0xBTC'),
         MercatoxAPI('0xBTC'),
+        IDEXAPI('0xBTC'),
     ])
     while True:
         try:
