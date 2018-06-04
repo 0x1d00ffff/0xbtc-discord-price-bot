@@ -358,7 +358,7 @@ def handle_command(command_str):
         else:
             msg = cmd_price()
 
-    if command_str.startswith('!volume'):
+    if command_str.startswith('!vol'):
         #logging.info('got !volume')
         msg = cmd_volume()
 
