@@ -352,7 +352,8 @@ def handle_command(command_str):
                 'all']):
             msg = '\n'.join([cmd_price(source="Enclaves DEX"),
                              cmd_price(source="Fork Delta"),
-                             cmd_price(source="Mercatox")])
+                             cmd_price(source="Mercatox"),
+                             cmd_price(source="IDEX")])
         else:
             msg = cmd_price()
 
