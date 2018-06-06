@@ -39,6 +39,8 @@ try:
 except:
     from urllib import urlopen
 
+from urllib.error import URLError
+
 import json
 
 import pprint
@@ -154,7 +156,7 @@ class LiveCoinWatchAPI():
                 ConnectionRefusedError,
                 socket.timeout,
                 socket.gaierror,
-                urllib.error.URLError) as e:
+                URLError) as e:
             logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
         else:
             self.last_updated_time = time.time()
