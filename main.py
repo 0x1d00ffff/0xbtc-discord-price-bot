@@ -61,6 +61,8 @@ _EXPENSIVE_STUFF = [
      ['millionaire']),
     (1e9,
      ['billionaire']),
+    (650,
+     ['magnumdomperignon', 'domperignon', 'expensivechampagne', 'fancychampagne']),
 ]
 
 
