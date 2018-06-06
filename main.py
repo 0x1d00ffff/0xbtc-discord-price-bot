@@ -24,7 +24,7 @@ from mercatox import MercatoxAPI
 from idex import IDEXAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.20"
+_VERSION = "0.0.21"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -35,6 +35,10 @@ command_count = 0
 #enclaves = EnclavesAPI()
 
 client = None
+
+_BLACKLISTED_CHANNEL_IDS = [
+    '429103257026297866',
+]
 
 _EXPENSIVE_STUFF = [
     (400000,
@@ -55,6 +59,8 @@ _EXPENSIVE_STUFF = [
      ['newfordtaurus', 'fordtaurus']),
     (12,
      ['avocadotoast', 'avocadoontoast']),
+    (100,
+     ['hundredaire']),
     (1e3,
      ['thousandaire']),
     (1e6,
@@ -325,7 +331,7 @@ async def update_price_task():
 def handle_command(command_str):
     global command_count
     msg = None
-    if command_str.startswith('!price'):
+    if command_str.startswith('!price') or command_str.startswith('!rice'):
         #logging.info('got !price ({})'.format(command_str))
         if any(s in command_str for s in [
                 'enclaves',
@@ -417,6 +423,9 @@ def configure_client():
 
     @client.event
     async def on_message(message):
+        # exclude some channels
+        if message.channel.id in _BLACKLISTED_CHANNEL_IDS:
+            return
         # we do not want the bot to reply to itself
         if message.author == client.user:
             return
