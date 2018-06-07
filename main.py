@@ -37,7 +37,22 @@ command_count = 0
 client = None
 
 _BLACKLISTED_CHANNEL_IDS = [
-    '429103257026297866',
+    # 0xbitcoin server
+    '454156227446964226',  # announcements
+    '417834372864147456',  # articles
+    '413927301932253185',  # useful-links
+    '412477591778492429',  # 0xbitcoin
+    #'412483801265078273',  # trading (allowed)
+    '429103257026297866',  # marketing
+    '419929514316136473',  # miner-dev
+    '414664710210846722',  # development
+    '412483768541249536',  # support
+    '438693168393748500',  # mining
+    '435893447958986752',  # pools
+    '439217061475123200',  # memes
+    '421306695940046852',  # off-topic
+    '418282243186753537',  # alts-trading
+
 ]
 
 _EXPENSIVE_STUFF = [
@@ -46,7 +61,7 @@ _EXPENSIVE_STUFF = [
     (200000,
      ['usedlambo', 'used_lambo']),
     (500000,
-     ['privateisland', 'privareisland', 'pirvateisland']),
+     ['privateisland', 'private island', 'privareisland', 'pirvateisland']),
     (398.8*1000*1000,
      ['whitehouse']),
     (101500, 
@@ -139,7 +154,9 @@ def cmd_compare_price_vs(item_name="lambo", item_price=200000):
     if token_price_usd == 0:
         return ":shrug:"
 
-    return "1 {} = **{:,.0f}** 0xBTC (${})".format(item_name, item_price / token_price_usd, to_readable_thousands(item_price))
+    return "1 {} = **{}** 0xBTC (${})".format(item_name, 
+                                              prettify_decimals(item_price / token_price_usd), 
+                                              to_readable_thousands(item_price))
 
 
 def cmd_price(source='aggregate'):
@@ -435,7 +452,11 @@ def configure_client():
         if message.author.bot:
             return
 
-        command_str = message.content.lower()
+        command_str = message.content.lower().strip()
+
+        # allow unicode ! (replace with ascii version)
+        if command_str.startswith('！'):
+            command_str = '!' + command_str[1:]
 
         # allow '! command' since some platforms autocorrect to add a space
         if command_str.startswith('! '):
