@@ -49,4 +49,5 @@ Todo:
  - ~~!vol~~
  - ~~!zj~~
  - ~~!hundredaire~~
+ - ~~！price (unicode !)~~
  - ~~catch `discord.errors.Forbidden` when commands are run in forbidden channels~~
