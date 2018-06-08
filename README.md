@@ -24,9 +24,6 @@ Todo:
    - !binance (to show current listing price in usd)
    - !private island (would be nice to store value with spaces and search for
      any matches that use underscores instead of spaces, or no spaces)
-   - !microsoft windows license
-   - !whitepaper
-   - !website
  - multiple quick commands will run in parallel, causing some things like 
    command counter to only count 1/2 commands. Results should really be pushed
    to a queue instead.
@@ -55,5 +52,8 @@ Todo:
  - ~~!zj~~
  - ~~!hundredaire~~
  - ~~！price (unicode !)~~
+ - ~~!microsoft windows license~~
+ - ~~!whitepaper~~
+ - ~~!website~~
  - ~~catch `discord.errors.Forbidden` when commands are run in forbidden channels~~
  - ~~ethprice and bitcoinprice are sometimes wrong when lcw includes a bad exchange~~
