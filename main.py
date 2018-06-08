@@ -24,7 +24,7 @@ from mercatox import MercatoxAPI
 from idex import IDEXAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.19"
+_VERSION = "0.0.21"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -36,27 +36,54 @@ command_count = 0
 
 client = None
 
+_BLACKLISTED_CHANNEL_IDS = [
+    # 0xbitcoin server
+    '454156227446964226',  # announcements
+    '417834372864147456',  # articles
+    '413927301932253185',  # useful-links
+    '412477591778492429',  # 0xbitcoin
+    #'412483801265078273',  # trading (allowed)
+    '429103257026297866',  # marketing
+    '419929514316136473',  # miner-dev
+    '414664710210846722',  # development
+    '412483768541249536',  # support
+    '438693168393748500',  # mining
+    '435893447958986752',  # pools
+    '439217061475123200',  # memes
+    '421306695940046852',  # off-topic
+    '418282243186753537',  # alts-trading
+
+]
+
 _EXPENSIVE_STUFF = [
     (400000,
      ['lambo']),
     (200000,
      ['usedlambo', 'used_lambo']),
     (500000,
-     ['privateisland', 'privareisland', 'pirvateisland']),
+     ['privateisland', 'private island', 'privareisland', 'pirvateisland']),
     (398.8*1000*1000,
      ['whitehouse']),
     (101500, 
      ['tesla', 'telsa']),
     (1700,
-     ['usedfordtaurus', 'oldfordtaurus']),
+     ['usedfordtaurus', 'usedtaurus', 'oldfordtaurus', 'oldtaurus']),
+    (17600,
+     ['likenewfordtaurus', 'likenewtaurus']),
     (28400,
      ['newfordtaurus', 'fordtaurus']),
+    (12,
+     ['avocadotoast', 'avocadoontoast']),
+    (100,
+     ['hundredaire']),
     (1e3,
      ['thousandaire']),
     (1e6,
      ['millionaire']),
     (1e9,
      ['billionaire']),
+    (650,
+     ['magnumdomperignon', 'domperignon', 'expensivechampagne', 'fancychampagne']),
 ]
 
 
@@ -127,7 +154,9 @@ def cmd_compare_price_vs(item_name="lambo", item_price=200000):
     if token_price_usd == 0:
         return ":shrug:"
 
-    return "1 {} = **{:,.0f}** 0xBTC (${})".format(item_name, item_price / token_price_usd, to_readable_thousands(item_price))
+    return "1 {} = **{}** 0xBTC (${})".format(item_name, 
+                                              prettify_decimals(item_price / token_price_usd), 
+                                              to_readable_thousands(item_price))
 
 
 def cmd_price(source='aggregate'):
@@ -321,7 +350,7 @@ async def update_price_task():
 def handle_command(command_str):
     global command_count
     msg = None
-    if command_str.startswith('!price'):
+    if command_str.startswith('!price') or command_str.startswith('!rice'):
         #logging.info('got !price ({})'.format(command_str))
         if any(s in command_str for s in [
                 'enclaves',
@@ -358,7 +387,7 @@ def handle_command(command_str):
         else:
             msg = cmd_price()
 
-    if command_str.startswith('!volume'):
+    if command_str.startswith('!vol'):
         #logging.info('got !volume')
         msg = cmd_volume()
 
@@ -388,8 +417,10 @@ def handle_command(command_str):
         msg = cmd_compare_price_vs(correct_name, price)
 
     if command_str.startswith('!help'):
-        #logging.info('got !help')
         msg = "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
+
+    if command_str.startswith('!zj'):
+        msg = "If you have to ask big man, you can't afford it."
 
     #if command_str.startswith('!hello'):
     #    msg = 'Hello {0.author.mention}'.format(message)
@@ -411,6 +442,9 @@ def configure_client():
 
     @client.event
     async def on_message(message):
+        # exclude some channels
+        if message.channel.id in _BLACKLISTED_CHANNEL_IDS:
+            return
         # we do not want the bot to reply to itself
         if message.author == client.user:
             return
@@ -418,7 +452,15 @@ def configure_client():
         if message.author.bot:
             return
 
-        command_str = message.content.lower()
+        command_str = message.content.lower().strip()
+
+        # allow unicode ! (replace with ascii version)
+        if command_str.startswith('！'):
+            command_str = '!' + command_str[1:]
+
+        # allow '! command' since some platforms autocorrect to add a space
+        if command_str.startswith('! '):
+            command_str = '!' + command_str[2:]
 
         response = handle_command(command_str)
         if response == None:
