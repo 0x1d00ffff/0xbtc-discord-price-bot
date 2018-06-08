@@ -21,8 +21,11 @@ Todo:
    - !pools
    - !marketcap
    - !rank (to show cmc ranking)
+   - !binance (to show current listing price in usd)
    - !private island (would be nice to store value with spaces and search for
      any matches that use underscores instead of spaces, or no spaces)
+   - !whitepaper
+   - !website
  - multiple quick commands will run in parallel, causing some things like 
    command counter to only count 1/2 commands. Results should really be pushed
    to a queue instead.
