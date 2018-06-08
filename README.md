@@ -13,6 +13,10 @@ Requires:
  - discord
 
 Todo:
+ - ethprice and bitcoinprice are sometimes wrong when lcw includes a bad exchange
+ - !microsoft windows license
+ - add !avocadotoast !avocadoontoast for $12
+ - add !zj = "If you have to ask big man, you can't afford it."
  - multiple quick commands will run in parallel, causing some things like 
    command counter to only count 1/2 commands. Results should really be pushed
    to a queue instead.
@@ -26,4 +30,5 @@ Todo:
  - new exchanges
    - tokenjar
    - tokenstore
+   - ddex.io
  - ~~0xBTC - BTC ratio~~
