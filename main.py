@@ -25,7 +25,7 @@ from idex import IDEXAPI
 from hotbit import HotbitAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.22"
+_VERSION = "0.0.23"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -434,7 +434,7 @@ def handle_command(command_str):
         msg = "0xBitcoin Whitepaper: https://github.com/0xbitcoin/white-paper"
 
     if command_str.startswith('!website'):
-        msg = "0xBitcoin Whitepaper: https://0xbitcoin.org/"
+        msg = "0xBitcoin Website: https://0xbitcoin.org/"
 
     if command_str == '!ann':
         msg = "\"[ANN] 0xBitcoin [0xBTC]\": https://bitcointalk.org/index.php?topic=3039182.0"
