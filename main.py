@@ -22,9 +22,10 @@ from livecoinwatch import LiveCoinWatchAPI
 from forkdelta import ForkDeltaAPI
 from mercatox import MercatoxAPI
 from idex import IDEXAPI
+from hotbit import HotbitAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.21"
+_VERSION = "0.0.22"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -84,6 +85,8 @@ _EXPENSIVE_STUFF = [
      ['billionaire']),
     (650,
      ['magnumdomperignon', 'domperignon', 'expensivechampagne', 'fancychampagne']),
+    (200,
+     ['microsoft windows license', 'microsoft windows', 'microsoftwindows', 'microsoftwindowslicense', 'windows']),
 ]
 
 
@@ -219,7 +222,7 @@ def cmd_volume():
     total_btc_volume = 0
     response = ""
 
-    for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX']:
+    for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX', 'Hotbit']:
         volume_eth = apis.volume_eth('0xBTC', api_name=source)
         volume_btc = apis.volume_btc('0xBTC', api_name=source)
         total_eth_volume += volume_eth
@@ -371,6 +374,10 @@ def handle_command(command_str):
                 'idex']):
             msg = cmd_price(source="IDEX")
         elif any(s in command_str for s in [
+                'hotbit',
+                'hot bit']):
+            msg = cmd_price(source="Hotbit")
+        elif any(s in command_str for s in [
                 'btc',
                 'bitcoin']):
             msg = cmd_bitcoinprice()
@@ -383,7 +390,8 @@ def handle_command(command_str):
             msg = '\n'.join([cmd_price(source="Enclaves DEX"),
                              cmd_price(source="Fork Delta"),
                              cmd_price(source="Mercatox"),
-                             cmd_price(source="IDEX")])
+                             cmd_price(source="IDEX"),
+                             cmd_price(source="Hotbit"),])
         else:
             msg = cmd_price()
 
@@ -421,6 +429,19 @@ def handle_command(command_str):
 
     if command_str.startswith('!zj'):
         msg = "If you have to ask big man, you can't afford it."
+
+    if command_str.startswith('!whitepaper'):
+        msg = "0xBitcoin Whitepaper: https://github.com/0xbitcoin/white-paper"
+
+    if command_str.startswith('!website'):
+        msg = "0xBitcoin Whitepaper: https://0xbitcoin.org/"
+
+    if command_str == '!ann':
+        msg = "\"[ANN] 0xBitcoin [0xBTC]\": https://bitcointalk.org/index.php?topic=3039182.0"
+
+    
+
+        
 
     #if command_str.startswith('!hello'):
     #    msg = 'Hello {0.author.mention}'.format(message)
@@ -531,6 +552,7 @@ if __name__ == "__main__":
         ForkDeltaAPI('0xBTC'),
         MercatoxAPI('0xBTC'),
         IDEXAPI('0xBTC'),
+        HotbitAPI('0xBTC'),
     ])
     while True:
         try:
