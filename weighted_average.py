@@ -4,6 +4,8 @@ class WeightedAverage():
         self.sum_of_weight = 0
     def add(self, value, weight):
         self.sum_of_weight += weight
+        value = 0 if value == None
+        weight = 0 if weight == None
         self.values.append((value, weight))
     def average(self):
         if self.sum_of_weight == 0:
