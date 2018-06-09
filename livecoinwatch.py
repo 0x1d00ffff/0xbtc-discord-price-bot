@@ -82,11 +82,14 @@ class LiveCoinWatchAPI():
             
 
         volume_usd = 0
+        volume_usd_eth = 0
+        volume_usd_btc = 0
 
         wavg_eth_price_usd = WeightedAverage()
         wavg_btc_price_usd = WeightedAverage()
 
         wavg_price_eth = WeightedAverage()
+        wavg_price_btc = WeightedAverage()
         wavg_price_usd = WeightedAverage()
 
         for exchange_data in data['data']:
@@ -114,16 +117,23 @@ class LiveCoinWatchAPI():
                 pass
             else:
                 #pprint.pprint(exchange_data)
-                logging.debug('Unknown base_pair {}'.format(base_pair))
+                #logging.debug('Unknown base_pair {}'.format(base_pair))
                 # if base pair is unknown, don't use for calcualted volume/price
                 continue
 
             # only let allowed_apis to count toward price
             if self.allowed_apis == 'all' or exchange_data['exchange'] in self.allowed_apis:
-                print('match', exchange_data['exchange'])
-                wavg_price_eth.add(exchange_data['rate'], relative_volume)
+                pprint.pprint(exchange_data)
                 wavg_price_usd.add(exchange_data['usd'], relative_volume)
                 volume_usd += exchange_data['volume']
+                
+                if base_pair == "ETH":
+                    wavg_price_eth.add(exchange_data['rate'], relative_volume)
+                    volume_usd_eth += exchange_data['volume']
+                
+                if base_pair == "BTC":
+                    wavg_price_btc.add(exchange_data['rate'], relative_volume)
+                    volume_usd_btc += exchange_data['volume']
 
 
 
@@ -144,10 +154,19 @@ class LiveCoinWatchAPI():
             # TODO: volume_eth should really represent quantity of volume in eth,
             # not quantity of all volume converted to price of eth. This
             # calculation includes btc in eth volume.
-            self.volume_eth = self.volume_usd / self.eth_price_usd
+            self.volume_eth = volume_usd_eth / self.eth_price_usd
+
+        if self.btc_price_usd != None and self.btc_price_usd != 0:
+            # TODO: volume_eth should really represent quantity of volume in eth,
+            # not quantity of all volume converted to price of eth. This
+            # calculation includes btc in eth volume.
+            self.volume_btc = volume_usd_btc / self.btc_price_usd
 
         if self.currency_symbol == "BTC":
+            self.price_btc = 1
             self.btc_price_usd = self.price_usd
+        else:
+            self.price_btc = wavg_price_btc.average()
 
     def update(self, timeout=10.0):
         try:
@@ -164,9 +183,11 @@ class LiveCoinWatchAPI():
 
     def print_all_values(self):
         print(self.api_name, self.currency_symbol, 'price_eth    ', self.price_eth)
+        print(self.api_name, self.currency_symbol, 'price_btc    ', self.price_btc)
         print(self.api_name, self.currency_symbol, 'price_usd    ', self.price_usd)
         print(self.api_name, self.currency_symbol, 'volume_usd   ', self.volume_usd)
         print(self.api_name, self.currency_symbol, 'volume_eth   ', self.volume_eth)
+        print(self.api_name, self.currency_symbol, 'volume_btc   ', self.volume_btc)
         print(self.api_name, self.currency_symbol, 'change_24h   ', self.change_24h)
         print(self.api_name, self.currency_symbol, 'eth_price_usd', self.eth_price_usd)
         print(self.api_name, self.currency_symbol, 'btc_price_usd', self.btc_price_usd)
