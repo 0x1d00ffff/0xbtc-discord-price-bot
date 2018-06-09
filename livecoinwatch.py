@@ -123,7 +123,6 @@ class LiveCoinWatchAPI():
 
             # only let allowed_apis to count toward price
             if self.allowed_apis == 'all' or exchange_data['exchange'] in self.allowed_apis:
-                pprint.pprint(exchange_data)
                 wavg_price_usd.add(exchange_data['usd'], relative_volume)
                 volume_usd += exchange_data['volume']
                 
