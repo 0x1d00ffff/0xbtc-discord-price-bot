@@ -36,7 +36,7 @@ from livecoinwatch import LiveCoinWatchAPI
 
 class HotbitAPI(LiveCoinWatchAPI):
     def __init__(self, currency_symbol="0xBTC"):
-        super().__init__(allowed_apis=['Hotbit'], currency_symbol=currency_symbol)
+        super().__init__(currency_symbol=currency_symbol, allowed_apis=['Hotbit'])
         self.api_name = "Hotbit"
         self.short_url = "https://bit.ly/2sPqHM9"
 
