@@ -25,7 +25,7 @@ from idex import IDEXAPI
 from hotbit import HotbitAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.23"
+_VERSION = "0.0.24"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
