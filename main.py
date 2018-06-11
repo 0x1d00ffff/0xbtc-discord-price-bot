@@ -454,7 +454,7 @@ def configure_client():
     @client.event
     async def on_message(message):
         response = None
-        
+
         # we do not want the bot to reply to itself
         if message.author == client.user:
             return
@@ -484,6 +484,9 @@ def configure_client():
         if command_str.startswith('!contract'):
             response = "0xBitcoin Contract: 0xb6ed7644c69416d67b522e20bc294a9a9b405b31 [<https://bit.ly/2y1WlMB>]"
 
+        if command_str.startswith('!stats'):
+            response = "0xBitcoin Stats: <https://0x1d00ffff.github.io/0xBTC-Stats/>"
+
         if command_str == '!ann':
             response = "\"[ANN] 0xBitcoin [0xBTC]\": https://bitcointalk.org/index.php?topic=3039182.0"
 
@@ -498,8 +501,9 @@ def configure_client():
         
 
 
-        # if not in a blacklisted channel, allow complex commands
-        if message.channel.id not in _BLACKLISTED_CHANNEL_IDS:
+        # if not in a blacklisted channel, and a simple command didn't match
+        # already, allow complex commands
+        if if response == None and message.channel.id not in _BLACKLISTED_CHANNEL_IDS:
             response = handle_command(command_str)
 
 
