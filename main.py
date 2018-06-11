@@ -25,7 +25,7 @@ from idex import IDEXAPI
 from hotbit import HotbitAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.26"
+_VERSION = "0.0.27"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -424,10 +424,6 @@ def handle_command(command_str):
         #logging.info('got !{} ({})'.format(correct_name, command_str))
         msg = cmd_compare_price_vs(correct_name, price)
 
-    if command_str.startswith('!help'):
-        msg =  "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`\n"
-        msg += "quick link commands: `whitepaper website ann contract stats mvis cosmic az`"
-
     if command_str.startswith('!zj'):
         msg = "If you have to ask big man, you can't afford it."
 
@@ -475,6 +471,10 @@ def configure_client():
 
 
         # These commands will work in any channel (TODO: move to a fn)
+        if command_str.startswith('!help'):
+            response =  "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`\n"
+            response += "quick link commands: `whitepaper website ann contract stats mvis cosmic az`"
+
         if command_str.startswith('!whitepaper'):
             response = "0xBitcoin Whitepaper: https://github.com/0xbitcoin/white-paper"
 
