@@ -25,7 +25,7 @@ from idex import IDEXAPI
 from hotbit import HotbitAPI
 from multi_api_manager import MultiApiManager
 
-_VERSION = "0.0.25"
+_VERSION = "0.0.26"
 _UPDATE_RATE = 120
 
 # todo: encapsulate these
@@ -425,21 +425,11 @@ def handle_command(command_str):
         msg = cmd_compare_price_vs(correct_name, price)
 
     if command_str.startswith('!help'):
-        msg = "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`"
+        msg =  "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`\n"
+        msg += "quick link commands: `whitepaper website ann contract stats mvis cosmic az`"
 
     if command_str.startswith('!zj'):
         msg = "If you have to ask big man, you can't afford it."
-
-    if command_str.startswith('!whitepaper'):
-        msg = "0xBitcoin Whitepaper: https://github.com/0xbitcoin/white-paper"
-
-    if command_str.startswith('!website'):
-        msg = "0xBitcoin Website: https://0xbitcoin.org/"
-
-    if command_str == '!ann':
-        msg = "\"[ANN] 0xBitcoin [0xBTC]\": https://bitcointalk.org/index.php?topic=3039182.0"
-
-    
 
         
 
@@ -463,9 +453,6 @@ def configure_client():
 
     @client.event
     async def on_message(message):
-        # exclude some channels
-        if message.channel.id in _BLACKLISTED_CHANNEL_IDS:
-            return
         # we do not want the bot to reply to itself
         if message.author == client.user:
             return
@@ -483,7 +470,37 @@ def configure_client():
         if command_str.startswith('! '):
             command_str = '!' + command_str[2:]
 
-        response = handle_command(command_str)
+
+
+        # These commands will work in any channel (TODO: move to a fn)
+        if command_str.startswith('!whitepaper'):
+            response = "0xBitcoin Whitepaper: https://github.com/0xbitcoin/white-paper"
+
+        if command_str.startswith('!website'):
+            response = "0xBitcoin Website: https://0xbitcoin.org/"
+
+        if command_str.startswith('!contract'):
+            response = "0xBitcoin Contract: 0xb6ed7644c69416d67b522e20bc294a9a9b405b31 [<https://bit.ly/2y1WlMB>]"
+
+        if command_str == '!ann':
+            response = "\"[ANN] 0xBitcoin [0xBTC]\": https://bitcointalk.org/index.php?topic=3039182.0"
+
+        if command_str.startswith('!mvis'):
+            response = "MVIS-Tokenminer: <https://github.com/mining-visualizer/MVis-tokenminer/releases>"
+
+        if command_str.startswith('!cosmic'):
+            response = "COSMiC: <https://bitbucket.org/LieutenantTofu/cosmic-v3/downloads/>"
+
+        if command_str.startswith('!az'):
+            response = "Azlehria: <https://github.com/azlehria/0xbitcoin-gpuminer/releases>"
+        
+
+
+        # if not in a blacklisted channel, allow complex commands
+        if message.channel.id not in _BLACKLISTED_CHANNEL_IDS:
+            response = handle_command(command_str)
+
+
         if response == None:
             return
 
