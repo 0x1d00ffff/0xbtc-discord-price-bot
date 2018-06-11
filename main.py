@@ -503,7 +503,7 @@ def configure_client():
 
         # if not in a blacklisted channel, and a simple command didn't match
         # already, allow complex commands
-        if if response == None and message.channel.id not in _BLACKLISTED_CHANNEL_IDS:
+        if response == None and message.channel.id not in _BLACKLISTED_CHANNEL_IDS:
             response = handle_command(command_str)
 
 
