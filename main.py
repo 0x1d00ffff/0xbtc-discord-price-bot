@@ -222,7 +222,8 @@ def cmd_volume():
     total_btc_volume = 0
     response = ""
 
-    for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX', 'Hotbit']:
+    #for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX', 'Hotbit']:
+    for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX']:
         volume_eth = apis.volume_eth('0xBTC', api_name=source)
         volume_btc = apis.volume_btc('0xBTC', api_name=source)
         total_eth_volume += volume_eth
@@ -373,10 +374,10 @@ def handle_command(command_str):
         elif any(s in command_str for s in [
                 'idex']):
             msg = cmd_price(source="IDEX")
-        elif any(s in command_str for s in [
-                'hotbit',
-                'hot bit']):
-            msg = cmd_price(source="Hotbit")
+        #elif any(s in command_str for s in [
+        #        'hotbit',
+        #        'hot bit']):
+        #    msg = cmd_price(source="Hotbit")
         elif any(s in command_str for s in [
                 'btc',
                 'bitcoin']):
@@ -391,7 +392,8 @@ def handle_command(command_str):
                              cmd_price(source="Fork Delta"),
                              cmd_price(source="Mercatox"),
                              cmd_price(source="IDEX"),
-                             cmd_price(source="Hotbit"),])
+                             #cmd_price(source="Hotbit"),
+                             ])
         else:
             msg = cmd_price()
 
@@ -575,7 +577,7 @@ if __name__ == "__main__":
         ForkDeltaAPI('0xBTC'),
         MercatoxAPI('0xBTC'),
         IDEXAPI('0xBTC'),
-        HotbitAPI('0xBTC'),
+        #HotbitAPI('0xBTC'),
     ])
     while True:
         try:
