@@ -388,12 +388,7 @@ def handle_command(command_str):
             msg = cmd_ethereumprice()
         elif any(s in command_str for s in [
                 'all']):
-            msg = '\n'.join([cmd_price(source="Enclaves DEX"),
-                             cmd_price(source="Fork Delta"),
-                             cmd_price(source="Mercatox"),
-                             cmd_price(source="IDEX"),
-                             #cmd_price(source="Hotbit"),
-                             ])
+            msg = '\n'.join([cmd_price(source=name) for name in apis.alive_api_names()])
         else:
             msg = cmd_price()
 

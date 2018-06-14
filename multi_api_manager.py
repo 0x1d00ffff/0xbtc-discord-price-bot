@@ -32,6 +32,15 @@ class MultiApiManager():
                 continue
             yield a
 
+    @property
+    def alive_api_names(self):
+        all_names = []
+        for a in self.alive_apis:
+            all_names.append(a.name)
+
+        # convert to set to remove duplicates 
+        return list(set(all_names))
+
     def short_url(self, api_name='aggregate'):
         default_url = "http://bitly.com/2LvDE6u"
         if api_name == "aggregate":
