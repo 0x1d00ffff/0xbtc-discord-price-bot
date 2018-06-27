@@ -25,17 +25,9 @@ from idex import IDEXAPI
 from hotbit import HotbitAPI
 from multi_api_manager import MultiApiManager
 
+_PROGRAM_NAME = "0xbtc-price-bot"
 _VERSION = "0.0.27"
-_UPDATE_RATE = 120
-
-# todo: encapsulate these
-#bitcoin_price = 0
-#price_in_usd, price_in_eth, apis.eth_price_usd() = 0, 0, 0
-last_updated = 0
-command_count = 0
-#enclaves = EnclavesAPI()
-
-client = None
+_UPDATE_RATE = 120  # how often to update all APIs (in seconds)
 
 _BLACKLISTED_CHANNEL_IDS = [
     # 0xbitcoin server
@@ -62,19 +54,19 @@ _EXPENSIVE_STUFF = [
     (200000,
      ['usedlambo', 'used_lambo']),
     (500000,
-     ['privateisland', 'private island', 'privareisland', 'pirvateisland']),
+     ['private island', 'privateisland', 'privareisland', 'pirvateisland']),
     (398.8*1000*1000,
      ['whitehouse']),
     (101500, 
      ['tesla', 'telsa']),
     (1700,
-     ['usedfordtaurus', 'usedtaurus', 'oldfordtaurus', 'oldtaurus']),
+     ['used ford taurus', 'usedfordtaurus', 'usedtaurus', 'oldfordtaurus', 'oldtaurus']),
     (17600,
-     ['likenewfordtaurus', 'likenewtaurus']),
+     ['like-new ford taurus', 'likenewfordtaurus', 'likenewtaurus']),
     (28400,
-     ['newfordtaurus', 'fordtaurus']),
+     ['new ford taurus', 'newfordtaurus', 'fordtaurus', 'newtaurus']),
     (12,
-     ['avocadotoast', 'avocadoontoast']),
+     ['avocadotoast', 'avocadoontoast', 'avacadotoast', 'avacadoontoast']),
     (100,
      ['hundredaire']),
     (1e3,
@@ -84,10 +76,40 @@ _EXPENSIVE_STUFF = [
     (1e9,
      ['billionaire']),
     (650,
-     ['magnumdomperignon', 'domperignon', 'expensivechampagne', 'fancychampagne']),
+     ['magnum domperignon', 'magnumdomperignon', 'domperignon', 'expensivechampagne', 'fancychampagne', 'champagne']),
     (200,
      ['microsoft windows license', 'microsoft windows', 'microsoftwindows', 'microsoftwindowslicense', 'windows']),
 ]
+
+
+BasicCmd = collections.namedtuple('BasicCmd', ['command_list', 'response'])
+# commands that work in all channels (ignores the blacklist)
+_GLOBAL_COMMANDS = [
+    BasicCmd(['help'],
+        "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`\nquick link commands: `whitepaper website ann contract stats mvis cosmic az`"),
+    BasicCmd(['whitepaper'],
+        "0xBitcoin Whitepaper: <https://github.com/0xbitcoin/white-paper>"),
+    BasicCmd(["website"],
+        "0xBitcoin Website: https://0xbitcoin.org/"),
+    BasicCmd(["contract", "address"],
+        "0xBitcoin Contract: 0xb6ed7644c69416d67b522e20bc294a9a9b405b31 [<https://bit.ly/2y1WlMB>]"),
+    BasicCmd(["stats", "statistics"],
+        "0xBitcoin Stats: <https://0x1d00ffff.github.io/0xBTC-Stats/>"),
+    BasicCmd(["ann", "bitcointalk"],
+        "\"[ANN] 0xBitcoin [0xBTC]\": https://bitcointalk.org/index.php?topic=3039182.0"),
+    BasicCmd(["mvis", "mining-visualizer", "miningvisualizer"],
+        "MVIS-Tokenminer: <https://github.com/mining-visualizer/MVis-tokenminer/releases>"),
+    BasicCmd(["cosmic"],
+        "COSMiC: <https://bitbucket.org/LieutenantTofu/cosmic-v3/downloads/>"),
+    BasicCmd(["az"],
+        "Azlehria: <https://github.com/azlehria/0xbitcoin-gpuminer/releases>"),
+]
+
+
+# todo: encapsulate these
+last_updated = 0
+command_count = 0
+client = None
 
 
 def percent_change_to_emoji(percent_change):
@@ -355,7 +377,6 @@ def handle_command(command_str):
     global command_count
     msg = None
     if command_str.startswith('!price') or command_str.startswith('!rice'):
-        #logging.info('got !price ({})'.format(command_str))
         if any(s in command_str for s in [
                 'enclaves',
                 'encalves']):
@@ -393,24 +414,19 @@ def handle_command(command_str):
             msg = cmd_price()
 
     if command_str.startswith('!vol'):
-        #logging.info('got !volume')
         msg = cmd_volume()
 
     if command_str.startswith('!ratio'):
-        #logging.info('got !ratio')
         msg = cmd_ratio()
 
     if command_str.startswith('!bitcoinprice') or command_str.startswith('!btcprice'):
-        #logging.info('got !bitcoinprice ({})'.format(command_str))
         msg = cmd_bitcoinprice()
 
 
     if command_str.startswith('!ethereumprice') or command_str.startswith('!ethprice'):
-        #logging.info('got !ethereumprice ({})'.format(command_str))
         msg = cmd_ethereumprice()
 
     if command_str.startswith('!convert'):
-        #logging.info('got !convert ({})'.format(command_str))
         msg = cmd_convert(command_str)
 
     for price, names in _EXPENSIVE_STUFF:
@@ -418,7 +434,6 @@ def handle_command(command_str):
             continue
 
         correct_name = names[0]
-        #logging.info('got !{} ({})'.format(correct_name, command_str))
         msg = cmd_compare_price_vs(correct_name, price)
 
     if command_str.startswith('!zj'):
@@ -561,13 +576,13 @@ def setup_logging():
 if __name__ == "__main__":
     setup_logging()
 
-    logging.info('0xbtc-price-bot start v{}'.format(_VERSION))
+    logging.info('{} start v{}'.format(_PROGRAM_NAME, _VERSION))
     loop = asyncio.get_event_loop()
     client = discord.Client()
     configure_client()
     apis = MultiApiManager(
     [
-        EnclavesAPI('0xBTC'), 
+        EnclavesAPI('0xBTC'),
         LiveCoinWatchAPI('ETH'),
         ForkDeltaAPI('0xBTC'),
         MercatoxAPI('0xBTC'),
@@ -577,8 +592,6 @@ if __name__ == "__main__":
     while True:
         try:
             asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
-            # loop.run_until_complete(client.start(TOKEN))
-            # client.run(TOKEN)
         except SystemExit:
             raise
         except KeyboardInterrupt:
