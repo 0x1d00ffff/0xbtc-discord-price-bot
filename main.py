@@ -481,13 +481,26 @@ def handle_trading_command(command_str):
                 'ethereum'], exhaustive_search=True, require_cmd_char=False):
             msg = cmd_ethereumprice()
         elif string_contains_any(command_str, [
-                'all'], exhaustive_search=True, require_cmd_char=False):
-            msg = '\n'.join([cmd_price(source=name) for name in apis.alive_api_names])
+                'all',
+                'prices'], exhaustive_search=True, require_cmd_char=False):
+            msg = ""
+            for api in sorted(apis.alive_apis, key=attrgetter('api_name')):
+                # this skips apis not directly tracking 0xbtc
+                if api.currency_symbol != _CURRENCY:
+                    continue
+                single_line = cmd_price(source=api.api_name)
+                # TODO: remove this when 'alive_apis' excludes apis correctly
+                if single_line.startswith('not sure yet'):
+                    continue
+                msg += single_line + '\n'
         else:
             msg = cmd_price()
 
     if string_contains_any(command_str, ['vol', 'völ']):
         msg = cmd_volume()
+
+    if string_contains_any(command_str, ['zj']):
+        msg = "If you have to ask big man, you can't afford it."
 
     if string_contains_any(command_str, ['bettervolume']):
         msg = ':star2:'*10 + '\n' + cmd_volume() + '\n' + ':star2:'*10
@@ -509,9 +522,6 @@ def handle_trading_command(command_str):
 
     if string_contains_any(command_str, ['hi', 'hey bot']):
         msg = "Sup :sunglasses:"
-
-    if string_contains_any(command_str, ['zj']):
-        msg = "If you have to ask big man, you can't afford it."
 
     # TODO: enable when there is a source for this info
     #if string_contains_any(command_str, ['binance', 'binants', 'bine ants']):
