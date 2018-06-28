@@ -13,6 +13,7 @@ import websocket
 import asyncio
 import logging
 import urllib
+import collections
 
 import discord
 from secret_info import TOKEN
@@ -26,8 +27,11 @@ from hotbit import HotbitAPI
 from multi_api_manager import MultiApiManager
 
 _PROGRAM_NAME = "0xbtc-price-bot"
-_VERSION = "0.0.27"
+_VERSION = "0.1.0"
 _UPDATE_RATE = 120  # how often to update all APIs (in seconds)
+_COMMAND_CHARACTER = '!'  # what character should prepend all commands
+
+_CLI_MODE = False  # if true, do not connect to discotd, instead start a CLI to test commands
 
 _BLACKLISTED_CHANNEL_IDS = [
     # 0xbitcoin server
@@ -52,56 +56,85 @@ _EXPENSIVE_STUFF = [
     (400000,
      ['lambo']),
     (200000,
-     ['usedlambo', 'used_lambo']),
+     ['used lambo']),
     (500000,
-     ['private island', 'privateisland', 'privareisland', 'pirvateisland']),
+     ['private island', 'privare island', 'pirvate island']),
     (398.8*1000*1000,
      ['whitehouse']),
+    (1.225*1000*1000*1000,
+     ['buckinghampalace']),
     (101500, 
      ['tesla', 'telsa']),
     (1700,
-     ['used ford taurus', 'usedfordtaurus', 'usedtaurus', 'oldfordtaurus', 'oldtaurus']),
+     ['used ford taurus', 'used taurus', 'old ford taurus', 'old taurus']),
     (17600,
-     ['like-new ford taurus', 'likenewfordtaurus', 'likenewtaurus']),
+     ['like new ford taurus', 'like new taurus']),
     (28400,
-     ['new ford taurus', 'newfordtaurus', 'fordtaurus', 'newtaurus']),
+     ['new ford taurus', 'ford taurus', 'new taurus', 'taurus']),
     (12,
-     ['avocadotoast', 'avocadoontoast', 'avacadotoast', 'avacadoontoast']),
+     ['avocado toast',
+      'avocado on toast', 
+      'avacado toast', 
+      'avacado on toast', 
+      'avocato toast', 
+      'avocato on toast',
+      'avo toast']),
+    (1,
+     ['oneaire']),
+    (10,
+     ['tennaire', 'tenaire']),
     (100,
-     ['hundredaire']),
+     ['hundredaire', 'hundradiere']),
     (1e3,
      ['thousandaire']),
     (1e6,
      ['millionaire']),
     (1e9,
      ['billionaire']),
+    (1e12,
+     ['trillionaire']),
     (650,
-     ['magnum domperignon', 'magnumdomperignon', 'domperignon', 'expensivechampagne', 'fancychampagne', 'champagne']),
+     ['magnum domperignon', 'domperignon', 'champagne', 'donperignon']),
     (200,
-     ['microsoft windows license', 'microsoft windows', 'microsoftwindows', 'microsoftwindowslicense', 'windows']),
+     ['microsoft windows license', 'microsoft windows', 'windows']),
 ]
 
 
-BasicCmd = collections.namedtuple('BasicCmd', ['command_list', 'response'])
+CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
 # commands that work in all channels (ignores the blacklist)
 _GLOBAL_COMMANDS = [
-    BasicCmd(['help'],
-        "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`\nquick link commands: `whitepaper website ann contract stats mvis cosmic az`"),
-    BasicCmd(['whitepaper'],
+    CmdDef(
+        ['help'],
+        "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`\nquick link commands: `whitepaper website ann contract stats merch mvis cosmic az`"),
+    CmdDef(
+        ['white paper'],
         "0xBitcoin Whitepaper: <https://github.com/0xbitcoin/white-paper>"),
-    BasicCmd(["website"],
-        "0xBitcoin Website: https://0xbitcoin.org/"),
-    BasicCmd(["contract", "address"],
+    CmdDef(
+        ["site", "web site"],
+        "0xBitcoin Website: <https://0xbitcoin.org/>"),
+    CmdDef(
+        ["lava wallet"],
+        "Lava Wallet: <https://lavawallet.io/> (GitHub:<https://github.com/lavawallet>)"),
+    CmdDef(
+        ["contract", "address"],
         "0xBitcoin Contract: 0xb6ed7644c69416d67b522e20bc294a9a9b405b31 [<https://bit.ly/2y1WlMB>]"),
-    BasicCmd(["stats", "statistics"],
-        "0xBitcoin Stats: <https://0x1d00ffff.github.io/0xBTC-Stats/>"),
-    BasicCmd(["ann", "bitcointalk"],
-        "\"[ANN] 0xBitcoin [0xBTC]\": https://bitcointalk.org/index.php?topic=3039182.0"),
-    BasicCmd(["mvis", "mining-visualizer", "miningvisualizer"],
+    CmdDef(
+        ["stats", "statistics"],
+        "0xBitcoin Stats: <https://0x1d00ffff.github.io/0xBTC-Stats/> (GitHub: <https://github.com/0x1d00ffff/0xBTC-Stats>)"),
+    CmdDef(
+        ["ann", "bitcoin talk"],
+        "[ANN] 0xBitcoin [0xBTC]: <https://bitcointalk.org/index.php?topic=3039182.0>"),
+    CmdDef(
+        ["merch", "merchandise", "tshirt", "0xbtcat"],
+        "0xBTC Merch: <https://www.teepublic.com/user/0xbtcat>"),
+    CmdDef(
+        ["mvis", "mining visualizer", "mvis tokenminer"],
         "MVIS-Tokenminer: <https://github.com/mining-visualizer/MVis-tokenminer/releases>"),
-    BasicCmd(["cosmic"],
+    CmdDef(
+        ["cosmic"],
         "COSMiC: <https://bitbucket.org/LieutenantTofu/cosmic-v3/downloads/>"),
-    BasicCmd(["az"],
+    CmdDef(
+        ["az", "nabiki", "gaiden"],
         "Azlehria: <https://github.com/azlehria/0xbitcoin-gpuminer/releases>"),
 ]
 
@@ -111,6 +144,41 @@ last_updated = 0
 command_count = 0
 client = None
 
+
+
+# look through an input_string, return True if it looks like a match for command
+# if exhaustive_search is true, look in the middle of string for commands - otherwise only check beginning
+# if permute_whitespace is true, replace spaces with dashes etc and also match those
+# if require_cmd_char is true, search only for `!command` - otherwise allow `command`
+def string_contains_command(input_string, command, exhaustive_search=False, permute_whitespace=True, require_cmd_char=True):
+    possible_commands = [command]
+    if permute_whitespace:
+        possible_commands.append(command.replace(' ', '-'))
+        possible_commands.append(command.replace(' ', '_'))
+        possible_commands.append(command.replace(' ', ''))
+
+    if exhaustive_search:
+        for possible_command in possible_commands:
+            if require_cmd_char:
+                possible_command = _COMMAND_CHARACTER+possible_command
+            if possible_command in input_string:
+                return True
+    else:
+        for possible_command in possible_commands:
+            if require_cmd_char:
+                possible_command = _COMMAND_CHARACTER+possible_command
+            if input_string.startswith(possible_command):
+                return True
+
+    return False
+
+# similar to string_contains_command but accepts a list of multiple command synonyms
+def string_contains_any(input_string, command_list, exhaustive_search=False, permute_whitespace=True, require_cmd_char=True):
+    for command in command_list:
+        if string_contains_command(input_string, command, exhaustive_search, permute_whitespace, require_cmd_char):
+            return True
+
+    return False
 
 def percent_change_to_emoji(percent_change):
     values = [
@@ -373,94 +441,104 @@ async def update_price_task():
     # in normal operation, we should never reach this
     raise RuntimeError('update_price_task loop stopped - something is wrong')
 
-def handle_command(command_str):
-    global command_count
+# These commands will work in any channel (TODO: move to a fn)
+def handle_global_command(command_str):
+    for cmd_def in _GLOBAL_COMMANDS:
+        if string_contains_any(command_str, cmd_def.keywords):
+            return cmd_def.response
+    return None
+
+def handle_trading_command(command_str):
     msg = None
-    if command_str.startswith('!price') or command_str.startswith('!rice'):
-        if any(s in command_str for s in [
+    if string_contains_any(command_str, ['price', 'rice']):
+        if string_contains_any(command_str, [
                 'enclaves',
-                'encalves']):
+                'encalves'], exhaustive_search=True, require_cmd_char=False):
             msg = cmd_price(source="Enclaves DEX")
-        elif any(s in command_str for s in [
-                'fd', 
-                'forkdelta',
-                'fork delta']):
+        elif string_contains_any(command_str, [
+                'fd',
+                'fork delta'], exhaustive_search=True, require_cmd_char=False):
             msg = cmd_price(source="Fork Delta")
-        elif any(s in command_str for s in [
+        elif string_contains_any(command_str, [
                 'merc', 
                 'mercatox', 
                 'meractox', 
-                'mecratox']):
+                'mecratox'], exhaustive_search=True, require_cmd_char=False):
             msg = cmd_price(source="Mercatox")
-        elif any(s in command_str for s in [
-                'idex']):
+        elif string_contains_any(command_str, [
+                'idex'], exhaustive_search=True, require_cmd_char=False):
             msg = cmd_price(source="IDEX")
-        #elif any(s in command_str for s in [
+        #elif string_contains_any(command_str, [
         #        'hotbit',
-        #        'hot bit']):
+        #        'hot bit'], exhaustive_search=True, require_cmd_char=False):
         #    msg = cmd_price(source="Hotbit")
-        elif any(s in command_str for s in [
+        elif string_contains_any(command_str, [
                 'btc',
-                'bitcoin']):
+                'bitcoin'], exhaustive_search=True, require_cmd_char=False):
             msg = cmd_bitcoinprice()
-        elif any(s in command_str for s in [
+        elif string_contains_any(command_str, [
                 'eth',
-                'ethereum']):
+                'ethereum'], exhaustive_search=True, require_cmd_char=False):
             msg = cmd_ethereumprice()
-        elif any(s in command_str for s in [
-                'all']):
-            msg = '\n'.join([cmd_price(source=name) for name in apis.alive_api_names()])
+        elif string_contains_any(command_str, [
+                'all'], exhaustive_search=True, require_cmd_char=False):
+            msg = '\n'.join([cmd_price(source=name) for name in apis.alive_api_names])
         else:
             msg = cmd_price()
 
-    if command_str.startswith('!vol'):
+    if string_contains_any(command_str, ['vol', 'völ']):
         msg = cmd_volume()
 
-    if command_str.startswith('!ratio'):
+    if string_contains_any(command_str, ['bettervolume']):
+        msg = ':star2:'*10 + '\n' + cmd_volume() + '\n' + ':star2:'*10
+
+    if string_contains_any(command_str, ['ratio']):
         msg = cmd_ratio()
 
-    if command_str.startswith('!bitcoinprice') or command_str.startswith('!btcprice'):
+    if string_contains_any(command_str, ['bitcoin price', 'btc price', 'btc']):
         msg = cmd_bitcoinprice()
 
-
-    if command_str.startswith('!ethereumprice') or command_str.startswith('!ethprice'):
+    if string_contains_any(command_str, ['ethereum price', 'eth price', 'eth']):
         msg = cmd_ethereumprice()
 
-    if command_str.startswith('!convert'):
+    if string_contains_any(command_str, ['convert', 'concert', 'conver']):
         msg = cmd_convert(command_str)
 
-    for price, names in _EXPENSIVE_STUFF:
-        if not any('!' + name in command_str for name in names):
-            continue
+    if string_contains_any(command_str, ['hug']):
+        msg = "*SQUEEEEEEEEEEEEE* There, there. It's alright now. Botty is gonna make it all better."
 
-        correct_name = names[0]
-        msg = cmd_compare_price_vs(correct_name, price)
+    if string_contains_any(command_str, ['hi', 'hey bot']):
+        msg = "Sup :sunglasses:"
 
-    if command_str.startswith('!zj'):
+    if string_contains_any(command_str, ['zj']):
         msg = "If you have to ask big man, you can't afford it."
 
-        
+    # TODO: enable when there is a source for this info
+    #if string_contains_any(command_str, ['binance', 'binants', 'bine ants']):
+    #    msg = "Listing fee for binance is 10-30 BTC"
 
-    #if command_str.startswith('!hello'):
-    #    msg = 'Hello {0.author.mention}'.format(message)
-    #    await client.send_message(message.channel, msg)
-
-    # log anything starting with ! with debug messages
-    if command_str.startswith('!'):
-        if msg != None:
-            command_count += 1
-            logging.info('cmd: {} total, matched {}'.format(command_count, repr(command_str)))
-        else:
-            logging.info('cmd: {} total, UNKNOWN {}'.format(command_count, repr(command_str)))
+    for price, names in _EXPENSIVE_STUFF:
+        if string_contains_any(command_str, names, exhaustive_search=True):
+            correct_name = names[0]
+            msg = cmd_compare_price_vs(correct_name, price)
+            break
 
     return msg
 
+async def send_discord_msg(channel, message):
+    try:
+        await client.send_message(channel, message)
+    except discord.errors.Forbidden:
+        logging.debug('no permission: {} [{}]'.format(channel.name, channel.id))
+
 
 def configure_client():
-    #client = discord.Client()
+
+    client.loop.create_task(update_price_task())
 
     @client.event
     async def on_message(message):
+        global command_count
         response = None
 
         # we do not want the bot to reply to itself
@@ -472,61 +550,35 @@ def configure_client():
 
         command_str = message.content.lower().strip()
 
-        # allow unicode ! (replace with ascii version)
-        if command_str.startswith('！'):
-            command_str = '!' + command_str[1:]
-
         # allow '! command' since some platforms autocorrect to add a space
-        if command_str.startswith('! '):
-            command_str = '!' + command_str[2:]
+        if command_str.startswith(_COMMAND_CHARACTER + ' '):
+            command_str = _COMMAND_CHARACTER + command_str[2:]
 
+        # allow '!!command', its a common typo
+        if command_str.startswith(_COMMAND_CHARACTER+_COMMAND_CHARACTER):
+            command_str = _COMMAND_CHARACTER + command_str[2:]
 
+        # allow unicode ! (replace with ascii version)
+        if _COMMAND_CHARACTER == '!':
+            if command_str.startswith('！'):
+                command_str = '!' + command_str[1:]
 
-        # These commands will work in any channel (TODO: move to a fn)
-        if command_str.startswith('!help'):
-            response =  "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`\n"
-            response += "quick link commands: `whitepaper website ann contract stats mvis cosmic az`"
+        # trading commands are ignored in blacklisted channels
+        if message.channel.id not in _BLACKLISTED_CHANNEL_IDS:
+            response = handle_trading_command(command_str)
+            if response:
+                await send_discord_msg(message.channel, response);
+                return
 
-        if command_str.startswith('!whitepaper'):
-            response = "0xBitcoin Whitepaper: https://github.com/0xbitcoin/white-paper"
-
-        if command_str.startswith('!website'):
-            response = "0xBitcoin Website: https://0xbitcoin.org/"
-
-        if command_str.startswith('!contract'):
-            response = "0xBitcoin Contract: 0xb6ed7644c69416d67b522e20bc294a9a9b405b31 [<https://bit.ly/2y1WlMB>]"
-
-        if command_str.startswith('!stats'):
-            response = "0xBitcoin Stats: <https://0x1d00ffff.github.io/0xBTC-Stats/>"
-
-        if command_str == '!ann':
-            response = "\"[ANN] 0xBitcoin [0xBTC]\": https://bitcointalk.org/index.php?topic=3039182.0"
-
-        if command_str.startswith('!mvis'):
-            response = "MVIS-Tokenminer: <https://github.com/mining-visualizer/MVis-tokenminer/releases>"
-
-        if command_str.startswith('!cosmic'):
-            response = "COSMiC: <https://bitbucket.org/LieutenantTofu/cosmic-v3/downloads/>"
-
-        if command_str.startswith('!az'):
-            response = "Azlehria: <https://github.com/azlehria/0xbitcoin-gpuminer/releases>"
-        
-
-
-        # if not in a blacklisted channel, and a simple command didn't match
-        # already, allow complex commands
-        if response == None and message.channel.id not in _BLACKLISTED_CHANNEL_IDS:
-            response = handle_command(command_str)
-
-
-        if response == None:
+        response = handle_global_command(command_str)
+        if response:
+            await send_discord_msg(message.channel, response);
             return
 
-        try:
-            await client.send_message(message.channel, response)
-        except discord.errors.Forbidden:
-            logging.debug('no permission in this channel ({} in {})'.format(message.channel.name, message.server.name))
 
+        # If command starts with _COMMAND_CHARACTER and we have not returned yet, it was unrecognized.
+        if command_str.startswith(_COMMAND_CHARACTER):
+            logging.info('UNKNOWN cmd {}'.format(repr(command_str)))
 
 
     @client.event
@@ -534,35 +586,30 @@ def configure_client():
         logging.info('Logged in as {} ({})'.format(client.user.name,
                                                    client.user.id))
 
-    client.loop.create_task(update_price_task())
+        logging.info('In {} servers'.format(len(client.servers)))
+        for server in client.servers:
+            logging.info('  {} [id:{}] ({} Members), {}'.format(server.name, server.id, server.member_count, server.region))
+
 
 def setup_logging():
     path = '.'
     filename = 'debug.log'
 
-
     # set up logging to file
-
-    filehandler = logging.FileHandler("{0}/{1}.log".format(path, filename),
+    filehandler = logging.FileHandler("{0}/{1}".format(path, filename),
                                       mode='a',
                                       encoding='utf-8')
     filehandler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s, %(name)-12s, %(levelname)-8s, %(message)s',
                                   datefmt='%m-%d-%y %H:%M:%S')
     filehandler.setFormatter(formatter)
-    #logging.getLogger('').addHandler(filehandler)
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
-    # set a format which is simpler for console use
     formatter = logging.Formatter('%(asctime)s [%(levelname)-5.5s] %(message)s',
                                   datefmt='%H:%M:%S')
-    # tell the handler to use this format
     console.setFormatter(formatter)
-    # add the handler to the root logger
-    #logging.getLogger('').addHandler(console)
-
 
     logging.basicConfig(handlers=[filehandler, console],
         level=logging.DEBUG)
@@ -576,7 +623,8 @@ def setup_logging():
 if __name__ == "__main__":
     setup_logging()
 
-    logging.info('{} start v{}'.format(_PROGRAM_NAME, _VERSION))
+    logging.info('{} version {}'.format(_PROGRAM_NAME, _VERSION))
+    logging.info('discord.py version {}'.format(discord.__version__))
     loop = asyncio.get_event_loop()
     client = discord.Client()
     configure_client()

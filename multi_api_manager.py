@@ -36,7 +36,7 @@ class MultiApiManager():
     def alive_api_names(self):
         all_names = []
         for a in self.alive_apis:
-            all_names.append(a.name)
+            all_names.append(a.api_name)
 
         # convert to set to remove duplicates 
         return list(set(all_names))
