@@ -29,6 +29,7 @@ from multi_api_manager import MultiApiManager
 _PROGRAM_NAME = "0xbtc-price-bot"
 _VERSION = "0.1.0"
 _UPDATE_RATE = 120  # how often to update all APIs (in seconds)
+_CURRENCY = '0xBTC'
 _COMMAND_CHARACTER = '!'  # what character should prepend all commands
 
 _CLI_MODE = False  # if true, do not connect to discotd, instead start a CLI to test commands
@@ -242,7 +243,7 @@ def cmd_compare_price_vs(item_name="lambo", item_price=200000):
     if apis.last_updated_time() == 0:
         return ":shrug:"
 
-    token_price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
+    token_price_usd = apis.price_eth(_CURRENCY) * apis.eth_price_usd()
 
     if token_price_usd == 0:
         return ":shrug:"
@@ -256,24 +257,24 @@ def cmd_price(source='aggregate'):
     if apis.last_updated_time(api_name=source) == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url(api_name=source))
     
-    token_price = apis.price_eth('0xBTC', api_name=source) * apis.eth_price_usd()
+    token_price = apis.price_eth(_CURRENCY, api_name=source) * apis.eth_price_usd()
     eth_price = float(apis.eth_price_usd(api_name=source))
 
     percent_change_str = ""
 
-    if apis.change_24h('0xBTC', api_name=source) == None:
+    if apis.change_24h(_CURRENCY, api_name=source) == None:
         percent_change_str = ""
     else:
         # TODO: enable percentage once enclaves is stable
-        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.change_24h('0xBTC', api_name=source),
-                                                       percent_change_to_emoji(apis.change_24h('0xBTC', api_name=source)),)
+        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.change_24h(_CURRENCY, api_name=source),
+                                                       percent_change_to_emoji(apis.change_24h(_CURRENCY, api_name=source)),)
         pass
 
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
     result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
                             seconds_to_readable_time(time.time()-apis.last_updated_time(api_name=source)),
                             '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
-                            apis.price_eth('0xBTC', api_name=source), 
+                            apis.price_eth(_CURRENCY, api_name=source), 
                             percent_change_str,
                             '' if eth_price == 0 else '(ETH: **${:.0f}**) '.format(eth_price), 
                             apis.short_url(api_name=source))
@@ -314,8 +315,8 @@ def cmd_volume():
 
     #for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX', 'Hotbit']:
     for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX']:
-        volume_eth = apis.volume_eth('0xBTC', api_name=source)
-        volume_btc = apis.volume_btc('0xBTC', api_name=source)
+        volume_eth = apis.volume_eth(_CURRENCY, api_name=source)
+        volume_btc = apis.volume_btc(_CURRENCY, api_name=source)
         total_eth_volume += volume_eth
         total_btc_volume += volume_btc
         response += "{}: $**{}**({}Ξ) ".format(source, prettify_decimals(volume_eth * apis.eth_price_usd()), prettify_decimals(volume_eth))
@@ -332,7 +333,7 @@ def cmd_ratio():
     if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
 
-    token_price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
+    token_price_usd = apis.price_eth(_CURRENCY) * apis.eth_price_usd()
 
     if token_price_usd == 0:
         return ":shrug:"
@@ -352,7 +353,7 @@ def cmd_convert(message):
     except:
         return "Bad formatting? try this : `!convert 1 eth to 0xbtc`"
 
-    token_price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
+    token_price_usd = apis.price_eth(_CURRENCY) * apis.eth_price_usd()
 
 
     if src in ['0xbtc', '0xbitcoins', '0xbitcoin']:
@@ -423,14 +424,14 @@ async def update_price_task():
 
         try:
             # price in usd is conritional - only show it if eth price is not 0 (an error)
-            price_usd = apis.price_eth('0xBTC') * apis.eth_price_usd()
+            price_usd = apis.price_eth(_CURRENCY) * apis.eth_price_usd()
             usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
 
             # wait until at least one successful update to show status
             if apis.last_updated_time() != 0:
                 fmt_str = "{}{:.5f} Ξ ({})"
                 await update_status(client, fmt_str.format(usd_str,
-                                                           apis.price_eth('0xBTC'),
+                                                           apis.price_eth(_CURRENCY),
                                                            seconds_to_readable_time(time.time()-apis.last_updated_time())))
         except:
             logging.exception('failed to change status')
@@ -484,7 +485,7 @@ def handle_trading_command(command_str):
                 'all',
                 'prices'], exhaustive_search=True, require_cmd_char=False):
             msg = ""
-            for api in sorted(apis.alive_apis, key=attrgetter('api_name')):
+            for api in sorted(apis.alive_apis, key=lambda a: a.api_name):
                 # this skips apis not directly tracking 0xbtc
                 if api.currency_symbol != _CURRENCY:
                     continue
@@ -640,12 +641,12 @@ if __name__ == "__main__":
     configure_client()
     apis = MultiApiManager(
     [
-        EnclavesAPI('0xBTC'),
+        EnclavesAPI(_CURRENCY),
         LiveCoinWatchAPI('ETH'),
-        ForkDeltaAPI('0xBTC'),
-        MercatoxAPI('0xBTC'),
-        IDEXAPI('0xBTC'),
-        #HotbitAPI('0xBTC'),
+        ForkDeltaAPI(_CURRENCY),
+        MercatoxAPI(_CURRENCY),
+        IDEXAPI(_CURRENCY),
+        #HotbitAPI(_CURRENCY),
     ])
     while True:
         try:
