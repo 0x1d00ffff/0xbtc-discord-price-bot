@@ -340,21 +340,17 @@ def cmd_ratio():
 
     return "1 BTC : {:,.0f} 0xBTC".format(apis.btc_price_usd() / token_price_usd)
 
-def cmd_convert(message):
-    if apis.last_updated_time() == 0:
-        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
-
-    try:
-        # example: '!convert 1 usd to 0xbtc'
-        _, amount, src, _, dest = message.split(' ')
-        src = src.lower()
-        dest = dest.lower()
-        amount = float(amount)
-    except:
-        return "Bad formatting? try this : `!convert 1 eth to 0xbtc`"
+"""Convert from source currency to dest currency. _amount_ indicates total
+amount of source currency. Example:
+>>> convert(100, 'cents', 'usd')
+1
+"""
+def convert(amount, src, dest):
+    src = src.lower()
+    dest = dest.lower()
+    amount = float(amount)
 
     token_price_usd = apis.price_eth(_CURRENCY) * apis.eth_price_usd()
-
 
     if src in ['0xbtc', '0xbitcoins', '0xbitcoin']:
         usd_value = token_price_usd * amount
@@ -402,6 +398,36 @@ def cmd_convert(message):
     result = prettify_decimals(result)
 
     return "{} {} = **{}** {}".format(amount, src, result, dest)
+
+
+def cmd_convert(message):
+    if apis.last_updated_time() == 0:
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
+
+    split = message.split()
+    
+    # example input: '!convert 1 usd to 0xbtc'
+    try:
+        _, amount, src, _, dest = split
+    except ValueError:
+        pass
+    except:
+        return "Something went wrong :sob: try this: `!convert 1 eth to 0xbtc`"
+    else:
+        return convert(amount, src, dest)
+    
+    # example input: '!convert 1 usd 0xbtc'
+    try:
+        _, amount, src, dest = split
+    except ValueError:
+        pass
+    except:
+        return "Something went wrong :sob: try this: `!convert 1 eth to 0xbtc`"
+    else:
+        return convert(amount, src, dest)
+
+    # ValueError exceptions lead here
+    return "Something went wrong :sob: try this: `!convert 1 eth to 0xbtc`"
 
 
 async def update_status(client, stat_str):
