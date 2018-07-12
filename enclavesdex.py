@@ -81,6 +81,7 @@ class EnclavesAPI():
             	raise TimeoutError("api sent bad data ({})".format(repr(response)))
          
 
+        data_was_updated = False
         #pprint.pprint(all_data)
         tokens = all_data[1]['tokens']
         for token in tokens:
@@ -88,6 +89,10 @@ class EnclavesAPI():
                 self.price_eth = float(token['priceEnclaves'])
                 self.volume_eth = wei_to_ether(token['volumeEther'])
                 self.change_24h = float(token['change'])
+                data_was_updated = True
+
+        if not data_was_updated:
+            raise RuntimeError('Response from Enclaves did not include indicated currency ({}).'.format(self.currency_symbol))
 
 
     def update(self, timeout=10.0):
