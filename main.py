@@ -61,9 +61,11 @@ _EXPENSIVE_STUFF = [
     (500000,
      ['private island', 'privare island', 'pirvate island']),
     (398.8*1000*1000,
-     ['whitehouse']),
+     ['whitehouse', 'white house']),
     (1.225*1000*1000*1000,
-     ['buckinghampalace']),
+     ['buckingham palace']),
+    (3.9*1000*1000*1000,
+     ['air force one']),
     (101500, 
      ['tesla', 'telsa']),
     (1700,
@@ -79,6 +81,7 @@ _EXPENSIVE_STUFF = [
       'avacado on toast', 
       'avocato toast', 
       'avocato on toast',
+      'avovado toast',
       'avo toast']),
     (1,
      ['oneaire']),
@@ -332,7 +335,7 @@ def cmd_volume():
     response += "\n"
 
     if apis.eth_price_usd() == 0 or apis.btc_price_usd() == 0:
-        response += "Total: {}Ξ + {}₿".format(, prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume))
+        response += "Total: {}Ξ + {}₿".format(prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume))
     else:
         response += "Total: $**{}**({}Ξ+{}₿)".format(prettify_decimals((total_eth_volume * apis.eth_price_usd()) + (total_btc_volume * apis.btc_price_usd())), prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume))
 
