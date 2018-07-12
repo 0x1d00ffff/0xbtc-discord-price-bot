@@ -27,7 +27,7 @@ from hotbit import HotbitAPI
 from multi_api_manager import MultiApiManager
 
 _PROGRAM_NAME = "0xbtc-price-bot"
-_VERSION = "0.1.0"
+_VERSION = "0.1.1"
 _UPDATE_RATE = 120  # how often to update all APIs (in seconds)
 _CURRENCY = '0xBTC'
 _COMMAND_CHARACTER = '!'  # what character should prepend all commands
@@ -319,12 +319,22 @@ def cmd_volume():
         volume_btc = apis.volume_btc(_CURRENCY, api_name=source)
         total_eth_volume += volume_eth
         total_btc_volume += volume_btc
-        response += "{}: $**{}**({}Ξ) ".format(source, prettify_decimals(volume_eth * apis.eth_price_usd()), prettify_decimals(volume_eth))
+        if apis.eth_price_usd() == 0:
+            response += "{}: **{}Ξ** ".format(source, prettify_decimals(volume_eth))
+        else:
+            response += "{}: $**{}**({}Ξ) ".format(source, prettify_decimals(volume_eth * apis.eth_price_usd()), prettify_decimals(volume_eth))
         if volume_btc != 0:
-            response += "+ $**{}**({}₿) ".format(prettify_decimals(volume_btc * apis.btc_price_usd()), prettify_decimals(volume_btc))
+            if apis.btc_price_usd() == 0:
+                response += "+ **{}₿** ".format(prettify_decimals(volume_btc))
+            else:
+                response += "+ $**{}**({}₿) ".format(prettify_decimals(volume_btc * apis.btc_price_usd()), prettify_decimals(volume_btc))
 
     response += "\n"
-    response += "Total: $**{}**({}Ξ+{}₿)".format(prettify_decimals((total_eth_volume * apis.eth_price_usd()) + (total_btc_volume * apis.btc_price_usd())), prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume))
+
+    if apis.eth_price_usd() == 0 or apis.btc_price_usd() == 0:
+        response += "Total: {}Ξ + {}₿".format(, prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume))
+    else:
+        response += "Total: $**{}**({}Ξ+{}₿)".format(prettify_decimals((total_eth_volume * apis.eth_price_usd()) + (total_btc_volume * apis.btc_price_usd())), prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume))
 
     return response
 
