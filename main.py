@@ -14,6 +14,10 @@ import asyncio
 import logging
 import urllib
 import collections
+import sys
+if (sys.version_info < (3, 6)):
+    print('This requires python 3.6+')
+    sys.exit(1)
 
 import discord
 from secret_info import TOKEN
@@ -25,6 +29,7 @@ from mercatox import MercatoxAPI
 from idex import IDEXAPI
 from hotbit import HotbitAPI
 from multi_api_manager import MultiApiManager
+
 
 _PROGRAM_NAME = "0xbtc-price-bot"
 _VERSION = "0.1.1"
