@@ -127,7 +127,10 @@ class MultiApiManager():
             if a.eth_price_usd == None:
                 continue
             if api_name == 'aggregate' or a.api_name == api_name:
-                result.add(a.eth_price_usd, a.volume_eth)
+                if a.currency_symbol == 'ETH':
+                    result.add(a.price_usd, a.volume_usd / a.price_usd)
+                else:
+                    result.add(a.eth_price_usd, a.volume_eth)
         return result.average()
 
     def btc_price_usd(self, api_name='aggregate'):
@@ -136,7 +139,10 @@ class MultiApiManager():
             if a.btc_price_usd == None:
                 continue
             if api_name == 'aggregate' or a.api_name == api_name:
-                result.add(a.btc_price_usd, a.volume_eth)
+                if a.currency_symbol == 'BTC':
+                    result.add(a.price_usd, a.volume_usd / a.price_usd)
+                else:
+                    result.add(a.btc_price_usd, a.volume_btc)
         return result.average()
 
     def last_updated_time(self, api_name='aggregate'):
@@ -151,6 +157,7 @@ class MultiApiManager():
         return result
 
 if __name__ == "__main__":
+    from coinmarketcap import CoinMarketCapAPI
     from enclavesdex import EnclavesAPI
     from livecoinwatch import LiveCoinWatchAPI
     from forkdelta import ForkDeltaAPI
@@ -158,9 +165,10 @@ if __name__ == "__main__":
 
     apis = [
         EnclavesAPI('0xBTC'), 
-        LiveCoinWatchAPI('ETH'),
         ForkDeltaAPI('0xBTC'),
         MercatoxAPI('0xBTC'),
+        CoinMarketCapAPI('BTC'),
+        CoinMarketCapAPI('ETH')
     ]
 
     m = MultiApiManager(apis)

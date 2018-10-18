@@ -16,7 +16,7 @@ async def keep_running(client, token):
             await client.login(token)
 
         except (discord.HTTPException, aiohttp.ClientError):
-            logging.exception("Discord.py pls login")
+            logging.exception("Discord.py trying to login...")
             await asyncio.sleep(retry.delay())
 
         else:
@@ -36,7 +36,7 @@ async def keep_running(client, token):
                 websockets.WebSocketProtocolError) as e:
             if isinstance(e, discord.ConnectionClosed) and e.code == 4004:
                 raise # Do not reconnect on authentication failure
-            logging.exception("Discord.py pls keep running")
+            logging.exception("Discord.py trying to stay connected...")
             await asyncio.sleep(retry.delay())
 
 
