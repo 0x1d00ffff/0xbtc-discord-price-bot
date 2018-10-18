@@ -139,12 +139,6 @@ _GLOBAL_COMMANDS = [
 ]
 
 
-# todo: encapsulate these
-last_updated = 0
-client = None
-settings = {}
-
-
 # look through an input_string, return True if it looks like a match for command
 # if exhaustive_search is true, look in the middle of string for commands - otherwise only check beginning
 # if permute_whitespace is true, replace spaces with dashes etc and also match those
@@ -446,7 +440,6 @@ async def update_status(client, stat_str):
 
 
 async def background_update():
-    global last_updated
     await client.wait_until_ready()
     while not client.is_closed:
         try:
@@ -669,7 +662,14 @@ def setup_logging(path):
 
     logging.info('Logging to {}...'.format(path))
 
-if __name__ == "__main__":
+
+# todo: encapsulate these
+client = None
+apis = None
+settings = {}
+
+def main():
+    global client, apis, settings
     import argparse
     parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot',
                                      epilog='<3 0x1d00ffff')
@@ -707,3 +707,6 @@ if __name__ == "__main__":
         except:
             logging.exception('Unexpected error from Discord... retrying')
             time.sleep(10)  # wait a little time to prevent cpu spins
+
+if __name__ == "__main__":
+    main()
