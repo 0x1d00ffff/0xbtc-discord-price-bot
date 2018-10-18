@@ -58,6 +58,7 @@ class IDEXAPI():
         self._SERVER_URL = "https://api.idex.market"
         self.currency_symbol = currency_symbol
         self.api_name = "IDEX"
+        self.command_names = ['idex', 'idx']
         self.short_url = "https://bit.ly/2stRdvt"
         self.last_updated_time = 0
 

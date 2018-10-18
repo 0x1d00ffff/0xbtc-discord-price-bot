@@ -1,10 +1,6 @@
 # -*- coding: UTF-8 -*-
-
-# https://github.com/Rapptz/discord.py/blob/async/examples/reply.py
 """
-
-livecoinwatch bitly: https://bit.ly/2w6Q0P0
-enclaves bitly: https://bit.ly/2rnYA7b
+0xBitcoin Discord Price Bot
 """
 
 import time
@@ -18,16 +14,16 @@ import collections
 import discord
 from secret_info import TOKEN
 from reconnecting_bot import keep_running
+
+from coinmarketcap import CoinMarketCapAPI
 from enclavesdex import EnclavesAPI
-from livecoinwatch import LiveCoinWatchAPI
 from forkdelta import ForkDeltaAPI
 from mercatox import MercatoxAPI
 from idex import IDEXAPI
-from hotbit import HotbitAPI
 from multi_api_manager import MultiApiManager
 
 _PROGRAM_NAME = "0xbtc-price-bot"
-_VERSION = "0.1.1"
+_VERSION = "0.1.2"
 _UPDATE_RATE = 120  # how often to update all APIs (in seconds)
 _CURRENCY = '0xBTC'
 _COMMAND_CHARACTER = '!'  # what character should prepend all commands
@@ -145,9 +141,8 @@ _GLOBAL_COMMANDS = [
 
 # todo: encapsulate these
 last_updated = 0
-command_count = 0
 client = None
-
+settings = {}
 
 
 # look through an input_string, return True if it looks like a match for command
@@ -205,6 +200,8 @@ def percent_change_to_emoji(percent_change):
 
 
 def prettify_decimals(number):
+    if number == 0:
+        return "0"
     if number < 0.000000000001:
         return "{:.2E}".format(number)
     if number < 0.00000001:
@@ -268,10 +265,8 @@ def cmd_price(source='aggregate'):
     if apis.change_24h(_CURRENCY, api_name=source) == None:
         percent_change_str = ""
     else:
-        # TODO: enable percentage once enclaves is stable
         percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.change_24h(_CURRENCY, api_name=source),
                                                        percent_change_to_emoji(apis.change_24h(_CURRENCY, api_name=source)),)
-        pass
 
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
     result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
@@ -414,7 +409,7 @@ def convert(amount, src, dest):
 
 
 def cmd_convert(message):
-    if apis.last_updated_time() == 0:
+    if apis.last_updated_time() == 0 or apis.eth_price_usd() == 0 or apis.btc_price_usd() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
 
     split = message.split()
@@ -450,19 +445,17 @@ async def update_status(client, stat_str):
                                  afk=False)
 
 
-async def update_price_task():
+async def background_update():
     global last_updated
     await client.wait_until_ready()
     while not client.is_closed:
         try:
             apis.update()
-            #last_updated = time.time()
         except Exception as e:
             logging.exception('failed to update prices')
-            #await update_status(client, "???")
 
         try:
-            # price in usd is conritional - only show it if eth price is not 0 (an error)
+            # price in usd is conditional - only show it if eth price is not 0 (an error)
             price_usd = apis.price_eth(_CURRENCY) * apis.eth_price_usd()
             usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
 
@@ -478,8 +471,8 @@ async def update_price_task():
         await asyncio.sleep(_UPDATE_RATE)
 
     # this throws an exception which causes the program to restart
-    # in normal operation, we should never reach this
-    raise RuntimeError('update_price_task loop stopped - something is wrong')
+    # in normal operation we should never reach this
+    raise RuntimeError('background_update loop stopped - something is wrong')
 
 # These commands will work in any channel (TODO: move to a fn)
 def handle_global_command(command_str):
@@ -522,6 +515,7 @@ def handle_trading_command(command_str):
             msg = cmd_ethereumprice()
         elif string_contains_any(command_str, [
                 'all',
+                'al',
                 'prices'], exhaustive_search=True, require_cmd_char=False):
             msg = ""
             for api in sorted(apis.alive_apis, key=lambda a: a.api_name):
@@ -563,10 +557,6 @@ def handle_trading_command(command_str):
     if string_contains_any(command_str, ['hi', 'hey bot']):
         msg = "Sup :sunglasses:"
 
-    # TODO: enable when there is a source for this info
-    #if string_contains_any(command_str, ['binance', 'binants', 'bine ants']):
-    #    msg = "Listing fee for binance is 10-30 BTC"
-
     for price, names in _EXPENSIVE_STUFF:
         if string_contains_any(command_str, names, exhaustive_search=True):
             correct_name = names[0]
@@ -579,16 +569,15 @@ async def send_discord_msg(channel, message):
     try:
         await client.send_message(channel, message)
     except discord.errors.Forbidden:
-        logging.debug('no permission: {} [{}]'.format(channel.name, channel.id))
+        logging.debug('no permission in channel: {} [{}]'.format(channel.name, channel.id))
 
 
 def configure_client():
 
-    client.loop.create_task(update_price_task())
+    client.loop.create_task(background_update())
 
     @client.event
     async def on_message(message):
-        global command_count
         response = None
 
         # we do not want the bot to reply to itself
@@ -598,55 +587,63 @@ def configure_client():
         if message.author.bot:
             return
 
-        command_str = message.content.lower().strip()
+        message_contents = message.content.lower().strip()
 
         # allow '! command' since some platforms autocorrect to add a space
-        if command_str.startswith(_COMMAND_CHARACTER + ' '):
-            command_str = _COMMAND_CHARACTER + command_str[2:]
+        if message_contents.startswith(_COMMAND_CHARACTER + ' '):
+            message_contents = _COMMAND_CHARACTER + message_contents[2:]
 
         # allow '!!command', its a common typo
-        if command_str.startswith(_COMMAND_CHARACTER+_COMMAND_CHARACTER):
-            command_str = _COMMAND_CHARACTER + command_str[2:]
+        if message_contents.startswith(_COMMAND_CHARACTER+_COMMAND_CHARACTER):
+            message_contents = _COMMAND_CHARACTER + message_contents[2:]
 
         # allow unicode ! (replace with ascii version)
         if _COMMAND_CHARACTER == '!':
-            if command_str.startswith('！'):
-                command_str = '!' + command_str[1:]
+            if message_contents.startswith('！'):
+                message_contents = '!' + message_contents[1:]
 
         # trading commands are ignored in blacklisted channels
         if message.channel.id not in _BLACKLISTED_CHANNEL_IDS:
-            response = handle_trading_command(command_str)
+            response = handle_trading_command(message_contents)
             if response:
                 await send_discord_msg(message.channel, response);
                 return
 
-        response = handle_global_command(command_str)
+        response = handle_global_command(message_contents)
         if response:
             await send_discord_msg(message.channel, response);
             return
 
-
         # If command starts with _COMMAND_CHARACTER and we have not returned yet, it was unrecognized.
-        if command_str.startswith(_COMMAND_CHARACTER):
-            logging.info('UNKNOWN cmd {}'.format(repr(command_str)))
-
+        if message_contents.startswith(_COMMAND_CHARACTER):
+            logging.info('UNKNOWN cmd {}'.format(repr(message_contents)))
 
     @client.event
     async def on_ready():
-        logging.info('Logged in as {} ({})'.format(client.user.name,
-                                                   client.user.id))
+        show_startup_info(client)
 
-        logging.info('In {} servers'.format(len(client.servers)))
-        for server in client.servers:
-            logging.info('  {} [id:{}] ({} Members), {}'.format(server.name, server.id, server.member_count, server.region))
+def show_startup_info(client):
+    logging.info('{} version {}'.format(_PROGRAM_NAME, _VERSION))
+    logging.info('discord.py version {}'.format(discord.__version__))
+    logging.info('Logged in as {} ({}) to {} servers'.format(client.user.name,
+                                                             client.user.id,
+                                                             len(client.servers)))
+    for server in client.servers:
+        logging.info('  {} [id:{}] ({} Members), {}'.format(server.name, 
+                                                            server.id,
+                                                            server.member_count,
+                                                            server.region))
+        if settings['show_channels']:
+            member = server.get_member(client.user.id)
+            for channel in server.channels:
+                allowed = 'no send permission' if not channel.permissions_for(member).send_messages else ''
+                logging.info('    {} [id:{}] {}'.format(channel.name, 
+                                                        channel.id,
+                                                        allowed))
 
-
-def setup_logging():
-    path = '.'
-    filename = 'debug.log'
-
+def setup_logging(path):
     # set up logging to file
-    filehandler = logging.FileHandler("{0}/{1}".format(path, filename),
+    filehandler = logging.FileHandler(path,
                                       mode='a',
                                       encoding='utf-8')
     filehandler.setLevel(logging.DEBUG)
@@ -670,23 +667,36 @@ def setup_logging():
     # make discord be quiet
     logging.getLogger('discord').setLevel(logging.WARNING)
 
-if __name__ == "__main__":
-    setup_logging()
+    logging.info('Logging to {}...'.format(path))
 
-    logging.info('{} version {}'.format(_PROGRAM_NAME, _VERSION))
-    logging.info('discord.py version {}'.format(discord.__version__))
-    loop = asyncio.get_event_loop()
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot',
+                                     epilog='<3 0x1d00ffff')
+    parser.add_argument('--show_channels', action='store_true', default=False,
+                        help='Show all visible channels/permissions during init')
+    parser.add_argument('--log_location', default='debug.log',
+                        help='Set the location of the debug log file')
+    parser.add_argument('--version', action='version', 
+                        version='%(prog)s v{}'.format(_VERSION))
+    args = parser.parse_args()
+
+    settings['show_channels'] = args.show_channels
+    setup_logging(args.log_location)
+
     client = discord.Client()
     configure_client()
+
     apis = MultiApiManager(
     [
+        CoinMarketCapAPI('ETH'),
+        CoinMarketCapAPI('BTC'),
         EnclavesAPI(_CURRENCY),
-        LiveCoinWatchAPI('ETH'),
         ForkDeltaAPI(_CURRENCY),
-        MercatoxAPI(_CURRENCY),
         IDEXAPI(_CURRENCY),
-        #HotbitAPI(_CURRENCY),
+        MercatoxAPI(_CURRENCY),
     ])
+
     while True:
         try:
             asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
@@ -695,5 +705,5 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             raise
         except:
-            logging.exception('bot ded:')
+            logging.exception('Unexpected error from Discord... retrying')
             time.sleep(10)  # wait a little time to prevent cpu spins
