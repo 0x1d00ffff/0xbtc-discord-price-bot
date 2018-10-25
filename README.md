@@ -20,6 +20,9 @@ Todo:
    - !pools
    - !marketcap
    - !binance (to show current listing price in usd)
+   - !diff
+   - !hashrate
+   - !retarget
  - Need a new 'Pairing' class to handle pairings in a more generic way. This
    will allow easier integration of BTC pairings (ie mercatox)
  - volume_eth and volume_usd are not strictly defined - sometimes it means total

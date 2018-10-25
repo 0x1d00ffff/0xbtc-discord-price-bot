@@ -5,7 +5,7 @@
 
 import sys
 
-assert sys.version_info >= (3,6), "requires python > 3.5"
+assert sys.version_info >= (3,6), "requires python > 3.6+"
 
 
 import time
@@ -16,9 +16,6 @@ import logging
 import urllib
 import collections
 import sys
-if (sys.version_info < (3, 6)):
-    print('This requires python 3.6+')
-    sys.exit(1)
 
 import discord
 from secret_info import TOKEN
@@ -40,7 +37,7 @@ CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
 # commands that work in all channels (ignores the blacklist)
 _GLOBAL_COMMANDS = [
     CmdDef(
-        ['help'],
+        ['help', 'commands', 'bot'],
         "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`\nquick link commands: `whitepaper website ann contract stats merch mvis cosmic az`"),
     CmdDef(
         ['white paper'],
@@ -49,8 +46,8 @@ _GLOBAL_COMMANDS = [
         ["site", "web site"],
         "0xBitcoin Website: <https://0xbitcoin.org/>"),
     CmdDef(
-        ["lava wallet"],
-        "Lava Wallet: <https://lavawallet.io/> (GitHub:<https://github.com/lavawallet>)"),
+        ["lava"],
+        "Lava Wallet: <https://lavawallet.io/> (Development:<https://github.com/lavawallet> and <http://forum.0xbtc.io/c/development/lava-network>)"),
     CmdDef(
         ["contract", "address"],
         "0xBitcoin Contract: 0xb6ed7644c69416d67b522e20bc294a9a9b405b31 [<https://bit.ly/2y1WlMB>]"),
@@ -61,17 +58,23 @@ _GLOBAL_COMMANDS = [
         ["ann", "bitcoin talk"],
         "[ANN] 0xBitcoin [0xBTC]: <https://bitcointalk.org/index.php?topic=3039182.0>"),
     CmdDef(
-        ["merch", "merchandise", "tshirt", "0xbtcat"],
+        ["merch", "merchandise", "tshirt", "0xbtcat", "beeherder"],
         "0xBTC Merch: <https://www.teepublic.com/user/0xbtcat>"),
+    CmdDef(
+        ["miner"],
+        "Try !mvis !cosmic !az !ss3"),
     CmdDef(
         ["mvis", "mining visualizer", "mvis tokenminer"],
         "MVIS-Tokenminer: <https://github.com/mining-visualizer/MVis-tokenminer/releases>"),
     CmdDef(
-        ["cosmic"],
+        ["cosmic", "lttofu"],
         "COSMiC: <https://bitbucket.org/LieutenantTofu/cosmic-v3/downloads/>"),
     CmdDef(
-        ["az", "nabiki", "gaiden"],
+        ["az", "azlehria", "nabiki", "gaiden"],
         "Azlehria: <https://github.com/azlehria/0xbitcoin-gpuminer/releases>"),
+    CmdDef(
+        ["soliditysha3miner", "armano", "ss3"],
+        "SoliditySHA3Miner: <https://github.com/lwYeo/SoliditySHA3Miner/releases>"),
 ]
 
 
@@ -452,7 +455,7 @@ def handle_global_command(command_str):
 
 def handle_trading_command(command_str):
     msg = None
-    if string_contains_any(command_str, ['price', 'rice']):
+    if string_contains_any(command_str, ['price', 'rice', 'pric', 'pricce', 'proce', 'rpice']):
         if string_contains_any(command_str, [
                 'enclaves',
                 'encalves'], exhaustive_search=True, require_cmd_char=False):
@@ -499,7 +502,7 @@ def handle_trading_command(command_str):
         else:
             msg = cmd_price()
 
-    if string_contains_any(command_str, ['vol', 'völ']):
+    if string_contains_any(command_str, ['vol', 'völ', 'vil']):
         msg = cmd_volume()
 
     if string_contains_any(command_str, ['zj']):
@@ -514,13 +517,13 @@ def handle_trading_command(command_str):
     if string_contains_any(command_str, ['rank']):
         msg = cmd_rank()
 
-    if string_contains_any(command_str, ['bitcoin price', 'btc price', 'btc']):
+    if string_contains_any(command_str, ['bitcoin price', 'btc price', 'bitcoin', 'btc']):
         msg = cmd_bitcoinprice()
 
-    if string_contains_any(command_str, ['ethereum price', 'eth price', 'eth']):
+    if string_contains_any(command_str, ['ethereum price', 'eth price', 'ethereum', 'eth']):
         msg = cmd_ethereumprice()
 
-    if string_contains_any(command_str, ['convert', 'concert', 'conver']):
+    if string_contains_any(command_str, ['convert', 'concert', 'conver', 'covert']):
         msg = cmd_convert(command_str)
 
     if string_contains_any(command_str, ['hug']):
