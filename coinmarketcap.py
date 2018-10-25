@@ -86,12 +86,22 @@ class CoinMarketCapAPI():
                 raise TimeoutError("api is down - got 404 page")
             else:
             	raise TimeoutError("api sent bad data ({})".format(repr(response)))
-            
-        self.price_usd = data['data']['quotes']['USD']['price']
-        self.volume_usd = data['data']['quotes']['USD']['volume_24h']
-        self.change_24h = data['data']['quotes']['USD']['percent_change_24h'] / 100.0
 
-        if self.currency_symbol == 'ETH':
+        # CMC-only attributes; TODO: use market_cap in !market or something
+        self.rank = int(data['data']['rank'])
+        self.market_cap = float(data['data']['quotes']['USD']['market_cap'])
+
+        self.price_usd = float(data['data']['quotes']['USD']['price'])
+
+        # hack: only pull volume data for ETH and BTC, since they are usually
+        # used as reference currencies only. The volume is ignored for other
+        # currencies, since volume in this bot is defined as a per-exchange
+        # volume, not an aggregate like CMC's api.
+        if self.currency_symbol == "ETH" or self.currency_symbol == "BTC":
+            self.volume_usd = float(data['data']['quotes']['USD']['volume_24h'])
+            self.change_24h = float(data['data']['quotes']['USD']['percent_change_24h']) / 100.0
+
+        if self.currency_symbol == "ETH":
             self.price_eth = 1
             self.eth_price_usd = self.price_usd
         
