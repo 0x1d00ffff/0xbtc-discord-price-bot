@@ -22,8 +22,6 @@ Todo:
    - !marketcap
    - !rank (to show cmc ranking)
    - !binance (to show current listing price in usd)
-   - !private island (would be nice to store value with spaces and search for
-     any matches that use underscores instead of spaces, or no spaces)
  - Need a new 'Pairing' class to handle pairings in a more generic way. This
    will allow easier integration of BTC pairings (ie mercatox)
  - volume_eth and volume_usd are not strictly defined - sometimes it means total

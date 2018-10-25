@@ -3,6 +3,11 @@
 0xBitcoin Discord Price Bot
 """
 
+import sys
+
+assert sys.version_info >= (3,6), "requires python > 3.5"
+
+
 import time
 import socket
 import websocket
@@ -22,82 +27,18 @@ from mercatox import MercatoxAPI
 from idex import IDEXAPI
 from multi_api_manager import MultiApiManager
 
+from configuration import BLACKLISTED_CHANNEL_IDS as _BLACKLISTED_CHANNEL_IDS
+from configuration import EXPENSIVE_STUFF as _EXPENSIVE_STUFF
+
 _PROGRAM_NAME = "0xbtc-price-bot"
-_VERSION = "0.1.2"
+_VERSION = "0.1.3"
+
+# todo: move to configuration.py
 _UPDATE_RATE = 120  # how often to update all APIs (in seconds)
 _CURRENCY = '0xBTC'
 _COMMAND_CHARACTER = '!'  # what character should prepend all commands
 
 _CLI_MODE = False  # if true, do not connect to discotd, instead start a CLI to test commands
-
-_BLACKLISTED_CHANNEL_IDS = [
-    # 0xbitcoin server
-    '454156227446964226',  # announcements
-    '417834372864147456',  # articles
-    '413927301932253185',  # useful-links
-    '412477591778492429',  # 0xbitcoin
-    #'412483801265078273',  # trading (allowed)
-    '429103257026297866',  # marketing
-    '419929514316136473',  # miner-dev
-    '414664710210846722',  # development
-    '412483768541249536',  # support
-    '438693168393748500',  # mining
-    '435893447958986752',  # pools
-    '439217061475123200',  # memes
-    '421306695940046852',  # off-topic
-    '418282243186753537',  # alts-trading
-
-]
-
-_EXPENSIVE_STUFF = [
-    (400000,
-     ['lambo']),
-    (200000,
-     ['used lambo']),
-    (500000,
-     ['private island', 'privare island', 'pirvate island']),
-    (398.8*1000*1000,
-     ['whitehouse', 'white house']),
-    (1.225*1000*1000*1000,
-     ['buckingham palace']),
-    (3.9*1000*1000*1000,
-     ['air force one']),
-    (101500, 
-     ['tesla', 'telsa']),
-    (1700,
-     ['used ford taurus', 'used taurus', 'old ford taurus', 'old taurus']),
-    (17600,
-     ['like new ford taurus', 'like new taurus']),
-    (28400,
-     ['new ford taurus', 'ford taurus', 'new taurus', 'taurus']),
-    (12,
-     ['avocado toast',
-      'avocado on toast', 
-      'avacado toast', 
-      'avacado on toast', 
-      'avocato toast', 
-      'avocato on toast',
-      'avovado toast',
-      'avo toast']),
-    (1,
-     ['oneaire']),
-    (10,
-     ['tennaire', 'tenaire']),
-    (100,
-     ['hundredaire', 'hundradiere']),
-    (1e3,
-     ['thousandaire']),
-    (1e6,
-     ['millionaire']),
-    (1e9,
-     ['billionaire']),
-    (1e12,
-     ['trillionaire']),
-    (650,
-     ['magnum domperignon', 'domperignon', 'champagne', 'donperignon']),
-    (200,
-     ['microsoft windows license', 'microsoft windows', 'windows']),
-]
 
 
 CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
@@ -368,7 +309,7 @@ def convert(amount, src, dest):
         usd_value = apis.btc_price_usd() * amount / 10**8
     elif src in ['mbtc', 'millibtc', 'millibitcoins', 'millibitcoin']:
         usd_value = apis.btc_price_usd() * amount / 1000.0
-    elif src in ['usd', 'dollars', 'dollar', 'bucks', 'buck']:
+    elif src in ['usd', 'dollars', 'dollar', 'ddollar', 'bucks', 'buck']:
         usd_value = amount
     elif src in ['cents', 'cent']:
         usd_value = amount / 100.0
@@ -389,7 +330,7 @@ def convert(amount, src, dest):
         result = 10**8 * usd_value / apis.btc_price_usd()
     elif dest in ['mbtc', 'millibtc', 'millibitcoins', 'millibitcoin']:
         result = usd_value * 1000.0 / apis.btc_price_usd()
-    elif dest in ['usd', 'dollars', 'dollar', 'bucks', 'buck']:
+    elif dest in ['usd', 'dollars', 'dollar', 'ddollar', 'bucks', 'buck']:
         result = usd_value
     elif dest in ['cents', 'cent']:
         result = usd_value * 100.0
@@ -660,7 +601,43 @@ def setup_logging(path):
     # make discord be quiet
     logging.getLogger('discord').setLevel(logging.WARNING)
 
-    logging.info('Logging to {}...'.format(path))
+    logging.info('Logging debug info to {}...'.format(path))
+
+
+def manual_api_update():
+    logging.info('updating apis...')
+    try:
+        apis.update()
+    except Exception as e:
+        logging.exception('failed to update prices')
+
+def command_test():
+
+    # todo: start background_update instead?
+    manual_api_update()
+
+    while True:
+        cmd = input('command: ')
+        if cmd == "quit" or cmd == "exit":
+            return
+        if cmd == "update" or cmd == "api":
+            manual_api_update()
+            continue
+        try:
+            response = handle_global_command(cmd)
+            logging.info('Global response:')
+            if response != None:
+                for line in response.split('\n'):
+                    logging.info(' ' + line)
+            response = handle_trading_command(cmd)
+            logging.info('Trading response:')
+            if response != None:
+                for line in response.split('\n'):
+                    logging.info(' ' + line)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            logging.exception('Got exception from command handler')
 
 
 # todo: encapsulate these
@@ -671,10 +648,13 @@ settings = {}
 def main():
     global client, apis, settings
     import argparse
-    parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot',
+    parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot v{}'.format(_VERSION),
                                      epilog='<3 0x1d00ffff')
     parser.add_argument('--show_channels', action='store_true', default=False,
                         help='Show all visible channels/permissions during init')
+    parser.add_argument('--command_test', action='store_true', default=False,
+                        help=("If set, don't connect to Discord - instead"
+                              "run a CLI interface to allow command tests."))
     parser.add_argument('--log_location', default='debug.log',
                         help='Set the location of the debug log file')
     parser.add_argument('--version', action='version', 
@@ -683,9 +663,6 @@ def main():
 
     settings['show_channels'] = args.show_channels
     setup_logging(args.log_location)
-
-    client = discord.Client()
-    configure_client()
 
     apis = MultiApiManager(
     [
@@ -696,6 +673,13 @@ def main():
         IDEXAPI(_CURRENCY),
         MercatoxAPI(_CURRENCY),
     ])
+
+    if args.command_test:
+        command_test()
+        return
+
+    client = discord.Client()
+    configure_client()
 
     while True:
         try:
