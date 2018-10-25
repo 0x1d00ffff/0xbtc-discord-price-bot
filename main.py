@@ -274,6 +274,24 @@ def cmd_ratio():
 
     return "1 BTC : {:,.0f} 0xBTC".format(apis.btc_price_usd() / token_price_usd)
 
+
+def cmd_rank():
+    api_name = "Coin Market Cap"
+    api_url = apis.short_url(api_name=api_name)
+
+    if apis.last_updated_time() == 0:
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(api_url)
+
+    rank = apis.rank(currency_symbol=config.CURRENCY,
+                     api_name=api_name)
+
+    if rank is None:
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(api_url)
+
+    return "Rank: **{}** on {} [<{}>]".format(rank,
+                                              api_name,
+                                              api_url)
+
 """Convert from source currency to dest currency. _amount_ indicates total
 amount of source currency. Example:
 >>> convert(100, 'cents', 'usd')
@@ -489,6 +507,9 @@ def handle_trading_command(command_str):
     if string_contains_any(command_str, ['ratio']):
         msg = cmd_ratio()
 
+    if string_contains_any(command_str, ['rank']):
+        msg = cmd_rank()
+
     if string_contains_any(command_str, ['bitcoin price', 'btc price', 'btc']):
         msg = cmd_bitcoinprice()
 
@@ -679,6 +700,7 @@ def main():
 
     apis = MultiApiManager(
     [
+        CoinMarketCapAPI('0xBTC'),
         CoinMarketCapAPI('ETH'),
         CoinMarketCapAPI('BTC'),
         EnclavesAPI(config.CURRENCY),

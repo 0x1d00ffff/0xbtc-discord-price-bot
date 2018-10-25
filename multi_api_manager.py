@@ -121,6 +121,18 @@ class MultiApiManager():
                 result.add(a.change_24h, a.volume_eth)
         return result.average()
 
+    def rank(self, currency_symbol='0xBTC', api_name='aggregate'):
+        result = None
+        for a in self.alive_apis:
+            if a.currency_symbol != currency_symbol:
+                continue
+            if api_name == 'aggregate' or a.api_name == api_name:
+                try:
+                    result = a.rank
+                except AttributeError:
+                    pass
+        return result
+
     def eth_price_usd(self, api_name='aggregate'):
         result = WeightedAverage()
         for a in self.alive_apis:
