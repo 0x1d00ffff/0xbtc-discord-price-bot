@@ -27,19 +27,10 @@ from mercatox import MercatoxAPI
 from idex import IDEXAPI
 from multi_api_manager import MultiApiManager
 
-from configuration import BLACKLISTED_CHANNEL_IDS as _BLACKLISTED_CHANNEL_IDS
-from configuration import EXPENSIVE_STUFF as _EXPENSIVE_STUFF
+import configuration as config
 
 _PROGRAM_NAME = "0xbtc-price-bot"
 _VERSION = "0.1.3"
-
-# todo: move to configuration.py
-_UPDATE_RATE = 120  # how often to update all APIs (in seconds)
-_CURRENCY = '0xBTC'
-_COMMAND_CHARACTER = '!'  # what character should prepend all commands
-
-_CLI_MODE = False  # if true, do not connect to discotd, instead start a CLI to test commands
-
 
 CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
 # commands that work in all channels (ignores the blacklist)
@@ -94,13 +85,13 @@ def string_contains_command(input_string, command, exhaustive_search=False, perm
     if exhaustive_search:
         for possible_command in possible_commands:
             if require_cmd_char:
-                possible_command = _COMMAND_CHARACTER+possible_command
+                possible_command = config.COMMAND_CHARACTER+possible_command
             if possible_command in input_string:
                 return True
     else:
         for possible_command in possible_commands:
             if require_cmd_char:
-                possible_command = _COMMAND_CHARACTER+possible_command
+                possible_command = config.COMMAND_CHARACTER+possible_command
             if input_string.startswith(possible_command):
                 return True
 
@@ -178,7 +169,7 @@ def cmd_compare_price_vs(item_name="lambo", item_price=200000):
     if apis.last_updated_time() == 0:
         return ":shrug:"
 
-    token_price_usd = apis.price_eth(_CURRENCY) * apis.eth_price_usd()
+    token_price_usd = apis.price_eth(config.CURRENCY) * apis.eth_price_usd()
 
     if token_price_usd == 0:
         return ":shrug:"
@@ -192,22 +183,22 @@ def cmd_price(source='aggregate'):
     if apis.last_updated_time(api_name=source) == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url(api_name=source))
     
-    token_price = apis.price_eth(_CURRENCY, api_name=source) * apis.eth_price_usd()
+    token_price = apis.price_eth(config.CURRENCY, api_name=source) * apis.eth_price_usd()
     eth_price = float(apis.eth_price_usd(api_name=source))
 
     percent_change_str = ""
 
-    if apis.change_24h(_CURRENCY, api_name=source) == None:
+    if apis.change_24h(config.CURRENCY, api_name=source) == None:
         percent_change_str = ""
     else:
-        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.change_24h(_CURRENCY, api_name=source),
-                                                       percent_change_to_emoji(apis.change_24h(_CURRENCY, api_name=source)),)
+        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.change_24h(config.CURRENCY, api_name=source),
+                                                       percent_change_to_emoji(apis.change_24h(config.CURRENCY, api_name=source)),)
 
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
     result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
                             seconds_to_readable_time(time.time()-apis.last_updated_time(api_name=source)),
                             '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
-                            apis.price_eth(_CURRENCY, api_name=source), 
+                            apis.price_eth(config.CURRENCY, api_name=source), 
                             percent_change_str,
                             '' if eth_price == 0 else '(ETH: **${:.0f}**) '.format(eth_price), 
                             apis.short_url(api_name=source))
@@ -248,8 +239,8 @@ def cmd_volume():
 
     #for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX', 'Hotbit']:
     for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX']:
-        volume_eth = apis.volume_eth(_CURRENCY, api_name=source)
-        volume_btc = apis.volume_btc(_CURRENCY, api_name=source)
+        volume_eth = apis.volume_eth(config.CURRENCY, api_name=source)
+        volume_btc = apis.volume_btc(config.CURRENCY, api_name=source)
         total_eth_volume += volume_eth
         total_btc_volume += volume_btc
         if apis.eth_price_usd() == 0:
@@ -276,7 +267,7 @@ def cmd_ratio():
     if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
 
-    token_price_usd = apis.price_eth(_CURRENCY) * apis.eth_price_usd()
+    token_price_usd = apis.price_eth(config.CURRENCY) * apis.eth_price_usd()
 
     if token_price_usd == 0:
         return ":shrug:"
@@ -293,10 +284,14 @@ def convert(amount, src, dest):
     dest = dest.lower()
     amount = float(amount)
 
-    token_price_usd = apis.price_eth(_CURRENCY) * apis.eth_price_usd()
+    usd_value, result = None, None
+
+    token_price_usd = apis.price_eth(config.CURRENCY) * apis.eth_price_usd()
 
     if src in ['0xbtc', '0xbitcoins', '0xbitcoin']:
         usd_value = token_price_usd * amount
+    elif src in ['m0xbtc', 'milli0xbtc', 'milli0xbitcoin', 'milli0xbitcoins']:
+        usd_value = token_price_usd * amount / 1000.0
     elif src in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti', 'crumbs', 'crumb']:
         usd_value = token_price_usd * amount / 10**8
     elif src in ['eth', 'ethereum']:
@@ -305,19 +300,28 @@ def convert(amount, src, dest):
         usd_value = apis.eth_price_usd() * amount / 10**18
     elif src in ['btc', 'bitcoins', 'bitcoin']:
         usd_value = apis.btc_price_usd() * amount
-    elif src in ['satoshis', 'satoshi']:
-        usd_value = apis.btc_price_usd() * amount / 10**8
     elif src in ['mbtc', 'millibtc', 'millibitcoins', 'millibitcoin']:
         usd_value = apis.btc_price_usd() * amount / 1000.0
+    elif src in ['satoshis', 'satoshi']:
+        usd_value = apis.btc_price_usd() * amount / 10**8
     elif src in ['usd', 'dollars', 'dollar', 'ddollar', 'bucks', 'buck']:
         usd_value = amount
     elif src in ['cents', 'cent']:
         usd_value = amount / 100.0
     else:
+        for price, names in config.EXPENSIVE_STUFF:
+            if string_contains_any(src, names, exhaustive_search=True, require_cmd_char=False):
+                src = names[0]  # replace name with the non-typo'd version
+                usd_value = amount * price
+                break
+
+    if usd_value == None:
         return "Bad currency ({}). 0xbtc, 0xsatoshis, eth, wei, btc, mbtc, satoshis, and usd are supported.".format(src)
 
     if dest in ['0xbtc', '0xbitcoins', '0xbitcoin']:
         result = usd_value / token_price_usd
+    elif dest in ['m0xbtc', 'milli0xbtc', 'milli0xbitcoin', 'milli0xbitcoins']:
+        result = 1000.0 * usd_value / token_price_usd
     elif dest in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti', 'crumbs', 'crumb']:
         result = 10**8 * usd_value / token_price_usd
     elif dest in ['eth', 'ethereum']:
@@ -326,15 +330,24 @@ def convert(amount, src, dest):
         result = 10**18 * usd_value / apis.eth_price_usd()
     elif dest in ['btc', 'bitcoins', 'bitcoin']:
         result = usd_value / apis.btc_price_usd()
-    elif dest in ['satoshis', 'satoshi']:
-        result = 10**8 * usd_value / apis.btc_price_usd()
     elif dest in ['mbtc', 'millibtc', 'millibitcoins', 'millibitcoin']:
         result = usd_value * 1000.0 / apis.btc_price_usd()
+    elif dest in ['satoshis', 'satoshi']:
+        result = 10**8 * usd_value / apis.btc_price_usd()
     elif dest in ['usd', 'dollars', 'dollar', 'ddollar', 'bucks', 'buck']:
         result = usd_value
     elif dest in ['cents', 'cent']:
         result = usd_value * 100.0
     else:
+        for price, names in config.EXPENSIVE_STUFF:
+            #logging.info('dest:{}'.format(dest))
+            #logging.info('names[0]:{}'.format(names[0]))
+            if string_contains_any(dest, names, exhaustive_search=True, require_cmd_char=False):
+                dest = names[0]  # replace name with the non-typo'd version
+                result = usd_value / price
+                break
+
+    if result == None:
         return "Bad currency ({}). 0xbtc, 0xsatoshis, eth, wei, btc, mbtc, satoshis, and usd are supported.".format(dest)
 
     amount = prettify_decimals(amount)
@@ -390,19 +403,19 @@ async def background_update():
 
         try:
             # price in usd is conditional - only show it if eth price is not 0 (an error)
-            price_usd = apis.price_eth(_CURRENCY) * apis.eth_price_usd()
+            price_usd = apis.price_eth(config.CURRENCY) * apis.eth_price_usd()
             usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
 
             # wait until at least one successful update to show status
             if apis.last_updated_time() != 0:
                 fmt_str = "{}{:.5f} Ξ ({})"
                 await update_status(client, fmt_str.format(usd_str,
-                                                           apis.price_eth(_CURRENCY),
+                                                           apis.price_eth(config.CURRENCY),
                                                            seconds_to_readable_time(time.time()-apis.last_updated_time())))
         except:
             logging.exception('failed to change status')
 
-        await asyncio.sleep(_UPDATE_RATE)
+        await asyncio.sleep(config.UPDATE_RATE)
 
     # this throws an exception which causes the program to restart
     # in normal operation we should never reach this
@@ -454,7 +467,7 @@ def handle_trading_command(command_str):
             msg = ""
             for api in sorted(apis.alive_apis, key=lambda a: a.api_name):
                 # this skips apis not directly tracking 0xbtc
-                if api.currency_symbol != _CURRENCY:
+                if api.currency_symbol != config.CURRENCY:
                     continue
                 single_line = cmd_price(source=api.api_name)
                 # TODO: remove this when 'alive_apis' excludes apis correctly
@@ -491,7 +504,7 @@ def handle_trading_command(command_str):
     if string_contains_any(command_str, ['hi', 'hey bot']):
         msg = "Sup :sunglasses:"
 
-    for price, names in _EXPENSIVE_STUFF:
+    for price, names in config.EXPENSIVE_STUFF:
         if string_contains_any(command_str, names, exhaustive_search=True):
             correct_name = names[0]
             msg = cmd_compare_price_vs(correct_name, price)
@@ -524,20 +537,20 @@ def configure_client():
         message_contents = message.content.lower().strip()
 
         # allow '! command' since some platforms autocorrect to add a space
-        if message_contents.startswith(_COMMAND_CHARACTER + ' '):
-            message_contents = _COMMAND_CHARACTER + message_contents[2:]
+        if message_contents.startswith(config.COMMAND_CHARACTER + ' '):
+            message_contents = config.COMMAND_CHARACTER + message_contents[2:]
 
         # allow '!!command', its a common typo
-        if message_contents.startswith(_COMMAND_CHARACTER+_COMMAND_CHARACTER):
-            message_contents = _COMMAND_CHARACTER + message_contents[2:]
+        if message_contents.startswith(config.COMMAND_CHARACTER+config.COMMAND_CHARACTER):
+            message_contents = config.COMMAND_CHARACTER + message_contents[2:]
 
         # allow unicode ! (replace with ascii version)
-        if _COMMAND_CHARACTER == '!':
+        if config.COMMAND_CHARACTER == '!':
             if message_contents.startswith('！'):
                 message_contents = '!' + message_contents[1:]
 
         # trading commands are ignored in blacklisted channels
-        if message.channel.id not in _BLACKLISTED_CHANNEL_IDS:
+        if message.channel.id not in config.BLACKLISTED_CHANNEL_IDS:
             response = handle_trading_command(message_contents)
             if response:
                 await send_discord_msg(message.channel, response);
@@ -548,8 +561,8 @@ def configure_client():
             await send_discord_msg(message.channel, response);
             return
 
-        # If command starts with _COMMAND_CHARACTER and we have not returned yet, it was unrecognized.
-        if message_contents.startswith(_COMMAND_CHARACTER):
+        # If command starts with config.COMMAND_CHARACTER and we have not returned yet, it was unrecognized.
+        if message_contents.startswith(config.COMMAND_CHARACTER):
             logging.info('UNKNOWN cmd {}'.format(repr(message_contents)))
 
     @client.event
@@ -668,10 +681,10 @@ def main():
     [
         CoinMarketCapAPI('ETH'),
         CoinMarketCapAPI('BTC'),
-        EnclavesAPI(_CURRENCY),
-        ForkDeltaAPI(_CURRENCY),
-        IDEXAPI(_CURRENCY),
-        MercatoxAPI(_CURRENCY),
+        EnclavesAPI(config.CURRENCY),
+        ForkDeltaAPI(config.CURRENCY),
+        IDEXAPI(config.CURRENCY),
+        MercatoxAPI(config.CURRENCY),
     ])
 
     if args.command_test:
