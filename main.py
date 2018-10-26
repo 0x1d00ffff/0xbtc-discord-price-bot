@@ -132,45 +132,82 @@ def percent_change_to_emoji(percent_change):
     return values[-1:][0][1]
 
 
+
+def round_to_n_decimals(x, n=1):
+    from math import log10, floor
+    assert n >= 1
+    return round(x, -int(floor(log10(abs(x))))+n-1)
+
 def prettify_decimals(number):
+
     if number == 0:
         return "0"
-    if number < 0.000000000001:
-        return "{:.2E}".format(number)
-    if number < 0.00000001:
-        return "{:.12f}".format(number)
-    if number < 0.00001:
-        return "{:.8f}".format(number)
-    elif number < 0.001:
-        return "{:.5f}".format(number)
-    elif number < 1.0:
-        return "{:.3f}".format(number)
-    elif number < 1000.0:
+    if number < 1e-12:
+        rounded = round_to_n_decimals(number, 3)
+        return "{:.2e}".format(rounded)
+    if number < 1.0:
+        rounded = round_to_n_decimals(number, 3)
+        return "{:.14f}".format(rounded).rstrip("0")
+    if number < 10.0:
+        rounded = round_to_n_decimals(number, 4)
+        return "{:.3f}".format(rounded)
+    if number < 10000.0:
         return "{:.2f}".format(number)
-    elif number < 10000.0:
-        return "{:,.1f}".format(number)
+    if number < 1e9:
+        return "{:,.0f}".format(number)
+    if number < 1e15:
+        return to_readable_thousands(number, long_units=True)
 
-    return "{:,.0f}".format(number)
+    return "{:.2e}".format(number).replace("+", "")
 
-def to_readable_thousands(value):
-    units = ['', 'k', 'm', 'b'];
+def to_readable_thousands(value, long_units=False):
+    if long_units:
+        units = ['', ' thousand', ' million', ' billion', ' trillion']
+    else:
+        units = ['', 'k', 'm', 'b', 't']
 
     for unit in units:
         if value < 1000:
             return "{:.1f}{}".format(value, unit)
         value /= 1000
 
-    return "{:.1f}{}".format(value, 't')
+    return "{:.1f}{}".format(value*1000, units[-1])
 
-def seconds_to_readable_time(seconds):
+def seconds_to_n_time_ago(seconds):
     if seconds < 60:
         return 'now'
 
-    minutes = seconds / 60;
+    minutes = seconds / 60
     if minutes < 60:
         return "{:.0f}m ago".format(minutes)
 
     return "{:.0f}h ago".format(minutes / 60)
+
+
+
+
+
+def seconds_to_time(seconds, granularity=2):
+    result = []
+    intervals = (
+        ('years',   60*60*24*7*4.34524*12),
+        ('months',  60*60*24*7*4.34524),
+        ('weeks',   60*60*24*7),
+        ('days',    60*60*24),
+        ('hours',   60*60),
+        ('minutes', 60),
+        ('seconds', 1),
+    )
+
+    for name, multiplier in intervals:
+        value = seconds // multiplier
+        if value > 0:
+            seconds -= value * multiplier
+            if value == 1:
+                name = name.rstrip('s')
+            result.append("{:.0f} {}".format(value, name))
+    return ', '.join(result[:granularity])
+
 
 def cmd_compare_price_vs(item_name="lambo", item_price=200000):
     if apis.last_updated_time() == 0:
@@ -203,7 +240,7 @@ def cmd_price(source='aggregate'):
 
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
     result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
-                            seconds_to_readable_time(time.time()-apis.last_updated_time(api_name=source)),
+                            seconds_to_n_time_ago(time.time()-apis.last_updated_time(api_name=source)),
                             '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
                             apis.price_eth(config.CURRENCY, api_name=source), 
                             percent_change_str,
@@ -220,7 +257,7 @@ def cmd_bitcoinprice():
         return ":shrug:"
 
     fmt_str = "{}: **${:.0f}**"
-    result = fmt_str.format(seconds_to_readable_time(time.time()-apis.last_updated_time()), apis.btc_price_usd())
+    result = fmt_str.format(seconds_to_n_time_ago(time.time()-apis.last_updated_time()), apis.btc_price_usd())
     return result
 
 
@@ -232,7 +269,7 @@ def cmd_ethereumprice():
         return ":shrug:"
 
     fmt_str = "{}: **${:.0f}**"
-    result = fmt_str.format(seconds_to_readable_time(time.time()-apis.last_updated_time()), apis.eth_price_usd())
+    result = fmt_str.format(seconds_to_n_time_ago(time.time()-apis.last_updated_time()), apis.eth_price_usd())
     return result
 
 
@@ -436,7 +473,7 @@ async def background_update():
                 fmt_str = "{}{:.5f} Ξ ({})"
                 await update_status(client, fmt_str.format(usd_str,
                                                            apis.price_eth(config.CURRENCY),
-                                                           seconds_to_readable_time(time.time()-apis.last_updated_time())))
+                                                           seconds_to_n_time_ago(time.time()-apis.last_updated_time())))
         except:
             logging.exception('failed to change status')
 
@@ -491,8 +528,8 @@ def handle_trading_command(command_str):
                 'prices'], exhaustive_search=True, require_cmd_char=False):
             msg = ""
             for api in sorted(apis.alive_apis, key=lambda a: a.api_name):
-                # this skips apis not directly tracking 0xbtc
-                if api.currency_symbol != config.CURRENCY:
+                # this skips CMC and apis not directly tracking 0xbtc
+                if api.currency_symbol != config.CURRENCY or api.api_name == "Coin Market Cap":
                     continue
                 single_line = cmd_price(source=api.api_name)
                 # TODO: remove this when 'alive_apis' excludes apis correctly
@@ -531,6 +568,9 @@ def handle_trading_command(command_str):
 
     if string_contains_any(command_str, ['hi', 'hey bot']):
         msg = "Sup :sunglasses:"
+
+    if string_contains_any(command_str, ['uptime']):
+        msg = "Uptime: {}".format(seconds_to_time(time.time() - start_time))
 
     for price, names in config.EXPENSIVE_STUFF:
         if string_contains_any(command_str, names, exhaustive_search=True):
@@ -581,12 +621,12 @@ def configure_client():
         if message.channel.id not in config.BLACKLISTED_CHANNEL_IDS:
             response = handle_trading_command(message_contents)
             if response:
-                await send_discord_msg(message.channel, response);
+                await send_discord_msg(message.channel, response)
                 return
 
         response = handle_global_command(message_contents)
         if response:
-            await send_discord_msg(message.channel, response);
+            await send_discord_msg(message.channel, response)
             return
 
         # If command starts with config.COMMAND_CHARACTER and we have not returned yet, it was unrecognized.
@@ -669,12 +709,12 @@ def command_test():
             logging.info('Global response:')
             if response != None:
                 for line in response.split('\n'):
-                    logging.info(' ' + line)
+                    logging.info('>' + line)
             response = handle_trading_command(cmd)
             logging.info('Trading response:')
             if response != None:
                 for line in response.split('\n'):
-                    logging.info(' ' + line)
+                    logging.info('>' + line)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
@@ -684,10 +724,11 @@ def command_test():
 # todo: encapsulate these
 client = None
 apis = None
+start_time = None
 settings = {}
 
 def main():
-    global client, apis, settings
+    global client, apis, start_time, settings
     import argparse
     parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot v{}'.format(_VERSION),
                                      epilog='<3 0x1d00ffff')
@@ -696,11 +737,20 @@ def main():
     parser.add_argument('--command_test', action='store_true', default=False,
                         help=("If set, don't connect to Discord - instead"
                               "run a CLI interface to allow command tests."))
+    parser.add_argument('--self_test', action='store_true', default=False,
+                        help=("Run unittests"))
     parser.add_argument('--log_location', default='debug.log',
                         help='Set the location of the debug log file')
     parser.add_argument('--version', action='version', 
                         version='%(prog)s v{}'.format(_VERSION))
     args = parser.parse_args()
+
+    start_time = time.time()
+
+    if args.self_test:
+        import all_self_tests
+        all_self_tests.run_all()
+        return
 
     settings['show_channels'] = args.show_channels
     setup_logging(args.log_location)
