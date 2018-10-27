@@ -6,11 +6,18 @@ Installation:
  - Install python 3
  - `pip3 install websocket discord`
  - `python3 main.py`
+ - `pip3 install web3` - should work with 4.7.2 and above
+   Note for Windows Users:
+   - The above command failed for me with error:
+   `error: command 'C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\BIN\\link.exe' failed with exit status 1158`
+   - The fix: Copy rc.exe and rcdll.dll from `C:\Program Files (x86)\Windows Kits\8.1\bin\x86` to `C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin`
+
 
 Requires:
  - python3
  - websocket
  - discord
+ - web3.py
 
 Todo:
  - generalize the command interface
@@ -18,11 +25,7 @@ Todo:
    to explicitly check for this.
  - typos/new commands
    - !pools
-   - !marketcap
    - !binance (to show current listing price in usd)
-   - !diff
-   - !hashrate
-   - !retarget
  - Need a new 'Pairing' class to handle pairings in a more generic way. This
    will allow easier integration of BTC pairings (ie mercatox)
  - volume_eth and volume_usd are not strictly defined - sometimes it means total
