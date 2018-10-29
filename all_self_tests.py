@@ -17,6 +17,7 @@ class TestDecimalFormatting(unittest.TestCase):
     def test_prettify_decimals(self):
         self.assertEqual(prettify_decimals(0),   '0')
         self.assertEqual(prettify_decimals(0.0032),           '0.0032')
+        self.assertEqual(prettify_decimals(0.00160),          '0.0016')
 
         self.assertEqual(prettify_decimals(0.00000000000000123456), '1.23e-15')
         self.assertEqual(prettify_decimals(0.0000000000000123456),  '1.23e-14')

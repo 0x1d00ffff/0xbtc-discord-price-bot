@@ -1,6 +1,8 @@
 """
-API for LiveCoinWatch (livecoinwatch.com)
-# TODO: add multiple exchange support.. currently assumes only one (forkdelta)
+API for ForkDelta
+
+TODO: replace with real API instead of relying on livecoinwatch
+
 data = 
 {'data': [
   {

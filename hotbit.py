@@ -1,6 +1,8 @@
 """
 API for HotBit (https://hotbit.io)
 
+TODO: replace with real API instead of relying on livecoinwatch
+
 data = 
 {'data': [
   {

@@ -10,6 +10,8 @@ class WeightedAverage():
             weight = 0
         self.values.append((value, weight))
     def average(self):
+        if len(self.values) == 0:
+            return 0
         if self.sum_of_weight == 0:
             return 0
         return sum(v[0] * v[1] for v in self.values) / self.sum_of_weight

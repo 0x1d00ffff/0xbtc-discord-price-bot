@@ -22,6 +22,8 @@ try:
 except:
     from urllib import urlopen
 
+from urllib.error import URLError
+
 
 def wei_to_ether(amount_in_wei):
     return int(amount_in_wei) / 1000000000000000000.0
@@ -99,12 +101,12 @@ class EnclavesAPI():
     def update(self, timeout=10.0):
         try:
             self._update(timeout=timeout)
+        # todo: may not need to check for URLError when using websockets
         except (websocket._exceptions.WebSocketTimeoutException,
                 websocket._exceptions.WebSocketBadStatusException,
                 websocket._exceptions.WebSocketAddressException,
-                socket.gaierror):
-            logging.warning('api timeout {}'.format(self.api_name))
-        except websocket._exceptions.WebSocketBadStatusException:
+                socket.gaierror,
+                URLError) as e:
             logging.warning('api timeout {}'.format(self.api_name))
         else:
             self.last_updated_time = time.time()

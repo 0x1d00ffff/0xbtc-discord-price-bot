@@ -1,42 +1,27 @@
 """
-API for Mercatox (mercatox.com)
-# TODO: add multiple exchange support.. currently assumes only one (forkdelta)
+API for Ethex (ethex.market)
+
+https://api.ethex.market:5055/ticker24
+
 data = 
-{'24volume': '411695.9617',
- 'pairs': {'ADST_BTC': {'baseVolume': '4.8000',
-                        'high24hr': '0.00001571',
-                        'highestBid': '0.00001570',
-                        'id': '115',
-                        'isFrozen': '0',
-                        'last': '0.00001571',
-                        'low24hr': '0.00001571',
-                        'lowestAsk': '0.00007998',
-                        'percentChange': '0.00000000',
-                        'quoteVolume': '0.0001'},
-           'ETH_BTC': {'baseVolume': '1203.4878',
-                       'high24hr': '0.08528997',
-                       'highestBid': '0.07901667',
-                       'id': '19',
-                       'isFrozen': '0',
-                       'last': '0.07901667',
-                       'low24hr': '0.07700007',
-                       'lowestAsk': '0.08080000',
-                       'percentChange': '-6.49730000',
-                       'quoteVolume': '99.5457'},
-           'ETH_LTC': {'baseVolume': '69.8462',
-                       'high24hr': '5.36530692',
-                       'highestBid': '5.02000005',
-                       'id': '27',
-                       'isFrozen': '0',
-                       'last': '5.17790647',
-                       'low24hr': '5.02000005',
-                       'lowestAsk': '5.29000000',
-                       'percentChange': '-1.29100000',
-                       'quoteVolume': '365.4700'},
-
+{
+  "ETH_BAT": {
+    "last": null,
+    "lowestAsk": "0.00131868",
+    "highestBid": "0.001014",
+    "volume": "0",
+    "high24hr": null,
+    "low24hr": null
+  },
+  "ETH_DAI": {
+    "last": null,
+    "lowestAsk": "0.00494096",
+    "highestBid": "0.004627456",
+    "volume": "0",
+    "high24hr": null,
+    "low24hr": null
+  },
                        ...
-
-
 """
 import time
 import logging
@@ -55,15 +40,13 @@ import pprint
 from weighted_average import WeightedAverage
 
 
-class IDEXAPI():
+class EthexAPI():
     def __init__(self, currency_symbol="0xBTC"):
-        self._SERVER_URL = "https://api.idex.market"
+        self._SERVER_URL = "https://api.ethex.market:5055"
         self.currency_symbol = currency_symbol
-        self.api_name = "IDEX"
-        self.command_names = ['idex', 'idx']
-        self.short_url = "https://bit.ly/2stRdvt"
+        self.api_name = "Ethex"
+        self.short_url = "https://bit.ly/2SrmIl6"
         self.last_updated_time = 0
-
         self.price_eth = None
         self.price_usd = None
         self.price_btc = None
@@ -75,7 +58,7 @@ class IDEXAPI():
         self.btc_price_usd = None
 
     def _update(self, timeout=10.0):
-        method = "/returnTicker"
+        method = "/ticker24"
 
         req = Request(
             self._SERVER_URL+method, 
@@ -84,45 +67,32 @@ class IDEXAPI():
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
             }
         )
-
         response = urlopen(req, timeout=timeout)
         response = response.read().decode("utf-8") 
         try:
             data = json.loads(response)
         except json.decoder.JSONDecodeError:
-            raise TimeoutError("api sent bad data ({})".format(repr(response)))
-
-        #pprint.pprint(data)
-
-        volume_usd = 0
+            if "be right back" in response:
+                raise TimeoutError("api is down - got 404 page")
+            else:
+            	raise TimeoutError("api sent bad data ({})".format(repr(response)))
 
         for pair_name in data:
             base_pair, currency = pair_name.split('_')
             # skip reverse-pairings
-            if currency.lower() != self.currency_symbol.lower():
+            if currency != self.currency_symbol:
                 continue
 
-            pair_info = data[pair_name]
-
-            #pprint.pprint(pair_info)
-
             if base_pair == "BTC":
-                self.price_btc = float(pair_info['last'])
-                self.volume_btc = float(pair_info['baseVolume'])
-                # TODO: this should be tracked per-base pair
-                self.change_24h = float(pair_info['percentChange']) / 100.0
-
+                self.price_btc = float(data[pair_name]['last'])
+                self.volume_btc = float(data[pair_name]['volume'])
             if base_pair == "ETH":
-                self.price_eth = float(pair_info['last'])
-                self.volume_eth = float(pair_info['baseVolume'])
-                # TODO: this should be tracked per-base pair
-                self.change_24h = float(pair_info['percentChange']) / 100.0
-
+                self.price_eth = float(data[pair_name]['last'])
+                self.volume_eth = float(data[pair_name]['volume'])
 
         if self.currency_symbol == "ETH":
             self.price_eth = 1
             self.eth_price_usd = self.price_usd
-
         if self.currency_symbol == "BTC":
             self.price_btc = 1
             self.btc_price_usd = self.price_usd
@@ -153,14 +123,10 @@ class IDEXAPI():
 
 if __name__ == "__main__":
 
-    # eth_api = IDEXAPI('ETH')
-    # eth_api.update()
-    # eth_api.print_all_values()
-
-    btc_api = IDEXAPI('OMG')
+    btc_api = EthexAPI('DAI')
     btc_api.update()
     btc_api.print_all_values()
 
-    oxbtc_api = IDEXAPI('0xBTC')
+    oxbtc_api = EthexAPI('0xBTC')
     oxbtc_api.update()
     oxbtc_api.print_all_values()

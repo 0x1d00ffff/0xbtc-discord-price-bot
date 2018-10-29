@@ -32,6 +32,9 @@ except:
     from urllib import urlencode
     from urllib import quote
 
+from urllib.error import URLError
+
+
 _SECONDS_PER_ETH_BLOCK = 15.0
 
 class MineableTokenInfo():
@@ -153,8 +156,7 @@ class MineableTokenInfo():
         return self._read_contract_variable_at_index(location, convert_to_int=convert_to_int, divisor=divisor, timeout=timeout)
 
 
-    def update(self):
-
+    def _update(self):
         self.total_supply = self._contract.functions.totalSupply().call() / self._DIVISOR
         self.last_difficulty_start_block = self._contract.functions.latestDifficultyPeriodStarted().call()
         self.mining_target = self._contract.functions.getMiningTarget().call()
@@ -185,6 +187,14 @@ class MineableTokenInfo():
         self.reward = 50 / 2**self.era
         rewards_blocks_remaining_in_era = supply_remaining_in_era / self.reward;
         self.seconds_remaining_in_era = rewards_blocks_remaining_in_era * self._IDEAL_BLOCK_TIME_SECONDS
+
+    def update(self):
+        try:
+            return self._update()
+        except (requests.exceptions.ConnectionError,
+                URLError):
+            raise RuntimeError("Could not connect to infura.io")
+
 
     def get_digest_for_nonce_str(self, nonce_as_str, address, challenge_number=None):
         if not Web3.isAddress(address):

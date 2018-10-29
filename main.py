@@ -1,23 +1,22 @@
 # -*- coding: UTF-8 -*-
 """
 0xBitcoin Discord Price Bot
+
+TODO: move commands out of main.py, this file is getting long
 """
 
 import sys
-
 assert sys.version_info >= (3,6), "requires python > 3.6+"
 
-
 import time
+import datetime
 import socket
-import websocket
+import websocket  # for websocket.enableTrace(False)
+import websockets  # for websockets.exceptions.ConnectionClosed
 import asyncio
 import logging
-import urllib
 import collections
-import sys
 from web3 import Web3
-
 
 import discord
 from secret_info import TOKEN
@@ -28,15 +27,17 @@ from enclavesdex import EnclavesAPI
 from forkdelta import ForkDeltaAPI
 from mercatox import MercatoxAPI
 from idex import IDEXAPI
+from ethex import EthexAPI
 from multi_api_manager import MultiApiManager
 
 from mineable_token_info import MineableTokenInfo
+import etherscan
 
-import persistent_storage
+from persistent_storage import Storage
 import configuration as config
 
-_PROGRAM_NAME = "0xbtc-price-bot"
-_VERSION = "0.2.0"
+_PROGRAM_NAME = "0xbtc-discord-price-bot"
+_VERSION = "0.2.1"
 
 CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
 # commands that work in all channels (ignores the blacklist)
@@ -136,15 +137,12 @@ def percent_change_to_emoji(percent_change):
     # return the last option as fallback
     return values[-1:][0][1]
 
-
-
 def round_to_n_decimals(x, n=1):
     from math import log10, floor
     assert n >= 1
     return round(x, -int(floor(log10(abs(x))))+n-1)
 
 def prettify_decimals(number):
-
     if number == 0:
         return "0"
     if number < 1e-12:
@@ -193,10 +191,6 @@ def seconds_to_n_time_ago(seconds):
 
     return "{:.0f}h ago".format(minutes / 60)
 
-
-
-
-
 def seconds_to_time(seconds, granularity=2):
     result = []
     intervals = (
@@ -218,7 +212,6 @@ def seconds_to_time(seconds, granularity=2):
             result.append("{:.0f} {}".format(value, name))
     return ', '.join(result[:granularity])
 
-
 def cmd_compare_price_vs(item_name="lambo", item_price=200000):
     if apis.last_updated_time() == 0:
         return ":shrug:"
@@ -232,32 +225,49 @@ def cmd_compare_price_vs(item_name="lambo", item_price=200000):
                                               prettify_decimals(item_price / token_price_usd), 
                                               to_readable_thousands(item_price))
 
-
 def cmd_price(source='aggregate'):
-    if apis.last_updated_time(api_name=source) == 0:
+    if (apis.last_updated_time(api_name=source) == 0):
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url(api_name=source))
     
     token_price = apis.price_eth(config.CURRENCY, api_name=source) * apis.eth_price_usd()
-    eth_price = float(apis.eth_price_usd(api_name=source))
+    eth_price_on_this_exchange = float(apis.eth_price_usd(api_name=source))
+
+    # Enclaves usually fails this way
+    if token_price == 0 and eth_price_on_this_exchange == 0:
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url(api_name=source))
 
     percent_change_str = ""
-
     if apis.change_24h(config.CURRENCY, api_name=source) == None:
         percent_change_str = ""
+    elif apis.change_24h(config.CURRENCY, api_name=source) == 0:
+        percent_change_str = "**0**% "
     else:
         percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.change_24h(config.CURRENCY, api_name=source),
                                                        percent_change_to_emoji(apis.change_24h(config.CURRENCY, api_name=source)),)
-
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
     result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
                             seconds_to_n_time_ago(time.time()-apis.last_updated_time(api_name=source)),
                             '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
                             apis.price_eth(config.CURRENCY, api_name=source), 
                             percent_change_str,
-                            '' if eth_price == 0 else '(ETH: **${:.0f}**) '.format(eth_price), 
+                            '' if eth_price_on_this_exchange == 0 else '(ETH: **${:.0f}**) '.format(eth_price_on_this_exchange), 
                             apis.short_url(api_name=source))
     return result
 
+def cmd_priceall():
+    msg = ""
+    for api in sorted(apis.alive_apis, key=lambda a: a.api_name):
+        # this skips CMC and apis not directly tracking 0xbtc
+        if api.currency_symbol != config.CURRENCY or api.api_name == "Coin Market Cap":
+            continue
+        single_line = cmd_price(source=api.api_name)
+        # TODO: remove this when 'alive_apis' excludes apis correctly
+        if single_line.startswith('not sure yet'):
+            continue
+        msg += single_line + '\n'
+    if msg == "":
+        return ":shrug:"
+    return msg
 
 def cmd_bitcoinprice():
     if apis.last_updated_time() == 0:
@@ -271,7 +281,6 @@ def cmd_bitcoinprice():
                             apis.btc_price_usd())
     return result
 
-
 def cmd_ethereumprice():
     if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
@@ -284,23 +293,21 @@ def cmd_ethereumprice():
                             apis.eth_price_usd())
     return result
 
-
 def cmd_marketcap():
     if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
 
     token_price = apis.price_eth(config.CURRENCY) * apis.eth_price_usd()
-    marketcap = token.total_supply * token_price
+    marketcap = token.tokens_minted * token_price
 
     if marketcap == 0:
         return ":shrug:"
 
-    fmt_str = "Marketcap: **${}** (Price: ${} Supply: {})"
+    fmt_str = "Marketcap: **${}** (Price: ${} Circulating Supply: {})"
     result = fmt_str.format(prettify_decimals(marketcap),
                             prettify_decimals(token_price),
-                            prettify_decimals(token.total_supply))
+                            prettify_decimals(token.tokens_minted))
     return result
-
 
 def cmd_difficulty():
     if token.difficulty == None:
@@ -311,6 +318,14 @@ def cmd_difficulty():
                             seconds_to_time(token.seconds_until_readjustment))
     return result
 
+def cmd_blocktime():
+    if token.seconds_per_reward == None:
+        return ":shrug:"
+
+    fmt_str = "Current average block time: **{}** (average taken over the last {})"
+    result = fmt_str.format(seconds_to_time(token.seconds_per_reward),
+                            seconds_to_time(token.seconds_since_readjustment, granularity=1))
+    return result
 
 def cmd_hashrate():
     if token.estimated_hashrate == None:
@@ -319,7 +334,6 @@ def cmd_hashrate():
     fmt_str = "Estimated hashrate: **{}**"
     result = fmt_str.format(to_readable_thousands(token.estimated_hashrate, unit_type="hashrate", decimals=2))
     return result
-
 
 def cmd_tokens_minted():
     if token.tokens_minted == None:
@@ -330,7 +344,6 @@ def cmd_tokens_minted():
                             prettify_decimals(token.total_supply),
                             token.SYMBOL)
     return result
-
 
 def cmd_era():
     if token.era == None:
@@ -346,7 +359,6 @@ def cmd_era():
                             token.SYMBOL)
     return result
 
-
 def cmd_tokens_burned():
     if token.addr_0_balance == None:
         return ":shrug:"
@@ -355,13 +367,33 @@ def cmd_tokens_burned():
     result = fmt_str.format(token.addr_0_balance, token.SYMBOL)
     return result
 
+async def cmd_holders(message, author_id, raw_message):
+    if token.addr_0_balance == None:
+        return ":shrug:"
+
+    await client.send_file(raw_message.channel,
+                           etherscan.saved_holders_chart_filename)
+
+    # # Async
+    # await bot.send_file(channel, "filepath.png", content="...", filename="...")
+
+    # # Rewrite
+    # file = discord.File("filepath.png", filename="...")
+    # await channel.send("content", file=file)
+
+    # e = discord.Embed()
+    # e.set_image(url="https://discordapp.com/assets/e4923594e694a21542a489471ecffa50.svg")
+
+    #fmt_str = "**{}** {} burned [<https://bit.ly/2AulG0C>]"
+    #result = fmt_str.format(token.addr_0_balance, token.SYMBOL)
+    return 'OK-noresponse'
 
 def cmd_mine(message, author_id, raw_message):
     if token.mining_target is None:
         return "Sorry, I'm having problems with my APIs..."
 
     try:
-        address = persistent_storage.user_addresses.get(author_id)
+        address = storage.user_addresses.get(author_id)
     except KeyError:
         return "Looks like you don't have a public address set; run `!setaddress 0xAAA...` first"
 
@@ -370,9 +402,7 @@ def cmd_mine(message, author_id, raw_message):
     except:
         return "Bad nonce; try `mine 0xABBA`, `!mine 27`, or `!mine message`"
 
-
     nonce, digest = token.get_digest_for_nonce_str(nonce, address)
-
     resulting_difficulty = token.MAX_TARGET / Web3.toInt(digest)
     percent_of_the_way_to_full_target = token.mining_target / Web3.toInt(digest)
 
@@ -382,16 +412,16 @@ def cmd_mine(message, author_id, raw_message):
                             prettify_decimals(resulting_difficulty), 
                             prettify_decimals(percent_of_the_way_to_full_target * 100.0))
 
-    if resulting_difficulty > persistent_storage.top_miner_difficulty.get():
+    if resulting_difficulty > storage.top_miner_difficulty.get():
         fmt_str = "\nNew best share! Previous was `0x{}...` (Difficulty: {}) by {}"
-        result += fmt_str.format(persistent_storage.top_miner_digest.get()[:5].hex(),
-                                 prettify_decimals(persistent_storage.top_miner_difficulty.get()),
-                                 persistent_storage.top_miner_name.get())
+        result += fmt_str.format(storage.top_miner_digest.get()[:5].hex(),
+                                 prettify_decimals(storage.top_miner_difficulty.get()),
+                                 storage.top_miner_name.get())
 
-        persistent_storage.top_miner_difficulty.set(resulting_difficulty)
-        persistent_storage.top_miner_name.set(raw_message.author.name)
-        persistent_storage.top_miner_id.set(author_id)
-        persistent_storage.top_miner_digest.set(digest)
+        storage.top_miner_difficulty.set(resulting_difficulty)
+        storage.top_miner_name.set(raw_message.author.name)
+        storage.top_miner_id.set(author_id)
+        storage.top_miner_digest.set(digest)
 
     # in case someone solves a block... never going to happen but why not?
     if Web3.toInt(digest) <= token.mining_target:
@@ -402,28 +432,68 @@ def cmd_mine(message, author_id, raw_message):
         result += "\n  challenge_digest=`{}`".format(Web3.toHex(digest))
         result += "\n~~~~~"
 
-
     return result
-
 
 def cmd_bestshare():
     fmt_str = "Best share digest: `0x{}...` (Difficulty: {}) by {}"
-    result = fmt_str.format(persistent_storage.top_miner_digest.get()[:16].hex(),
-                            prettify_decimals(persistent_storage.top_miner_difficulty.get()),
-                            persistent_storage.top_miner_name.get())
-
+    result = fmt_str.format(storage.top_miner_digest.get()[:16].hex(),
+                            prettify_decimals(storage.top_miner_difficulty.get()),
+                            storage.top_miner_name.get())
     return result
-
 
 def cmd_all_time_high():
-    fmt_str = "ATH Price in ETH: **{}Ξ**; in USD: $**{}**"
-    result = fmt_str.format(prettify_decimals(persistent_storage.all_time_high_eth_price.get()),
-                            prettify_decimals(persistent_storage.all_time_high_usd_price.get()))
+    import platform
+    time_eth = datetime.datetime.fromtimestamp(storage.all_time_high_eth_timestamp.get())
+    time_usd = datetime.datetime.fromtimestamp(storage.all_time_high_usd_timestamp.get())
+
+    if platform.system() == "Linux":
+        time_eth = time_eth.strftime("%a %B %-e %Y")
+        time_usd = time_usd.strftime("%a %B %-e %Y")
+    else:
+        time_eth = time_eth.strftime("%a %B %#e %Y")
+        time_usd = time_usd.strftime("%a %B %#e %Y")
+
+    if time_eth == time_usd:
+        fmt_str = "All time high: **{}Ξ** **${}** ({})"
+        result = fmt_str.format(prettify_decimals(storage.all_time_high_eth_price.get()),
+                                prettify_decimals(storage.all_time_high_usd_price.get()),
+                                time_usd)
+    else:
+        fmt_str = "All time high: \n**{}Ξ** ({})  **${}** ({})"
+        result = fmt_str.format(prettify_decimals(storage.all_time_high_eth_price.get()),
+                                time_eth,
+                                prettify_decimals(storage.all_time_high_usd_price.get()),
+                                time_usd)
     return result
 
+def cmd_set_all_time_high(message, author_id, raw_message):
+    if author_id not in config.PRIVILEGED_USER_IDS:
+        fmt_str = 'User not allowed to run cmd_set_all_time_high: {} ({})'
+        logging.info(fmt_str.format(author_id, raw_message.author.name))
+        return
+
+    try:
+        command, price_eth, time_eth, price_usd, time_usd = message.split()
+        price_eth = float(price_eth)
+        time_eth = datetime.datetime.strptime(time_eth, '%Y-%m-%d').timestamp()
+        price_usd = float(price_usd.replace('$', ' '))
+        time_usd = datetime.datetime.strptime(time_usd, '%Y-%m-%d').timestamp()
+
+        assert 0 <= price_eth <= 1e20
+        assert 0 <= price_usd <= 1e20
+    except:
+        logging.exception('failed to parse')
+        return "Error parsing; try `!setath <price_eth> YYYY-MM-DD <price_usd> YYYY-MM-DD`"
+
+    storage.all_time_high_eth_price.set(price_eth)
+    storage.all_time_high_eth_timestamp.set(time_eth)
+    storage.all_time_high_usd_price.set(price_usd)
+    storage.all_time_high_usd_timestamp.set(time_usd)
+
+    result = "New ATH set!\n" + cmd_all_time_high()
+    return result
 
 async def cmd_set_user_address(message, author_id, raw_message):
-    # https://etherscan.io/address/0xb6ed7644c69416d67b522e20bc294a9a9b405b31#writeContract
     try:
         address = message.split()[-1]
     except:
@@ -436,14 +506,10 @@ async def cmd_set_user_address(message, author_id, raw_message):
         return "Something went wrong setting your public address... try `!setaddress 0xAAA...`. You can use `!setaddress dontcare` if you don't care."
 
     address = Web3.toChecksumAddress(address)
+    storage.user_addresses.set(author_id, address)
 
-    persistent_storage.user_addresses.set(author_id, address)
-
-    # reacts with the :thumbsup: emoji
-    await client.add_reaction(raw_message,"\U0001F44D")
-
+    await client.add_reaction(raw_message,"\U0001F44D")  # :thumbsup:
     return "OK-noresponse"
-
 
 def cmd_volume():
     if apis.last_updated_time() == 0:
@@ -453,7 +519,6 @@ def cmd_volume():
     total_btc_volume = 0
     response = ""
 
-    #for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX', 'Hotbit']:
     for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX']:
         volume_eth = apis.volume_eth(config.CURRENCY, api_name=source)
         volume_btc = apis.volume_btc(config.CURRENCY, api_name=source)
@@ -478,18 +543,15 @@ def cmd_volume():
 
     return response
 
-
 def cmd_ratio():
     if apis.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
 
     token_price_usd = apis.price_eth(config.CURRENCY) * apis.eth_price_usd()
-
     if token_price_usd == 0:
         return ":shrug:"
 
     return "1 BTC : {:,.0f} 0xBTC".format(apis.btc_price_usd() / token_price_usd)
-
 
 def cmd_rank():
     api_name = "Coin Market Cap"
@@ -500,13 +562,10 @@ def cmd_rank():
 
     rank = apis.rank(currency_symbol=config.CURRENCY,
                      api_name=api_name)
-
     if rank is None:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(api_url)
 
-    return "Rank: **{}** on {} [<{}>]".format(rank,
-                                              api_name,
-                                              api_url)
+    return "Rank: **{}** on {} [<{}>]".format(rank, api_name, api_url)
 
 """Convert from source currency to dest currency. _amount_ indicates total
 amount of source currency. Example:
@@ -574,10 +633,8 @@ def convert(amount, src, dest):
         result = usd_value * 100.0
     else:
         for price, names in config.EXPENSIVE_STUFF:
-            #logging.info('dest:{}'.format(dest))
-            #logging.info('names[0]:{}'.format(names[0]))
             if string_contains_any(dest, names, exhaustive_search=True, require_cmd_char=False):
-                dest = names[0]  # replace name with the non-typo'd version
+                dest = names[0]  # replaces provided name with the non-typo'd version
                 result = usd_value / price
                 break
 
@@ -589,14 +646,12 @@ def convert(amount, src, dest):
 
     return "{} {} = **{}** {}".format(amount, src, result, dest)
 
-
 def cmd_convert(message):
+    # example input: '!convert 1 usd to 0xbtc'
     if apis.last_updated_time() == 0 or apis.eth_price_usd() == 0 or apis.btc_price_usd() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url())
 
     split = message.split()
-    
-    # example input: '!convert 1 usd to 0xbtc'
     try:
         _, amount, src, _, dest = split
     except ValueError:
@@ -619,43 +674,64 @@ def cmd_convert(message):
     # ValueError exceptions lead here
     return "Something went wrong :sob: try this: `!convert 1 eth to 0xbtc`"
 
-
-async def update_status(client, stat_str):
-    logging.info('changing status to %s', repr(stat_str))
-    await client.change_presence(game=discord.Game(name=stat_str),
+old_status_string = None
+async def update_status(client, status_string):
+    global old_status_string
+    if status_string != old_status_string:
+        logging.info('changing status to %s', repr(status_string))
+        old_status_string = status_string
+    await client.change_presence(game=discord.Game(name=status_string),
                                  status=discord.Status('online'),
                                  afk=False)
-
 
 async def background_update():
     await client.wait_until_ready()
     while not client.is_closed:
         try:
             apis.update()
+        except RuntimeError as e:
+            logging.warning('Failed to update exchange APIs: {}'.format(e.msg))
+        except:
+            logging.exception('Failed to update exchange APIs')
+
+        try:
             token.update()
-        except Exception as e:
-            logging.exception('failed to update prices / contract info')
+        except RuntimeError as e:
+            logging.warning('Failed to update contract info: {}'.format(e.msg))
+        except:
+            logging.exception('Failed to update contract info')
+
+        if (time.time() - storage.last_holders_update_timestamp.get()) / 3600.0 > config.TOKEN_HOLDER_UPDATE_RATE_HOURS:
+            try:
+                etherscan.update_saved_holders_chart(config.TOKEN_ETH_ADDRESS,
+                                                     token.tokens_minted)
+                storage.last_holders_update_timestamp.set(time.time())
+            except:
+                logging.exception('Failed to update token holders chart')
+            else:
+                logging.info('Updated token holders chart')
 
         try:
             price_eth = apis.price_eth(config.CURRENCY)
             price_usd = apis.price_eth(config.CURRENCY) * apis.eth_price_usd()
-            if price_usd > persistent_storage.all_time_high_usd_price.get():
+            if price_usd > storage.all_time_high_usd_price.get():
                 logging.info('New usd ATH! ${}'.format(price_usd))
-                persistent_storage.all_time_high_usd_price.set(price_usd)
-                persistent_storage.all_time_high_usd_timestamp.set(time.time())
-            if price_eth > persistent_storage.all_time_high_eth_price.get():
+                storage.all_time_high_usd_price.set(price_usd)
+                storage.all_time_high_usd_timestamp.set(time.time())
+            if price_eth > storage.all_time_high_eth_price.get():
                 logging.info('New eth ATH! {}Ξ'.format(price_eth))
-                persistent_storage.all_time_high_eth_price.set(price_eth)
-                persistent_storage.all_time_high_eth_timestamp.set(time.time())
+                storage.all_time_high_eth_price.set(price_eth)
+                storage.all_time_high_eth_timestamp.set(time.time())
         except:
             logging.exception('Failed to save ATH data')
 
-
         try:
-            # price in usd is conditional - only show it if eth price is not 0 (an error)
+            price_eth = apis.price_eth(config.CURRENCY)
             price_usd = apis.price_eth(config.CURRENCY) * apis.eth_price_usd()
+            # usd price is hidden if it is 0 (an error)
             usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
 
+            # show hashrate if available, otherwise show 'time since last update'
             if token.estimated_hashrate is not None and token.estimated_hashrate > 0:
                 end_of_status = to_readable_thousands(token.estimated_hashrate, unit_type='short_hashrate')
             else:
@@ -665,10 +741,13 @@ async def background_update():
             if apis.last_updated_time() != 0:
                 fmt_str = "{}{} Ξ ({})"
                 await update_status(client, fmt_str.format(usd_str,
-                                                           prettify_decimals(apis.price_eth(config.CURRENCY)),
+                                                           prettify_decimals(price_eth),
                                                            end_of_status))
+        except (websockets.exceptions.ConnectionClosed,
+                RuntimeError) as e:
+            logginc.warning('Falied to change status: {}'.format(e.msg))
         except:
-            logging.exception('failed to change status')
+            logging.exception('Failed to change status')
 
         await asyncio.sleep(config.UPDATE_RATE)
 
@@ -677,7 +756,7 @@ async def background_update():
     raise RuntimeError('background_update loop stopped - something is wrong')
 
 # These commands will work in any channel (TODO: move to a fn)
-def handle_global_command(command_str, author_id, raw_message):
+async def handle_global_command(command_str, author_id, raw_message):
     for cmd_def in _GLOBAL_COMMANDS:
         if string_contains_any(command_str, cmd_def.keywords):
             return cmd_def.response
@@ -685,6 +764,10 @@ def handle_global_command(command_str, author_id, raw_message):
 
 async def handle_trading_command(command_str, author_id, raw_message):
     msg = None
+
+    if string_contains_any(command_str, ['exchanges', 'wheretobuy']):
+        msg = cmd_priceall()
+
     if string_contains_any(command_str, ['price', 'rice', 'pric', 'pricce', 'proce', 'rpice']):
         if string_contains_any(command_str, [
                 'enclaves',
@@ -719,16 +802,7 @@ async def handle_trading_command(command_str, author_id, raw_message):
                 'all',
                 'al',
                 'prices'], exhaustive_search=True, require_cmd_char=False):
-            msg = ""
-            for api in sorted(apis.alive_apis, key=lambda a: a.api_name):
-                # this skips CMC and apis not directly tracking 0xbtc
-                if api.currency_symbol != config.CURRENCY or api.api_name == "Coin Market Cap":
-                    continue
-                single_line = cmd_price(source=api.api_name)
-                # TODO: remove this when 'alive_apis' excludes apis correctly
-                if single_line.startswith('not sure yet'):
-                    continue
-                msg += single_line + '\n'
+            msg  = cmd_priceall()
         else:
             msg = cmd_price()
 
@@ -768,8 +842,11 @@ async def handle_trading_command(command_str, author_id, raw_message):
     if string_contains_any(command_str, ['marketcap', 'mcap']):
         msg = cmd_marketcap()
 
-    if string_contains_any(command_str, ['difficulty', 'diff', 'retarget']):
+    if string_contains_any(command_str, ['difficulty', 'diff', 'retarget', 'readjustment']):
         msg = cmd_difficulty()
+
+    if string_contains_any(command_str, ['block time', 'block rate', 'reward time', 'reward rate']):
+        msg = cmd_blocktime()
 
     if string_contains_any(command_str, ['hashrate']):
         msg = cmd_hashrate()
@@ -783,6 +860,9 @@ async def handle_trading_command(command_str, author_id, raw_message):
     if string_contains_any(command_str, ['burn', 'burned', 'address 0']):
         msg = cmd_tokens_burned()
 
+    if string_contains_any(command_str, ['holders', 'distribution', 'dist']):
+        msg = await cmd_holders(command_str, author_id, raw_message)
+
     if string_contains_any(command_str, ['mine']):
         msg = cmd_mine(command_str, author_id, raw_message)
 
@@ -794,6 +874,9 @@ async def handle_trading_command(command_str, author_id, raw_message):
 
     if string_contains_any(command_str, ['ath', 'all time high']):
         msg = cmd_all_time_high()
+
+    if string_contains_any(command_str, ['setath']):
+        msg = cmd_set_all_time_high(command_str, author_id, raw_message)
 
     for price, names in config.EXPENSIVE_STUFF:
         if string_contains_any(command_str, names, exhaustive_search=True):
@@ -814,9 +897,7 @@ async def send_discord_msg(channel, message):
     except discord.errors.Forbidden:
         logging.debug('no permission in channel: {} [{}]'.format(channel.name, channel.id))
 
-
-def configure_client():
-
+def configure_discord_client():
     client.loop.create_task(background_update())
 
     @client.event
@@ -852,7 +933,7 @@ def configure_client():
                 await send_discord_msg(message.channel, response)
                 return
 
-        response = handle_global_command(message_contents, message.author.id, message)
+        response = await handle_global_command(message_contents, message.author.id, message)
         if response:
             await send_discord_msg(message.channel, response)
             return
@@ -866,23 +947,22 @@ def configure_client():
         show_startup_info(client)
 
 def show_startup_info(client):
-    logging.info('{} version {}'.format(_PROGRAM_NAME, _VERSION))
-    logging.info('discord.py version {}'.format(discord.__version__))
-    logging.info('Logged in as {} ({}) to {} servers'.format(client.user.name,
-                                                             client.user.id,
-                                                             len(client.servers)))
-    for server in client.servers:
-        logging.info('  {} [id:{}] ({} Members), {}'.format(server.name, 
-                                                            server.id,
-                                                            server.member_count,
-                                                            server.region))
-        if settings['show_channels']:
+    logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
+    logging.debug('discord.py version {}'.format(discord.__version__))
+    logging.info('Logged to {} servers in as {} id:{}'.format(len(client.servers),
+                                                              client.user.name,
+                                                              client.user.id))
+    if settings['show_channels']:
+        for server in client.servers:
+            logging.info('  - {} - {} Members - id:{} '.format(server.name, 
+                                                               server.member_count,
+                                                               server.id))
             member = server.get_member(client.user.id)
             for channel in server.channels:
-                allowed = 'no send permission' if not channel.permissions_for(member).send_messages else ''
-                logging.info('    {} [id:{}] {}'.format(channel.name, 
-                                                        channel.id,
-                                                        allowed))
+                allowed = '[No send permission]' if not channel.permissions_for(member).send_messages else ''
+                logging.info('     - {} id:{} {}'.format(channel.name, 
+                                                           channel.id,
+                                                           allowed))
 
 def setup_logging(path):
     # set up logging to file
@@ -922,14 +1002,24 @@ def manual_api_update():
         logging.exception('failed to update prices / contract info')
 
 def command_test():
+    global client
 
+    class MockClient():
+        def __init__(self):
+            self.is_closed = False
+        def wait_until_ready(self):
+            pass
+        def change_presence(self, game=None, status=None, afk=None):
+            args = {'game':game, 'status':status, 'afk':afk}
+            logging.debug('Call to change_presence with args: {}'.format(args))
     class MockAuthor():
         name = "Test Name"
-        id = 0
+        id = '0'
     class MockMessage():
         author = MockAuthor()
 
-    mock_message = MockMessage
+    client = MockClient()
+    mock_message = MockMessage()
 
     # todo: start background_update instead?
     manual_api_update()
@@ -942,43 +1032,51 @@ def command_test():
             manual_api_update()
             continue
         try:
-            response = handle_global_command(cmd, 0, mock_message)
+            tasks = (
+                handle_global_command(cmd, mock_message.author.id, mock_message), 
+                handle_trading_command(cmd, mock_message.author.id, mock_message)
+            )
+
+            responses = asyncio.get_event_loop().run_until_complete(asyncio.gather(*tasks))
             logging.info('Global response:')
-            if response != None:
-                for line in response.split('\n'):
+            if responses[0] != None:
+                for line in responses[0].split('\n'):
                     logging.info('>' + line)
-            response = handle_trading_command(cmd, 0, mock_message)
             logging.info('Trading response:')
-            if response != None:
-                for line in response.split('\n'):
+            if responses[1] != None:
+                for line in responses[1].split('\n'):
                     logging.info('>' + line)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
             logging.exception('Got exception from command handler')
 
-
 # todo: encapsulate these
 client = None
+storage = None
 apis = None
 token = None
 start_time = None
 settings = {}
 
 def main():
-    global client, apis, token, start_time, settings
     import argparse
+    import os
+
+    global client, storage, apis, token, start_time, settings
+    
     parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot v{}'.format(_VERSION),
                                      epilog='<3 0x1d00ffff')
     parser.add_argument('--show_channels', action='store_true', default=False,
                         help='Show all visible channels/permissions during init')
     parser.add_argument('--command_test', action='store_true', default=False,
-                        help=("If set, don't connect to Discord - instead"
+                        help=("If set, don't connect to Discord - instead "
                               "run a CLI interface to allow command tests."))
     parser.add_argument('--self_test', action='store_true', default=False,
                         help=("Run unittests"))
-    parser.add_argument('--log_location', default='debug.log',
-                        help='Set the location of the debug log file')
+    parser.add_argument('--log_location',
+                        default=os.path.join(config.DATA_FOLDER, 'debug.log'),
+                        help=("Set the location of the debug log file"))
     parser.add_argument('--version', action='version', 
                         version='%(prog)s v{}'.format(_VERSION))
     args = parser.parse_args()
@@ -995,22 +1093,25 @@ def main():
 
     apis = MultiApiManager(
     [
-        CoinMarketCapAPI('0xBTC'),
+        CoinMarketCapAPI(config.CURRENCY),
         CoinMarketCapAPI('ETH'),
         CoinMarketCapAPI('BTC'),
         EnclavesAPI(config.CURRENCY),
         ForkDeltaAPI(config.CURRENCY),
         IDEXAPI(config.CURRENCY),
         MercatoxAPI(config.CURRENCY),
+        EthexAPI(config.CURRENCY),
     ])
     token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
+    storage = Storage(config.DATA_FOLDER)
 
     if args.command_test:
+        storage = Storage('./test_data/databases/')
         command_test()
         return
 
     client = discord.Client()
-    configure_client()
+    configure_discord_client()
 
     while True:
         try:

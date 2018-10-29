@@ -46,6 +46,8 @@ try:
 except:
     from urllib import urlopen, Request
 
+from urllib.error import URLError
+
 import json
 
 import pprint
@@ -137,7 +139,8 @@ class MercatoxAPI():
                 ConnectionResetError,
                 ConnectionRefusedError,
                 socket.timeout,
-                socket.gaierror) as e:
+                socket.gaierror,
+                URLError) as e:
             logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
         else:
             self.last_updated_time = time.time()
