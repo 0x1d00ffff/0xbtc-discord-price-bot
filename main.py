@@ -782,7 +782,7 @@ async def background_update():
                                                            end_of_status))
         except (websockets.exceptions.ConnectionClosed,
                 RuntimeError) as e:
-            logginc.warning('Falied to change status: {}'.format(e.msg))
+            logging.warning('Falied to change status: {}'.format(e.msg))
         except:
             logging.exception('Failed to change status')
 
