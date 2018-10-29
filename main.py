@@ -48,7 +48,7 @@ _GLOBAL_COMMANDS = [
         ("trading commands: `price`  `price <exchange>`  `volume`  `ratio`  `convert`  `rank`  `btc`  `eth`  `marketcap`\n"
          #+ "bot commands: `uptime` "
          + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned`  `mine`\n"
-         #+ "price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.sample(config.EXPENSIVE_STUFF, 10)))
+         + "**todo:random.seed(day-of-the-year)**price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.sample(config.EXPENSIVE_STUFF, 10)))
          + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`")),
     CmdDef(
         ['help', 'commands', 'bot'],
@@ -539,6 +539,21 @@ def cmd_bot_command(message, author_id, raw_message):
 
     return "OK-noresponse"
 
+def cmd_ping(message, author_id, raw_message):
+    sent_time = raw_message.timestamp
+    delta = time.time() - sent_time
+
+    response = "pong! Discord: {}ms".format(prettify_decimals(delta * 1000.0))
+
+    if author_id not in config.PRIVILEGED_USER_IDS:
+        fmt_str = 'User not allowed to run cmd_bot_command: {} ({})'
+        logging.info(fmt_str.format(author_id, raw_message.author.name))
+        return
+
+    for api in sorted(set(apis, key=lambda a: a.api_name)):
+        pass
+
+    return response
 
 def cmd_volume():
     if apis.last_updated_time() == 0:
@@ -918,6 +933,9 @@ async def handle_trading_command(command_str, author_id, raw_message):
     if string_contains_any(command_str, ['bot command']):
         msg = cmd_bot_command(command_str, author_id, raw_message)
 
+    if string_contains_any(command_str, ['ping']):
+        msg = cmd_ping()
+
     for price, names in config.EXPENSIVE_STUFF:
         if string_contains_any(command_str, names, exhaustive_search=True):
             correct_name = names[0]
@@ -1051,15 +1069,15 @@ def command_test():
             pass
         def change_presence(self, game=None, status=None, afk=None):
             args = {'game':game, 'status':status, 'afk':afk}
-            logging.debug('Call to change_presence with args: {}'.format(args))
+            logging.debug('Call to change_presence: {}'.format(args))
     class MockAuthor():
         name = "Test Name"
         id = '0'
     class MockMessage():
         author = MockAuthor()
+        timestamp = time.time()
 
     client = MockClient()
-    mock_message = MockMessage()
 
     # todo: start background_update instead?
     manual_api_update()
@@ -1072,6 +1090,7 @@ def command_test():
             manual_api_update()
             continue
         try:
+            mock_message = MockMessage()
             tasks = (
                 handle_global_command(cmd, mock_message.author.id, mock_message), 
                 handle_trading_command(cmd, mock_message.author.id, mock_message)
