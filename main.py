@@ -482,7 +482,6 @@ def cmd_set_all_time_high(message, author_id, raw_message):
         assert 0 <= price_eth <= 1e20
         assert 0 <= price_usd <= 1e20
     except:
-        logging.exception('failed to parse')
         return "Error parsing; try `!setath <price_eth> YYYY-MM-DD <price_usd> YYYY-MM-DD`"
 
     storage.all_time_high_eth_price.set(price_eth)
@@ -510,6 +509,28 @@ async def cmd_set_user_address(message, author_id, raw_message):
 
     await client.add_reaction(raw_message,"\U0001F44D")  # :thumbsup:
     return "OK-noresponse"
+
+def cmd_bot_command(message, author_id, raw_message):
+    if author_id not in config.PRIVILEGED_USER_IDS:
+        fmt_str = 'User not allowed to run cmd_bot_command: {} ({})'
+        logging.info(fmt_str.format(author_id, raw_message.author.name))
+        return
+
+    try:
+        message_parts = message.split()
+
+        if message_parts[1] == 'poweroff':
+            if message_parts[-1] == 'really':
+                raise SystemExit('Exit requested by user {}'.format(raw_message.author.name))
+            else:
+                return "Really? If you're sure run `!botcommand poweroff really`"
+    except SystemExit:
+        raise
+    except:
+        return "Error parsing command"
+
+    return "OK-noresponse"
+
 
 def cmd_volume():
     if apis.last_updated_time() == 0:
@@ -877,6 +898,9 @@ async def handle_trading_command(command_str, author_id, raw_message):
 
     if string_contains_any(command_str, ['setath']):
         msg = cmd_set_all_time_high(command_str, author_id, raw_message)
+
+    if string_contains_any(command_str, ['bot command']):
+        msg = cmd_bot_command(command_str, author_id, raw_message)
 
     for price, names in config.EXPENSIVE_STUFF:
         if string_contains_any(command_str, names, exhaustive_search=True):
