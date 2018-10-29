@@ -16,8 +16,9 @@ import websockets  # for websockets.exceptions.ConnectionClosed
 import asyncio
 import logging
 import collections
-from web3 import Web3
+import random
 
+from web3 import Web3
 import discord
 from secret_info import TOKEN
 from reconnecting_bot import keep_running
@@ -43,8 +44,15 @@ CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
 # commands that work in all channels (ignores the blacklist)
 _GLOBAL_COMMANDS = [
     CmdDef(
+        ['help all'],
+        ("trading commands: `price`  `price <exchange>`  `volume`  `ratio`  `convert`  `rank`  `btc`  `eth`  `marketcap`\n"
+         #+ "bot commands: `uptime` "
+         + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned`  `mine`\n"
+         #+ "price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.sample(config.EXPENSIVE_STUFF, 10)))
+         + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`")),
+    CmdDef(
         ['help', 'commands', 'bot'],
-        "available commands: `price volume ratio convert bitcoinprice lambo privateisland whitehouse millionaire billionaire`\nquick link commands: `whitepaper website ann contract stats merch mvis cosmic az`"),
+        "available commands: `price volume ratio convert bitcoinprice lambo whitehouse millionaire billionaire`\nquick link commands: `whitepaper website ann contract stats merch mvis cosmic az ss3`"),
     CmdDef(
         ['white paper'],
         "0xBitcoin Whitepaper: <https://github.com/0xbitcoin/white-paper>"),
@@ -52,8 +60,8 @@ _GLOBAL_COMMANDS = [
         ["site", "web site"],
         "0xBitcoin Website: <https://0xbitcoin.org/>"),
     CmdDef(
-        ["lava"],
-        "Lava Wallet: <https://lavawallet.io/> (Development:<https://github.com/lavawallet> and <http://forum.0xbtc.io/c/development/lava-network>)"),
+        ["ann", "bitcoin talk"],
+        "[ANN] 0xBitcoin [0xBTC]: <https://bitcointalk.org/index.php?topic=3039182.0>"),
     CmdDef(
         ["contract", "address"],
         "0xBitcoin Contract: 0xB6eD7644C69416d67B522e20bC294A9a9B405B31 [<https://bit.ly/2y1WlMB>]"),
@@ -61,14 +69,14 @@ _GLOBAL_COMMANDS = [
         ["stats", "statistics"],
         "0xBitcoin Stats: <https://0x1d00ffff.github.io/0xBTC-Stats/> (GitHub: <https://github.com/0x1d00ffff/0xBTC-Stats>)"),
     CmdDef(
-        ["ann", "bitcoin talk"],
-        "[ANN] 0xBitcoin [0xBTC]: <https://bitcointalk.org/index.php?topic=3039182.0>"),
+        ["miner", "miners", "software"],
+        "Try !mvis !cosmic !az !ss3"),
+    CmdDef(
+        ["lava"],
+        "Lava Wallet: <https://lavawallet.io/> (Development:<https://github.com/lavawallet> and <http://forum.0xbtc.io/c/development/lava-network>)"),
     CmdDef(
         ["merch", "merchandise", "tshirt", "0xbtcat", "beeherder"],
         "0xBTC Merch: <https://www.teepublic.com/user/0xbtcat>"),
-    CmdDef(
-        ["miner"],
-        "Try !mvis !cosmic !az !ss3"),
     CmdDef(
         ["mvis", "mining visualizer", "mvis tokenminer"],
         "MVIS-Tokenminer: <https://github.com/mining-visualizer/MVis-tokenminer/releases>"),
@@ -540,15 +548,23 @@ def cmd_volume():
     total_btc_volume = 0
     response = ""
 
-    for source in ['Enclaves DEX', 'Fork Delta', 'Mercatox', 'IDEX']:
-        volume_eth = apis.volume_eth(config.CURRENCY, api_name=source)
-        volume_btc = apis.volume_btc(config.CURRENCY, api_name=source)
+
+    for api in sorted(apis.alive_apis, key=lambda a: a.api_name):
+        # this skips CMC and apis not directly tracking 0xbtc
+        if api.currency_symbol != config.CURRENCY or api.api_name == "Coin Market Cap":
+            continue
+
+        volume_eth = apis.volume_eth(config.CURRENCY, api_name=api.api_name)
+        volume_btc = apis.volume_btc(config.CURRENCY, api_name=api.api_name)
+        if volume_eth == 0 and volume_btc == 0:
+            continue
+
         total_eth_volume += volume_eth
         total_btc_volume += volume_btc
         if apis.eth_price_usd() == 0:
-            response += "{}: **{}Ξ** ".format(source, prettify_decimals(volume_eth))
+            response += "{}: **{}Ξ** ".format(api.api_name, prettify_decimals(volume_eth))
         else:
-            response += "{}: $**{}**({}Ξ) ".format(source, prettify_decimals(volume_eth * apis.eth_price_usd()), prettify_decimals(volume_eth))
+            response += "{}: $**{}**({}Ξ) ".format(api.api_name, prettify_decimals(volume_eth * apis.eth_price_usd()), prettify_decimals(volume_eth))
         if volume_btc != 0:
             if apis.btc_price_usd() == 0:
                 response += "+ **{}₿** ".format(prettify_decimals(volume_btc))
@@ -872,7 +888,7 @@ async def handle_trading_command(command_str, author_id, raw_message):
     if string_contains_any(command_str, ['hashrate']):
         msg = cmd_hashrate()
 
-    if string_contains_any(command_str, ['minted', 'circulating', 'supply']):
+    if string_contains_any(command_str, ['minted', 'circulating', 'supply', 'tokens minted']):
         msg = cmd_tokens_minted()
 
     if string_contains_any(command_str, ['era', 'halving', 'halvening']):

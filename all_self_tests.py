@@ -1,12 +1,30 @@
 import unittest
 
-from main import prettify_decimals, round_to_n_decimals
 
-from mineable_token_info import MineableTokenInfo
+
+class TestPriceCommand(unittest.TestCase):
+    def setUp(self):
+        from main import apis
+
+        # apis = MultiApiManager(
+        # [
+        #     CoinMarketCapAPI(config.CURRENCY),
+        #     CoinMarketCapAPI('ETH'),
+        #     CoinMarketCapAPI('BTC'),
+        #     EnclavesAPI(config.CURRENCY),
+        #     ForkDeltaAPI(config.CURRENCY),
+        #     IDEXAPI(config.CURRENCY),
+        #     MercatoxAPI(config.CURRENCY),
+        #     EthexAPI(config.CURRENCY),
+        # ])
+
+    def test_price_all(self):
+        from main import cmd_priceall
+        pass
 
 class TestDecimalFormatting(unittest.TestCase):
-
     def test_round_to_n(self):
+        from main import round_to_n_decimals
         self.assertEqual(round_to_n_decimals(0.00000012345),    0.0000001)
         self.assertEqual(round_to_n_decimals(0.00012345),       0.0001)
         self.assertEqual(round_to_n_decimals(1234567),          1000000)
@@ -15,6 +33,7 @@ class TestDecimalFormatting(unittest.TestCase):
         self.assertEqual(round_to_n_decimals(1234567, 3),       1230000)
 
     def test_prettify_decimals(self):
+        from main import prettify_decimals
         self.assertEqual(prettify_decimals(0),   '0')
         self.assertEqual(prettify_decimals(0.0032),           '0.0032')
         self.assertEqual(prettify_decimals(0.00160),          '0.0016')
@@ -53,8 +72,10 @@ class TestDecimalFormatting(unittest.TestCase):
 
 
 class TestMineableTokenInfo(unittest.TestCase):
+    
 
     def setUp(self):
+        from mineable_token_info import MineableTokenInfo
         from web3 import Web3
         self.m = MineableTokenInfo("0xB6eD7644C69416d67B522e20bC294A9a9B405B31")
         self.m.update()
@@ -153,6 +174,7 @@ def suite():
     suite.addTest(TestDecimalFormatting("test_round_to_n"))
     suite.addTest(TestMineableTokenInfo("test_reading_0xbtc_values"))
     suite.addTest(TestMineableTokenInfo("test_hashing_nonces"))
+    suite.addTest(TestPriceCommand('test_price_all'))
     return suite
 
 def run_all():
