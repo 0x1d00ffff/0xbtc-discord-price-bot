@@ -1148,6 +1148,9 @@ def main():
         return
 
     settings['show_channels'] = args.show_channels
+
+    if not os.path.exists(os.path.split(args.log_location)[0]):
+        os.makedirs(os.path.split(args.log_location)[0])
     setup_logging(args.log_location)
 
     apis = MultiApiManager(
