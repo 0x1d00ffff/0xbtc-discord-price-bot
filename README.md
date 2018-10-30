@@ -42,9 +42,7 @@ Todo:
  - occasionally APIs return NaN as a data point.. which is a valid float. Need
    to explicitly check for this.
  - typos/new commands
-   - !pools
    - !binance (to show current listing price in usd)
-   - !profit 5.6 -> show profit of 5.6gh miner
    - !orderbooks mercatox
  - Need a new 'Pairing' class to handle pairings in a more generic way. This
    will allow easier integration of BTC pairings (ie mercatox)

@@ -17,6 +17,7 @@ import asyncio
 import logging
 import collections
 import random
+import re
 
 from web3 import Web3
 import discord
@@ -33,6 +34,7 @@ from multi_api_manager import MultiApiManager
 
 from mineable_token_info import MineableTokenInfo
 import etherscan
+import ping_wrapper
 
 from persistent_storage import Storage
 import configuration as config
@@ -43,13 +45,6 @@ _VERSION = "0.2.1"
 CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
 # commands that work in all channels (ignores the blacklist)
 _GLOBAL_COMMANDS = [
-    CmdDef(
-        ['help all'],
-        ("trading commands: `price`  `price <exchange>`  `volume`  `ratio`  `convert`  `rank`  `btc`  `eth`  `marketcap`\n"
-         #+ "bot commands: `uptime` "
-         + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned`  `mine`\n"
-         + "**todo:random.seed(day-of-the-year)**price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.sample(config.EXPENSIVE_STUFF, 10)))
-         + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`")),
     CmdDef(
         ['help', 'commands', 'bot'],
         "available commands: `price volume ratio convert bitcoinprice lambo whitehouse millionaire billionaire`\nquick link commands: `whitepaper website ann contract stats merch mvis cosmic az ss3`"),
@@ -202,14 +197,19 @@ def seconds_to_n_time_ago(seconds):
 def seconds_to_time(seconds, granularity=2):
     result = []
     intervals = (
-        ('years',   60*60*24*7*4.34524*12),
-        ('months',  60*60*24*7*4.34524),
-        ('weeks',   60*60*24*7),
-        ('days',    60*60*24),
-        ('hours',   60*60),
-        ('minutes', 60),
-        ('seconds', 1),
+        ('centuries', 60*60*24*7*4.34524*12*10*10),
+        ('decades',   60*60*24*7*4.34524*12*10),
+        ('years',     60*60*24*7*4.34524*12),
+        ('months',    60*60*24*7*4.34524),
+        ('weeks',     60*60*24*7),
+        ('days',      60*60*24),
+        ('hours',     60*60),
+        ('minutes',   60),
+        ('seconds',   1),
     )
+
+    if seconds == 0:
+        return '0 seconds'
 
     for name, multiplier in intervals:
         value = seconds // multiplier
@@ -389,12 +389,48 @@ async def cmd_holders(message, author_id, raw_message):
     # file = discord.File("filepath.png", filename="...")
     # await channel.send("content", file=file)
 
-    # e = discord.Embed()
-    # e.set_image(url="https://discordapp.com/assets/e4923594e694a21542a489471ecffa50.svg")
-
-    #fmt_str = "**{}** {} burned [<https://bit.ly/2AulG0C>]"
-    #result = fmt_str.format(token.addr_0_balance, token.SYMBOL)
     return 'OK-noresponse'
+
+def cmd_income(message, author_id, raw_message):
+    if token.difficulty is None:
+        return "Sorry, I'm having problems with my APIs..."
+
+    try:
+        command, hashrate = message.split(maxsplit=1)
+    except:
+        return "Bad hashrate; try `!income 5`, `!income 300mh`, or `!income 2.8gh`"
+
+    multipliers = (
+        ('k', 1e3),
+        ('m', 1e6),
+        ('g', 1e9),
+        ('t', 1e12),
+        ('p', 1e15),
+        ('e', 1e18),
+        ('z', 1e21),
+        ('y', 1e24))
+    selected_multiplier = 1e9
+    for char, mult in multipliers:
+        if char in hashrate:
+            selected_multiplier = mult
+
+    match = re.match("([<\d.]+)", hashrate)
+    if not match:
+        return "Bad hashrate; try `!income 5`, `!income 300mh`, or `!income 2.8gh`"
+    hashrate = float(match.group(1)) * selected_multiplier
+
+    tokens_per_day = 0.8 * 86400 * token.reward * hashrate / ((2**22) * token.difficulty)
+    seconds_per_block = 1.2 * ((2**22) * token.difficulty) / hashrate
+
+    if tokens_per_day > 1:
+        tokens_over_time_str = "**{}** tokens/day".format(prettify_decimals(tokens_per_day))
+    else:
+        tokens_over_time_str = "**{}** tokens/week".format(prettify_decimals(tokens_per_day*7))
+
+    fmt_str = "Income for {}: {}; **{}** per block solo"
+    return fmt_str.format(to_readable_thousands(hashrate, unit_type='hashrate'),
+                          tokens_over_time_str,
+                          seconds_to_time(seconds_per_block))
 
 def cmd_mine(message, author_id, raw_message):
     if token.mining_target is None:
@@ -542,16 +578,28 @@ def cmd_bot_command(message, author_id, raw_message):
 def cmd_ping(message, author_id, raw_message):
     sent_time = raw_message.timestamp
     delta = time.time() - sent_time
+    response = "Discord: {}ms\n".format(prettify_decimals(delta))
 
-    response = "pong! Discord: {}ms".format(prettify_decimals(delta * 1000.0))
+    ping_times = ping_wrapper.ping_list(['api.infura.io', 'etherscan.io'])
+    for url, latency in ping_times:
+        if latency == None:
+            response += "{}: down\n".format(url)
+        else:
+            response += "{}: {}ms\n".format(url, prettify_decimals(latency))
 
-    if author_id not in config.PRIVILEGED_USER_IDS:
-        fmt_str = 'User not allowed to run cmd_bot_command: {} ({})'
-        logging.info(fmt_str.format(author_id, raw_message.author.name))
-        return
+    return response
 
-    for api in sorted(set(apis, key=lambda a: a.api_name)):
-        pass
+def cmd_pools():
+    all_pools = (
+        ("Token Mining Pool", "http://TokenMiningPool.com", "0xeabe"),
+        ("mike.rs pool", "http://mike.rs", "0x5021"),
+        ("tosti.ro", "http://tosti.ro/", "0x540d"),
+        # TODO: uncomment when extremehash finds a block
+        #("ExtremeHash.io", "http://0xbtc.extremehash.io/", "0xbbdf"),
+        )
+    response = ""
+    for name, url, address in all_pools:
+        response += "{} <{}>\n".format(name, url)
 
     return response
 
@@ -730,11 +778,9 @@ old_status_string = None
 async def update_status(client, status_string):
     global old_status_string
     if status_string != old_status_string:
-        logging.info('changing status to %s', repr(status_string))
-        old_status_string = status_string
-    await client.change_presence(game=discord.Game(name=status_string),
-                                 status=discord.Status('online'),
-                                 afk=False)
+        await client.change_presence(game=discord.Game(name=status_string),
+                                     status=discord.Status('online'),
+                                     afk=False)
 
 async def background_update():
     await client.wait_until_ready()
@@ -915,6 +961,9 @@ async def handle_trading_command(command_str, author_id, raw_message):
     if string_contains_any(command_str, ['holders', 'distribution', 'dist']):
         msg = await cmd_holders(command_str, author_id, raw_message)
 
+    if string_contains_any(command_str, ['income', 'profit', 'earnings', 'mining calculator', 'calculator']):
+        msg = cmd_income(command_str, author_id, raw_message)
+
     if string_contains_any(command_str, ['mine']):
         msg = cmd_mine(command_str, author_id, raw_message)
 
@@ -934,7 +983,19 @@ async def handle_trading_command(command_str, author_id, raw_message):
         msg = cmd_bot_command(command_str, author_id, raw_message)
 
     if string_contains_any(command_str, ['ping']):
-        msg = cmd_ping()
+        msg = cmd_ping(command_str, author_id, raw_message)
+
+    if string_contains_any(command_str, ['pools']):
+        msg = cmd_pools()
+
+    if string_contains_any(command_str, ['help all']):
+        # TODO: generate this automatically
+        msg = ("trading commands: `price`  `price <exchange>`  `volume`  `ratio`  `convert`  `rank`  `btc`  `eth`  `marketcap`\n"
+               #+ "bot commands: `uptime` "
+               + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned`  `mine`\n"
+               + "price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.Random(datetime.date.today().strftime("%j")).sample(config.EXPENSIVE_STUFF, 10)))
+               + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`"
+               + "tools: `convert`  `mine`  `profit`")
 
     for price, names in config.EXPENSIVE_STUFF:
         if string_contains_any(command_str, names, exhaustive_search=True):
@@ -1007,7 +1068,7 @@ def configure_discord_client():
 def show_startup_info(client):
     logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
     logging.debug('discord.py version {}'.format(discord.__version__))
-    logging.info('Logged to {} servers in as {} id:{}'.format(len(client.servers),
+    logging.info('Logged in to {} servers as {} id:{}'.format(len(client.servers),
                                                               client.user.name,
                                                               client.user.id))
     if settings['show_channels']:
@@ -1023,10 +1084,20 @@ def show_startup_info(client):
                                                            allowed))
 
 def setup_logging(path):
+    class DiscordLogFilter(logging.Filter):
+        """Filter to hide uninformative/annoying discord errors"""
+        def filter(self, record):
+            ignored_messages = (
+                "PyNaCl is not installed, voice will NOT be supported",
+                #"We have stopped responding to the gateway.",
+                )
+            return not record.getMessage() in ignored_messages
+
     # set up logging to file
     filehandler = logging.FileHandler(path,
                                       mode='a',
                                       encoding='utf-8')
+    filehandler.addFilter(DiscordLogFilter())
     filehandler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s, %(name)-12s, %(levelname)-8s, %(message)s',
                                   datefmt='%m-%d-%y %H:%M:%S')
@@ -1034,22 +1105,22 @@ def setup_logging(path):
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
+    console.addFilter(DiscordLogFilter())
     console.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s [%(levelname)-5.5s] %(message)s',
-                                  datefmt='%H:%M:%S')
+    formatter = logging.Formatter('%(asctime)-15s %(name)-7.7s %(levelname)-5.5s %(message)s',
+                                  datefmt='%d/%m %H:%M:%S')
     console.setFormatter(formatter)
 
     logging.basicConfig(handlers=[filehandler, console],
         level=logging.DEBUG)
 
-    # make websocket be quiet (no traces to log)
+    # make libraries be quiet
     websocket.enableTrace(False)
     logging.getLogger('websockets').setLevel(logging.WARNING)
-    # make discord be quiet
+    logging.getLogger('web3').setLevel(logging.INFO)
     logging.getLogger('discord').setLevel(logging.WARNING)
 
-    logging.info('Logging debug info to {}...'.format(path))
-
+    logging.info('Logging debug info to {}'.format(path))
 
 def manual_api_update():
     logging.info('updating apis...')
