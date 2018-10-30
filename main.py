@@ -990,9 +990,9 @@ async def handle_trading_command(command_str, author_id, raw_message):
     if string_contains_any(command_str, ['help all']):
         # TODO: generate this automatically
         msg = ("trading commands: `price`  `price <exchange>`  `volume`  `ratio`  `convert`  `rank`  `btc`  `eth`  `marketcap`\n"
-               #+ "bot commands: `uptime` "
+               + "price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.Random(datetime.date.today().strftime("%j")).sample(config.EXPENSIVE_STUFF, 5)))
+               #+ "bot commands: `uptime ping` "
                + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned`  `mine`\n"
-               + "price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.Random(datetime.date.today().strftime("%j")).sample(config.EXPENSIVE_STUFF, 10)))
                + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`\n"
                + "tools: `convert`  `income`  `mine`\n")
 

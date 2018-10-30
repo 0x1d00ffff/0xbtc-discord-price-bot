@@ -38,6 +38,8 @@ Todo:
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
  - update help
  - move infura URL to config file
+ - rename 'api' to 'exchange'
+ - make exchanges module
  - generalize the command interface
  - occasionally APIs return NaN as a data point.. which is a valid float. Need
    to explicitly check for this.
