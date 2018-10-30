@@ -576,16 +576,15 @@ def cmd_bot_command(message, author_id, raw_message):
     return "OK-noresponse"
 
 def cmd_ping(message, author_id, raw_message):
-    sent_time = raw_message.timestamp
-    delta = time.time() - sent_time
-    response = "Discord: {}ms\n".format(prettify_decimals(delta))
+    delta = datetime.datetime.utcnow() - raw_message.timestamp
+    response = "Discord: {:.1f} ms\n".format(delta.total_seconds() * 1000.0)
 
     ping_times = ping_wrapper.ping_list(['api.infura.io', 'etherscan.io'])
     for url, latency in ping_times:
         if latency == None:
             response += "{}: down\n".format(url)
         else:
-            response += "{}: {}ms\n".format(url, prettify_decimals(latency))
+            response += "{}: {.1f} ms\n".format(url, latency)
 
     return response
 
