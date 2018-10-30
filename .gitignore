@@ -1,9 +1,11 @@
 # custom files for this project
 secret_info.py
+*.db
 *.db.bak
 *.db.dat
 *.db.dir
 holders_chart.png
+debug.log
 
 
 

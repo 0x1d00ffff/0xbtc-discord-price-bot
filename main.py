@@ -584,7 +584,7 @@ def cmd_ping(message, author_id, raw_message):
         if latency == None:
             response += "{}: down\n".format(url)
         else:
-            response += "{}: {.1f} ms\n".format(url, latency)
+            response += "{}: {:.1f} ms\n".format(url, latency)
 
     return response
 
