@@ -38,7 +38,7 @@ async def keep_running(client, token):
             if e.msg == "close_connection() got an unexpected keyword argument 'force'":
                 logging.error("Discord.py trying to stay connected...")
             else:
-                logging.exception("Unexpected error from discord, trying to stay connected...") from e
+                logging.exception("Unexpected error from discord, trying to stay connected...")
 
 
         except (discord.HTTPException, aiohttp.ClientError,
