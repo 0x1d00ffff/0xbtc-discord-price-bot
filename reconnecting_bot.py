@@ -31,8 +31,15 @@ async def keep_running(client, token):
             await client.connect()
 
         except aiohttp.errors.ClientOSError:
-            logging.warning("Network down; discord.py trying to stay connected...")
+            logging.error("Network down; discord.py trying to stay connected...")
             await asyncio.sleep(retry.delay())
+
+        except TypeError as e:
+            if e.msg == "close_connection() got an unexpected keyword argument 'force'":
+                logging.error("Discord.py trying to stay connected...")
+            else:
+                logging.exception("Unexpected error from discord, trying to stay connected...") from e
+
 
         except (discord.HTTPException, aiohttp.ClientError,
                 discord.GatewayNotFound, discord.ConnectionClosed,
@@ -40,7 +47,7 @@ async def keep_running(client, token):
                 websockets.WebSocketProtocolError) as e:
             if isinstance(e, discord.ConnectionClosed) and e.code == 4004:
                 raise # Do not reconnect on authentication failure
-            logging.exception("Discord.py trying to stay connected...")
+            logging.error("Discord.py trying to stay connected...")
             await asyncio.sleep(retry.delay())
 
 
