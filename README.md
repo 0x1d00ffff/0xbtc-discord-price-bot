@@ -3,8 +3,22 @@ bot to monitor/post price etc to the 0xbtc discord server
 
 Installation:
  - copy `template_secret_info.py` to `secret_info.py` and fill in your bot's authentication settings
- - Install python 3
- - `pip3 install websocket discord beautifulsoup matplotlib`
+ - Install python 3.6+
+   - For debian 9 users: Debian 9 repositories only go up to python 3.5, so to
+     install the latest 3.6.x python version:
+     - install prerequisites:
+
+         sudo apt install build-essential checkinstall libreadline-gplv2-dev \
+         libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev \
+         libbz2-dev libffi-dev
+
+     - `https://www.python.org/ftp/python/3.6.7/Python-3.6.7.tgz`
+     - `tar xvf Python-3.6.7.tgz`
+     - `cd Python-3.6.7/`
+     - `./configure --enable-optimizations --with-ensurepip=install`
+     - `make -j2` (or `make -j8` if you have a cpu with lots of threads)
+     - `sudo make altinstall`
+ - `pip3 install websocket discord beautifulsoup4 matplotlib`
  - `pip3 install web3` - should work with 4.7.2 and above
    Note for Windows Users:
    - The above command failed for me with error:
@@ -21,6 +35,7 @@ Requires:
  - matplotlib (only if !holders command is enabled)
 
 Todo:
+ - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
  - update help
  - move infura URL to config file
  - generalize the command interface
