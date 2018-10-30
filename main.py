@@ -994,8 +994,8 @@ async def handle_trading_command(command_str, author_id, raw_message):
                #+ "bot commands: `uptime` "
                + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned`  `mine`\n"
                + "price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.Random(datetime.date.today().strftime("%j")).sample(config.EXPENSIVE_STUFF, 10)))
-               + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`"
-               + "tools: `convert`  `mine`  `profit`")
+               + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`\n"
+               + "tools: `convert`  `income`  `mine`\n")
 
     for price, names in config.EXPENSIVE_STUFF:
         if string_contains_any(command_str, names, exhaustive_search=True):
