@@ -40,7 +40,7 @@ from persistent_storage import Storage
 import configuration as config
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.2.1"
+_VERSION = "0.2.2"
 
 CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
 # commands that work in all channels (ignores the blacklist)

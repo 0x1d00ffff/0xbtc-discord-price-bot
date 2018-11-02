@@ -12,6 +12,7 @@ class WeightedAverage():
     def average(self):
         if len(self.values) == 0:
             return 0
+        # if no weight, do normal average
         if self.sum_of_weight == 0:
-            return 0
+            return sum(v[0] for v in self.values) / len(self.values)
         return sum(v[0] * v[1] for v in self.values) / self.sum_of_weight
