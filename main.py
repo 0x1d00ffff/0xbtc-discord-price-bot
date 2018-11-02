@@ -241,7 +241,7 @@ def cmd_price(source='aggregate'):
     eth_price_on_this_exchange = float(apis.eth_price_usd(api_name=source))
 
     # Enclaves usually fails this way
-    if token_price == 0 and eth_price_on_this_exchange == 0:
+    if token_price == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.short_url(api_name=source))
 
     percent_change_str = ""
