@@ -82,7 +82,7 @@ _GLOBAL_COMMANDS = [
         ["az", "azlehria", "nabiki", "gaiden"],
         "Azlehria: <https://github.com/azlehria/0xbitcoin-gpuminer/releases>"),
     CmdDef(
-        ["soliditysha3miner", "armano", "ss3"],
+        ["soliditysha3miner", "amano", "ss3"],
         "SoliditySHA3Miner: <https://github.com/lwYeo/SoliditySHA3Miner/releases>"),
 ]
 
@@ -432,9 +432,49 @@ def cmd_income(message, author_id, raw_message):
                           tokens_over_time_str,
                           seconds_to_time(seconds_per_block))
 
+def check_and_set_top_share(resulting_difficulty, author_name, author_id, digest):
+    result = ""
+    if resulting_difficulty > storage.top_miner_difficulty.get():
+        fmt_str = "\nNew best share! Previous was `0x{}...` (Difficulty: {}) by {}"
+        result += fmt_str.format(storage.top_miner_digest.get()[:5].hex(),
+                                 prettify_decimals(storage.top_miner_difficulty.get()),
+                                 storage.top_miner_name.get())
+
+        storage.top_miner_difficulty.set(resulting_difficulty)
+        storage.top_miner_name.set(author_name)
+        storage.top_miner_id.set(author_id)
+        storage.top_miner_digest.set(digest)
+    # in case someone solves a block... never going to happen but why not?
+    if Web3.toInt(digest) <= token.mining_target:
+        result += "\n~~~~~"
+        result += "\n:money_mouth: You seem to have solved a block!? Try your luck here [<https://etherscan.io/address/0xb6ed7644c69416d67b522e20bc294a9a9b405b31#writeContract>]"
+        result += "\nMake sure you log into metamask using the public address you have set here, and type these values into the mint() function:"
+        result += "\n  nonce=`{}`".format(Web3.toHex(nonce))
+        result += "\n  challenge_digest=`{}`".format(Web3.toHex(digest))
+        result += "\n~~~~~"
+    return result
+
+def parse_mining_results(nonce, digest, save_high_score=False, author_name=None, author_id=None):
+    resulting_difficulty = token.MAX_TARGET / Web3.toInt(digest)
+    percent_of_the_way_to_full_target = token.mining_target / Web3.toInt(digest)
+    fmt_str = "Nonce `0x{}...` -> Digest `0x{}...`\nDiff: {} ({}% of the way to a full solution)"
+    result = fmt_str.format(nonce[:5].hex(),
+                            digest[:5].hex(),
+                            prettify_decimals(resulting_difficulty), 
+                            prettify_decimals(percent_of_the_way_to_full_target * 100.0))
+    if save_high_score:
+        result += check_and_set_top_share(resulting_difficulty, 
+                                          author_name,
+                                          author_id,
+                                          digest)
+    return result
+
 def cmd_mine(message, author_id, raw_message):
     if token.mining_target is None:
         return "Sorry, I'm having problems with my APIs..."
+
+    if 'test' in message:
+        return cmd_mine_test(message, author_id, raw_message)
 
     try:
         address = storage.user_addresses.get(author_id)
@@ -446,37 +486,37 @@ def cmd_mine(message, author_id, raw_message):
     except:
         return "Bad nonce; try `mine 0xABBA`, `!mine 27`, or `!mine message`"
 
-    nonce, digest = token.get_digest_for_nonce_str(nonce, address)
-    resulting_difficulty = token.MAX_TARGET / Web3.toInt(digest)
-    percent_of_the_way_to_full_target = token.mining_target / Web3.toInt(digest)
+    try:
+        nonce, digest = token.get_digest_for_nonce_str(nonce, address)
+    except RuntimeError as e:
+        return str(e)
 
-    fmt_str = "Nonce `0x{}...` -> Digest `0x{}...`\nDiff: {} ({}% of the way to a full solution)"
-    result = fmt_str.format(nonce[:5].hex(),
-                            digest[:5].hex(),
-                            prettify_decimals(resulting_difficulty), 
-                            prettify_decimals(percent_of_the_way_to_full_target * 100.0))
+    return parse_mining_results(nonce,
+                                digest,
+                                save_high_score=True,
+                                author_name=raw_message.author.name,
+                                author_id=raw_message.author.id)
 
-    if resulting_difficulty > storage.top_miner_difficulty.get():
-        fmt_str = "\nNew best share! Previous was `0x{}...` (Difficulty: {}) by {}"
-        result += fmt_str.format(storage.top_miner_digest.get()[:5].hex(),
-                                 prettify_decimals(storage.top_miner_difficulty.get()),
-                                 storage.top_miner_name.get())
+def cmd_mine_test(message, author_id, raw_message):
+    """ wrapper around get_digest_for_nonce to make testing easier. Example:
 
-        storage.top_miner_difficulty.set(resulting_difficulty)
-        storage.top_miner_name.set(raw_message.author.name)
-        storage.top_miner_id.set(author_id)
-        storage.top_miner_digest.set(digest)
+        !mine test 
+        0x3b0ec88154c8aecbc7876f50d8915ef7cd6112a604cad4f86f549d5b9eed369a 
+        0x540d752A388B4fC1c9Deeb1Cd3716A2B7875D8A6 
+        0x03000000000000000440a2682657259316000000e87905d96943030a90de3e74 
+    """
 
-    # in case someone solves a block... never going to happen but why not?
-    if Web3.toInt(digest) <= token.mining_target:
-        result += "\n~~~~~"
-        result += "\n:money_mouth: You seem to have solved a block!? Try your luck here [<https://etherscan.io/address/0xb6ed7644c69416d67b522e20bc294a9a9b405b31#writeContract>]"
-        result += "\nMake sure you log into metamask using the public address you have set here, and type these values into the mint() function:"
-        result += "\n  nonce=`{}`".format(Web3.toHex(nonce))
-        result += "\n  challenge_digest=`{}`".format(Web3.toHex(digest))
-        result += "\n~~~~~"
+    try:
+        challenge_number, address, nonce = message.split()[-3:]
+    except:
+        return "Bad command; try `mine test <challenge_number> <address> <nonce>`"
 
-    return result
+    try:
+        nonce, digest = token.get_digest_for_nonce_str(nonce, address, challenge_number)
+    except RuntimeError as e:
+        return str(e)
+    
+    return parse_mining_results(nonce, digest)
 
 def cmd_bestshare():
     fmt_str = "Best share digest: `0x{}...` (Difficulty: {}) by {}"
