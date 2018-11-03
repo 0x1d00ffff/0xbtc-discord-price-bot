@@ -83,12 +83,15 @@ class EthexAPI():
             if currency != self.currency_symbol:
                 continue
 
-            if base_pair == "BTC":
-                self.price_btc = float(data[pair_name]['last'])
-                self.volume_btc = float(data[pair_name]['volume'])
-            if base_pair == "ETH":
-                self.price_eth = float(data[pair_name]['last'])
-                self.volume_eth = float(data[pair_name]['volume'])
+            try:
+                if base_pair == "BTC":
+                    self.price_btc = float(data[pair_name]['last'])
+                    self.volume_btc = float(data[pair_name]['volume'])
+                if base_pair == "ETH":
+                    self.price_eth = float(data[pair_name]['last'])
+                    self.volume_eth = float(data[pair_name]['volume'])
+            except TypeError as e:
+                raise TimeoutError("Could not convert data to float") from e
 
         if self.currency_symbol == "ETH":
             self.price_eth = 1
