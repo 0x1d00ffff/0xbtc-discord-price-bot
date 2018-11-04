@@ -22,6 +22,12 @@ import configuration as config
 
 
 saved_holders_chart_filename = os.path.join(config.DATA_FOLDER, 'holders_chart.png')
+_known_addresses = {
+    "0x8d12a197cb00d4747a1fe03395095ce2a5cc6819" : "EtherDelta",
+    "0xbf45f4280cfbe7c2d2515a7d984b8c71c15e82b7" : "Enclaves",
+    "0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208" : "IDEX",
+    "0xe03c23519e18d64f144d2800e30e81b0065c48b5" : "Mercatox",
+}
 
 def update_saved_holders_chart(token_address, total_supply):
     holders = _get_top_1000_token_holders(token_address)
@@ -35,6 +41,9 @@ def _generate_holders_chart(holders, total_supply, output_filename):
 
     for holder in holders:
         rank, address, amount = holder
+
+        if address in _known_addresses:
+            address = "{} ({})".format(address, _known_addresses[address])
 
         supply_included += amount
 
