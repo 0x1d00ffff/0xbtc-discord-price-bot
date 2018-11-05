@@ -827,14 +827,14 @@ async def background_update():
         try:
             apis.update()
         except RuntimeError as e:
-            logging.warning('Failed to update exchange APIs: {}'.format(e.msg))
+            logging.warning('Failed to update exchange APIs: {}'.format(str(e)))
         except:
             logging.exception('Failed to update exchange APIs')
 
         try:
             token.update()
         except RuntimeError as e:
-            logging.warning('Failed to update contract info: {}'.format(e.msg))
+            logging.warning('Failed to update contract info: {}'.format(str(e)))
         except:
             logging.exception('Failed to update contract info')
 
@@ -882,7 +882,7 @@ async def background_update():
                                                            end_of_status))
         except (websockets.exceptions.ConnectionClosed,
                 RuntimeError) as e:
-            logging.warning('Falied to change status: {}'.format(e.msg))
+            logging.warning('Falied to change status: {}'.format(str(e)))
         except:
             logging.exception('Failed to change status')
 

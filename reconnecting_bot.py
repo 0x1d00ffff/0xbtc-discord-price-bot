@@ -35,7 +35,8 @@ async def keep_running(client, token):
             await asyncio.sleep(retry.delay())
 
         except TypeError as e:
-            if e.msg == "close_connection() got an unexpected keyword argument 'force'":
+            logging.error("Discord.py TypeError: '{}'".format(str(e)))
+            if str(e) == "close_connection() got an unexpected keyword argument 'force'":
                 logging.error("Discord.py trying to stay connected...")
             else:
                 logging.exception("Unexpected error from discord, trying to stay connected...")
