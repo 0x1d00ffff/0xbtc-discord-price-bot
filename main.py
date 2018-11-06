@@ -321,9 +321,14 @@ def cmd_difficulty():
     if token.difficulty == None:
         return ":shrug:"
 
-    fmt_str = "Current difficulty: **{}** ({} until next retarget)"
+    if token.seconds_until_readjustment == float('inf'):
+        retarget_str = ''
+    else:
+        retarget_str = " ({} until next retarget)".format(seconds_to_time(token.seconds_until_readjustment))
+
+    fmt_str = "Current difficulty: **{}** {}"
     result = fmt_str.format(to_readable_thousands(token.difficulty, unit_type='long'),
-                            seconds_to_time(token.seconds_until_readjustment))
+                            retarget_str)
     return result
 
 def cmd_blocktime():
@@ -331,7 +336,7 @@ def cmd_blocktime():
         return ":shrug:"
 
     fmt_str = "Current average block time: **{}** (average taken over the last {})"
-    result = fmt_str.format(seconds_to_time(token.seconds_per_reward),
+    result = fmt_str.format('unknown' if token.seconds_per_reward == float('inf') else seconds_to_time(token.seconds_per_reward),
                             seconds_to_time(token.seconds_since_readjustment, granularity=1))
     return result
 
