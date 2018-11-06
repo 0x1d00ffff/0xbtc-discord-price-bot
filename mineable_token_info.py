@@ -32,6 +32,8 @@ except:
     from urllib import urlencode
     from urllib import quote
 
+import requests
+
 from urllib.error import URLError
 
 
@@ -172,7 +174,10 @@ class MineableTokenInfo():
         eth_blocks_since_last_difficulty_period = self._current_eth_block - self.last_difficulty_start_block;
         self.seconds_since_readjustment = eth_blocks_since_last_difficulty_period * _SECONDS_PER_ETH_BLOCK
         rewards_since_readjustment = self._epoch_count % self._BLOCKS_PER_READJUSTMENT
-        self.seconds_per_reward = self.seconds_since_readjustment / rewards_since_readjustment;
+        if rewards_since_readjustment == 0:
+            self.seconds_per_reward = float('inf')
+        else:
+            self.seconds_per_reward = self.seconds_since_readjustment / rewards_since_readjustment;
         rewards_left = self._BLOCKS_PER_READJUSTMENT - rewards_since_readjustment
         self.seconds_until_readjustment = rewards_left * self.seconds_per_reward
 
