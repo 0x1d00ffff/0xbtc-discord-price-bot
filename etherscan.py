@@ -23,6 +23,7 @@ import configuration as config
 
 saved_holders_chart_filename = os.path.join(config.DATA_FOLDER, 'holders_chart.png')
 _known_addresses = {
+    "0xc91795A59F20027848bC785678B53875934792A1" : "Mercatox",  # merc cold storage source https://digitexfutures.com/news/a-message-from-the-team-addressing-the-recent-activity-with-dgtx/
     "0x8d12a197cb00d4747a1fe03395095ce2a5cc6819" : "EtherDelta",
     "0xbf45f4280cfbe7c2d2515a7d984b8c71c15e82b7" : "Enclaves",
     "0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208" : "IDEX",
