@@ -34,6 +34,11 @@ Requires:
  - BeautifulSoup (only if !holders command is enabled)
  - matplotlib (only if !holders command is enabled)
 
+Bugs:
+ - `!mine test` fails since it expects a checksum address
+ - occasionally APIs return NaN as a data point.. which is a valid float. Need
+   to explicitly check for this.
+
 Todo:
  - add error counters to exchange and token apis; add !status command that shows them
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
@@ -42,8 +47,6 @@ Todo:
  - rename 'api' to 'exchange'; wrap all apis (exchanges, token, etc) in a new apis class
  - make exchanges module
  - generalize the command interface
- - occasionally APIs return NaN as a data point.. which is a valid float. Need
-   to explicitly check for this.
  - typos/new commands
    - !binance (to show current listing price in usd)
    - !orderbooks mercatox
