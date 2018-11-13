@@ -6,10 +6,13 @@ import os
 import datetime
 import time
 
+import socket
 try:
     from urllib.request import urlopen, Request
 except:
     from urllib import urlopen, Request
+
+from urllib.error import URLError
 
 from bs4 import BeautifulSoup
 
@@ -23,7 +26,7 @@ import configuration as config
 
 saved_holders_chart_filename = os.path.join(config.DATA_FOLDER, 'holders_chart.png')
 _known_addresses = {
-    "0xc91795A59F20027848bC785678B53875934792A1" : "Mercatox",  # merc cold storage source https://digitexfutures.com/news/a-message-from-the-team-addressing-the-recent-activity-with-dgtx/
+    "0xc91795a59f20027848bc785678b53875934792a1" : "Mercatox",  # merc cold storage source https://digitexfutures.com/news/a-message-from-the-team-addressing-the-recent-activity-with-dgtx/
     "0x8d12a197cb00d4747a1fe03395095ce2a5cc6819" : "EtherDelta",
     "0xbf45f4280cfbe7c2d2515a7d984b8c71c15e82b7" : "Enclaves",
     "0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208" : "IDEX",
@@ -31,7 +34,15 @@ _known_addresses = {
 }
 
 def update_saved_holders_chart(token_address, total_supply):
-    holders = _get_top_1000_token_holders(token_address)
+    try:
+        holders = _get_top_1000_token_holders(token_address)
+    except (TimeoutError,
+            ConnectionResetError,
+            ConnectionRefusedError,
+            socket.timeout,
+            socket.gaierror,
+            URLError):
+        raise TimeoutError('Failed to get holders info')
     _generate_holders_chart(holders, total_supply, saved_holders_chart_filename)
 
 def _generate_holders_chart(holders, total_supply, output_filename):
@@ -91,7 +102,7 @@ def _generate_holders_chart(holders, total_supply, output_filename):
         wedge.set_linewidth(0.04)
     
     fmt_str = "0xBitcoin Distribution as of {}"
-    ax.set_title(fmt_str.format(datetime.datetime.now().strftime("%c")));
+    ax.set_title(fmt_str.format(datetime.datetime.now(tz=datetime.timezone.utc).strftime("%c UTC")));
 
     ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
     pyplot.tight_layout()

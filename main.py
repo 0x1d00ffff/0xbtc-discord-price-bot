@@ -848,6 +848,8 @@ async def background_update():
                 etherscan.update_saved_holders_chart(config.TOKEN_ETH_ADDRESS,
                                                      token.tokens_minted)
                 storage.last_holders_update_timestamp.set(time.time())
+            except TimeoutError:
+                logging.warning('Failed to update token holders chart')
             except:
                 logging.exception('Failed to update token holders chart')
             else:
