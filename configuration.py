@@ -10,6 +10,9 @@ COMMAND_CHARACTER = '!'  # what character should prepend all commands
 
 DATA_FOLDER = './databases/'  # folder to store persistent data (all-time high prices, etc)
 
+# URL for your Ethereum provider. Get one for free at infura.io
+ETHEREUM_NODE_URL = "https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"
+
 # Channels listed here will be ignored by the bot for all but 'global' commands
 BLACKLISTED_CHANNEL_IDS = [
     # 0xbitcoin server

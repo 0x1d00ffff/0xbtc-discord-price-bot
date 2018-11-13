@@ -36,6 +36,8 @@ import requests
 
 from urllib.error import URLError
 
+import configuration as config
+
 
 _SECONDS_PER_ETH_BLOCK = 15.0
 
@@ -61,7 +63,7 @@ class MineableTokenInfo():
 
         # TODO: change this out with a different one, this is used on the stats
         # site
-        self._w3 = Web3(Web3.HTTPProvider("https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"))
+        self._w3 = Web3(Web3.HTTPProvider(config.ETHEREUM_NODE_URL))
 
         self._contract = self._w3.eth.contract(address=self.address, abi=abi)
 
@@ -74,6 +76,8 @@ class MineableTokenInfo():
         self.addr_0_balance = None
 
     def _read_contract_variable_at_index(self, index, convert_to_int=True, divisor=1, timeout=10.0):
+        # UNUSED
+        # TODO: remove this if it is not necessary
         try:
             index = "{:#x}".format(index)
         except ValueError:
@@ -132,8 +136,10 @@ class MineableTokenInfo():
             return None
 
     def _read_contract_map_location(self, key, map_position, convert_to_int=True, divisor=1, timeout=10.0):
-        # todo: fix; this doesn't' seem to produce the correct keccack hashes
-        logging.warning("_read_contract_map_location probably doesn't work")
+        # UNUSED
+        # TODO: remove this if it is not necessary
+        # TODO: fix; this doesn't' seem to produce the correct keccack hashes
+        logging.exception("_read_contract_map_location probably doesn't work")
 
         try:
             key = "{:0>32x}".format(key)
@@ -255,22 +261,17 @@ class MineableTokenInfo():
         # pad end with 32 bytes of zeros, then drop all but first 32 bytes
         nonce = (nonce + (b'\x00' * 32))[:32]
 
-        # logging.info('challenge_number: {}'.format(challenge_number.hex()))
-        # logging.info('address: {}'.format(address))
-        # logging.info('nonce: {}'.format(nonce.hex()))
-        digest = Web3.sha3(Web3.toBytes(hexstr="3b0ec88154c8aecbc7876f50d8915ef7cd6112a604cad4f86f549d5b9eed369a540d752a388b4fc1c9deeb1cd3716a2b7875d8a603000000000000000440a2682657259316000000e87905d96943030a90de3e74"))
-
-        #import pdb; pdb.set_trace()
-
         digest = Web3.soliditySha3(['bytes32', 'address', 'uint256'], 
                                    [challenge_number, address, Web3.toInt(nonce)])
-
         return nonce, digest
 
 
 if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
+
+    # digest = Web3.sha3(Web3.toBytes(hexstr="3b0ec88154c8aecbc7876f50d8915ef7cd6112a604cad4f86f549d5b9eed369a540d752a388b4fc1c9deeb1cd3716a2b7875d8a603000000000000000440a2682657259316000000e87905d96943030a90de3e74"))
+
     m = MineableTokenInfo('0xB6eD7644C69416d67B522e20bC294A9a9B405B31')
 
     m.update()
