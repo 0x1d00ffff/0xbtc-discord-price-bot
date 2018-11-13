@@ -2,7 +2,7 @@
 bot to monitor/post price etc to the 0xbtc discord server
 
 Installation:
- - copy `template_secret_info.py` to `secret_info.py` and fill in your bot's authentication settings
+ - Clone this repository
  - Install python 3.6+
    - For debian 9 users: Debian 9 repositories only go up to python 3.5, so to
      install the latest 3.6.x python version:
@@ -18,12 +18,14 @@ Installation:
      - `./configure --enable-optimizations --with-ensurepip=install`
      - `make -j2` (or `make -j8` if you have a cpu with lots of threads)
      - `sudo make altinstall`
- - `pip3 install websocket discord beautifulsoup4 matplotlib`
- - `pip3 install web3` - should work with 4.7.2 and above
-   Note for Windows Users:
-   - The above command failed for me with error:
+ - run `pip3 install -r requirements.txt`
+   - For for Windows Users: This command failed for me with error:
    `error: command 'C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\BIN\\link.exe' failed with exit status 1158`
    - The fix: Copy rc.exe and rcdll.dll from `C:\Program Files (x86)\Windows Kits\8.1\bin\x86` to `C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin`
+ - copy `template_secret_info.py` to `secret_info.py` and fill in your bot's authentication settings
+ - edit `configuration.py` (you can run the bot with `--show_channels` to get channel IDs)
+ - (Optional) edit `apis` list at the end of `main.py`
+ - run `python3 /path/to/price-bot/`
 
 
 Requires:
@@ -38,12 +40,12 @@ Bugs:
  - `!mine test` fails since it expects a checksum address
  - occasionally APIs return NaN as a data point.. which is a valid float. Need
    to explicitly check for this.
+ - `--command_test` bypasses command preprocessing (.lower().strip()) etc
+ - if a command string matches two commands it will run both and return
+   the response from whatever command runs last.
 
 Todo:
- - add error counters to exchange and token apis; add !status command that shows them
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
- - update help
- - move infura URL to config file
  - rename 'api' to 'exchange'; wrap all apis (exchanges, token, etc) in a new apis class
  - make exchanges module
  - generalize the command interface
@@ -66,3 +68,4 @@ Todo:
    - instex [link](https://app.instex.io/0xBTC-WETH)
    - cryptobridge (not yet)
    - ddex.io
+   - Rootrex

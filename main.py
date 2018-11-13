@@ -40,14 +40,23 @@ from persistent_storage import Storage
 import configuration as config
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.2.2"
+_VERSION = "0.2.3"
+
+
+def cmd_help():
+    return ("trading commands: `price`  `price <exchange>`  `volume`  `ratio`  `rank`  `btc`  `eth`  `marketcap`\n"
+            + "price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.Random(datetime.date.today().strftime("%j")).sample(config.EXPENSIVE_STUFF, 5)))
+            #+ "bot commands: `uptime ping` "
+            + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned`\n"
+            + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`\n"
+            + "tools: `convert`  `income`  `mine`")
 
 CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
 # commands that work in all channels (ignores the blacklist)
 _GLOBAL_COMMANDS = [
     CmdDef(
         ['help', 'commands', 'bot'],
-        "available commands: `price volume ratio convert bitcoinprice lambo whitehouse millionaire billionaire`\nquick link commands: `whitepaper website ann contract stats merch mvis cosmic az ss3`"),
+        cmd_help),
     CmdDef(
         ['white paper'],
         "0xBitcoin Whitepaper: <https://github.com/0xbitcoin/white-paper>"),
@@ -64,8 +73,11 @@ _GLOBAL_COMMANDS = [
         ["stats", "statistics"],
         "0xBitcoin Stats: <https://0x1d00ffff.github.io/0xBTC-Stats/> (GitHub: <https://github.com/0x1d00ffff/0xBTC-Stats>)"),
     CmdDef(
-        ["miner", "miners", "software"],
-        "Try !mvis !cosmic !az !ss3"),
+        ["miner", "miners", "software", "cosmic", "lttofu", "az", "azlehria", "nabiki", "gaiden", "soliditysha3miner", "amano", "ss3"],
+        ("Azlehria: <https://github.com/azlehria/0xbitcoin-gpuminer/releases>\n"
+         "COSMiC: <https://bitbucket.org/LieutenantTofu/cosmic-v3/downloads/>\n" 
+         "MVIS-Tokenminer: <https://github.com/mining-visualizer/MVis-tokenminer/releases>\n"
+         "SoliditySHA3Miner: <https://github.com/lwYeo/SoliditySHA3Miner/releases>")),
     CmdDef(
         ["lava"],
         "Lava Wallet: <https://lavawallet.io/> (Development:<https://github.com/lavawallet> and <http://forum.0xbtc.io/c/development/lava-network>)"),
@@ -903,7 +915,10 @@ async def background_update():
 async def handle_global_command(command_str, author_id, raw_message):
     for cmd_def in _GLOBAL_COMMANDS:
         if string_contains_any(command_str, cmd_def.keywords):
-            return cmd_def.response
+            try:
+                return cmd_def.response()
+            except TypeError:
+                return cmd_def.response
     return None
 
 async def handle_trading_command(command_str, author_id, raw_message):
@@ -1034,15 +1049,6 @@ async def handle_trading_command(command_str, author_id, raw_message):
     if string_contains_any(command_str, ['pools']):
         msg = cmd_pools()
 
-    if string_contains_any(command_str, ['help all']):
-        # TODO: generate this automatically
-        msg = ("trading commands: `price`  `price <exchange>`  `volume`  `ratio`  `convert`  `rank`  `btc`  `eth`  `marketcap`\n"
-               + "price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.Random(datetime.date.today().strftime("%j")).sample(config.EXPENSIVE_STUFF, 5)))
-               #+ "bot commands: `uptime ping` "
-               + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned`  `mine`\n"
-               + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`\n"
-               + "tools: `convert`  `income`  `mine`\n")
-
     for price, names in config.EXPENSIVE_STUFF:
         if string_contains_any(command_str, names, exhaustive_search=True):
             correct_name = names[0]
@@ -1091,17 +1097,22 @@ def configure_discord_client():
             if message_contents.startswith('！'):
                 message_contents = '!' + message_contents[1:]
 
-        # trading commands are ignored in blacklisted channels
-        if message.channel.id not in config.BLACKLISTED_CHANNEL_IDS:
+        if message.channel.id in config.BLACKLISTED_CHANNEL_IDS:
+            # check only global commands in a blacklisted channel
+            response = await handle_global_command(message_contents, message.author.id, message)
+            if response:
+                await send_discord_msg(message.channel, response)
+                return
+        else:
+            # check all commands in a normal channel
+            response = await handle_global_command(message_contents, message.author.id, message)
+            if response:
+                await send_discord_msg(message.channel, response)
+                return
             response = await handle_trading_command(message_contents, message.author.id, message)
             if response:
                 await send_discord_msg(message.channel, response)
                 return
-
-        response = await handle_global_command(message_contents, message.author.id, message)
-        if response:
-            await send_discord_msg(message.channel, response)
-            return
 
         # If command starts with config.COMMAND_CHARACTER and we have not returned yet, it was unrecognized.
         if message_contents.startswith(config.COMMAND_CHARACTER):
@@ -1164,6 +1175,8 @@ def setup_logging(path):
     websocket.enableTrace(False)
     logging.getLogger('websockets').setLevel(logging.WARNING)
     logging.getLogger('web3').setLevel(logging.INFO)
+    logging.getLogger("urllib3").setLevel(logging.INFO)
+    logging.getLogger("matplotlib").setLevel(logging.INFO)
     logging.getLogger('discord').setLevel(logging.WARNING)
 
     logging.info('Logging debug info to {}'.format(path))
@@ -1252,7 +1265,9 @@ def main():
                         help=("Run unittests"))
     parser.add_argument('--log_location',
                         default=os.path.join(config.DATA_FOLDER, 'debug.log'),
-                        help=("Set the location of the debug log file"))
+                        help=("Set the location of the debug log file. By "
+                              "default it will go to the DATA_FOLDER set in "
+                              "configuration.py"))
     parser.add_argument('--version', action='version', 
                         version='%(prog)s v{}'.format(_VERSION))
     args = parser.parse_args()
