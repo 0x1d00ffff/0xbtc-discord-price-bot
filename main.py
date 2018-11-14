@@ -743,7 +743,7 @@ def convert(amount, src, dest):
         usd_value = token_price_usd * amount / 1000.0
     elif src in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti', 'crumbs', 'crumb']:
         usd_value = token_price_usd * amount / 10**8
-    elif src in ['eth', 'ethereum']:
+    elif src in ['eth', 'ethereum', 'ether']:
         usd_value = apis.eth_price_usd() * amount
     elif src == 'wei':
         usd_value = apis.eth_price_usd() * amount / 10**18
@@ -773,7 +773,7 @@ def convert(amount, src, dest):
         result = 1000.0 * usd_value / token_price_usd
     elif dest in ['0xsatoshis', '0xsatoshi', 'satoastis', 'satoasti', 'crumbs', 'crumb']:
         result = 10**8 * usd_value / token_price_usd
-    elif dest in ['eth', 'ethereum']:
+    elif dest in ['eth', 'ethereum', 'ether']:
         result = usd_value / apis.eth_price_usd()
     elif dest == 'wei':
         result = 10**18 * usd_value / apis.eth_price_usd()
