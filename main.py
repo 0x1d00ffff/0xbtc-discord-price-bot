@@ -6,7 +6,8 @@ TODO: move commands out of main.py, this file is getting long
 """
 
 import sys
-assert sys.version_info >= (3,6), "requires python > 3.6+"
+# TODO: after upgrading discord.py to rewrite, change to >=3.6
+assert sys.version_info != (3,6), "requires python 3.6"
 
 import time
 import datetime
