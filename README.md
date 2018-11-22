@@ -48,6 +48,7 @@ Todo:
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
  - rename 'api' to 'exchange'; wrap all apis (exchanges, token, etc) in a new apis class
  - make exchanges module
+ - generalize command categories (currently only trading and global)
  - generalize the command interface
  - typos/new commands
    - !binance (to show current listing price in usd)
