@@ -10,17 +10,11 @@ import sys
 assert sys.version_info != (3,6), "requires python 3.6"
 
 import time
-import datetime
-import socket
 import websocket  # for websocket.enableTrace(False)
 import websockets  # for websockets.exceptions.ConnectionClosed
 import asyncio
 import logging
-import collections
-import random
 import re
-
-from web3 import Web3
 import discord
 from secret_info import TOKEN
 from reconnecting_bot import keep_running
@@ -35,7 +29,6 @@ from multi_api_manager import MultiApiManager
 
 from mineable_token_info import MineableTokenInfo
 import etherscan
-import ping_wrapper
 
 import formatting_helpers
 import commands
@@ -45,8 +38,6 @@ import configuration as config
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
 _VERSION = "0.2.3"
-
-
 
 
 old_status_string = None
@@ -61,7 +52,7 @@ async def background_update():
     await client.wait_until_ready()
     while not client.is_closed:
         try:
-            apis.update()
+            exchanges.update()
         except RuntimeError as e:
             logging.warning('Failed to update exchange APIs: {}'.format(str(e)))
         except:
@@ -87,8 +78,8 @@ async def background_update():
                 logging.info('Updated token holders chart')
 
         try:
-            price_eth = apis.price_eth(config.CURRENCY)
-            price_usd = apis.price_eth(config.CURRENCY) * apis.eth_price_usd()
+            price_eth = exchanges.price_eth(config.CURRENCY)
+            price_usd = exchanges.price_eth(config.CURRENCY) * exchanges.eth_price_usd()
             if price_usd > storage.all_time_high_usd_price.get():
                 logging.info('New usd ATH! ${}'.format(price_usd))
                 storage.all_time_high_usd_price.set(price_usd)
@@ -101,8 +92,8 @@ async def background_update():
             logging.exception('Failed to save ATH data')
 
         try:
-            price_eth = apis.price_eth(config.CURRENCY)
-            price_usd = apis.price_eth(config.CURRENCY) * apis.eth_price_usd()
+            price_eth = exchanges.price_eth(config.CURRENCY)
+            price_usd = exchanges.price_eth(config.CURRENCY) * exchanges.eth_price_usd()
             # usd price is hidden if it is 0 (an error)
             usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
 
@@ -110,10 +101,10 @@ async def background_update():
             if token.estimated_hashrate is not None and token.estimated_hashrate > 0:
                 end_of_status = to_readable_thousands(token.estimated_hashrate, unit_type='short_hashrate')
             else:
-                end_of_status = formatting_helpers.seconds_to_n_time_ago(time.time()-apis.last_updated_time())
+                end_of_status = formatting_helpers.seconds_to_n_time_ago(time.time()-exchanges.last_updated_time())
 
             # wait until at least one successful update to show status
-            if apis.last_updated_time() != 0:
+            if exchanges.last_updated_time() != 0:
                 fmt_str = "{}{} Ξ ({})"
                 await update_status(client, fmt_str.format(usd_str,
                                                            prettify_decimals(price_eth),
@@ -257,7 +248,7 @@ def setup_logging(path):
 def manual_api_update():
     logging.info('updating apis...')
     try:
-        apis.update()
+        exchanges.update()
         token.update()
     except Exception as e:
         logging.exception('failed to update prices / contract info')
@@ -316,7 +307,7 @@ def command_test():
 # todo: encapsulate these
 client = None
 storage = None
-apis = None
+exchanges = None
 token = None
 start_time = None
 settings = {}
@@ -325,7 +316,7 @@ def main():
     import argparse
     import os
 
-    global client, storage, apis, token, start_time, settings
+    global client, storage, exchanges, token, start_time, settings
     
     parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot v{}'.format(_VERSION),
                                      epilog='<3 0x1d00ffff')
@@ -358,7 +349,7 @@ def main():
         os.makedirs(os.path.split(args.log_location)[0])
     setup_logging(args.log_location)
 
-    apis = MultiApiManager(
+    exchanges = MultiApiManager(
     [
         CoinMarketCapAPI(config.CURRENCY),
         CoinMarketCapAPI('ETH'),
