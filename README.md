@@ -2,6 +2,7 @@
 bot to monitor/post price etc to the 0xbtc discord server
 
 Installation:
+
  - Clone this repository
  - Install python 3.6+
    - For debian 9 users: Debian 9 repositories only go up to python 3.5, so to
@@ -29,6 +30,7 @@ Installation:
 
 
 Requires:
+
  - python3
  - websocket
  - discord
@@ -37,6 +39,7 @@ Requires:
  - matplotlib (only if !holders command is enabled)
 
 Bugs:
+
  - `!mine test` fails since it expects a checksum address
  - occasionally APIs return NaN as a data point.. which is a valid float. Need
    to explicitly check for this.
@@ -45,6 +48,18 @@ Bugs:
    the response from whatever command runs last.
 
 Todo:
+
+ - support commas as decimals in '!convert'
+ 
+```python
+# if no decimals (.) then assume commas are decimal separators
+if '.' not in msg:
+    msg = msg.replace(',', '.')
+# if decimals exist then simply remove commas
+else:
+    msg = msg.replace(',', '')
+```
+   
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
  - rename 'api' to 'exchange'; wrap all apis (exchanges, token, etc) in a new apis class
  - make exchanges module
