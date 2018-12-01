@@ -106,6 +106,7 @@ class EnclavesAPI():
                 websocket._exceptions.WebSocketBadStatusException,
                 websocket._exceptions.WebSocketAddressException,
                 socket.gaierror,
+                socket.timeout,
                 URLError) as e:
             logging.warning('api timeout {}'.format(self.api_name))
         else:

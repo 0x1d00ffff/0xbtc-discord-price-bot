@@ -133,8 +133,8 @@ class IDEXAPI():
         except (TimeoutError,
                 ConnectionResetError,
                 ConnectionRefusedError,
-                socket.timeout,
                 socket.gaierror,
+                socket.timeout,
                 URLError) as e:
             logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
         else:

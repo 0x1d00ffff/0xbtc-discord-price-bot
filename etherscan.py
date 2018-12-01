@@ -39,8 +39,8 @@ def update_saved_holders_chart(token_address, total_supply):
     except (TimeoutError,
             ConnectionResetError,
             ConnectionRefusedError,
-            socket.timeout,
             socket.gaierror,
+            socket.timeout,
             URLError):
         raise TimeoutError('Failed to get holders info')
     _generate_holders_chart(holders, total_supply, saved_holders_chart_filename)
