@@ -34,8 +34,10 @@ class EnclavesAPI():
 
         if currency_symbol == "0xBTC":
             self._CONTRACT_ADDRESS = '0xb6ed7644c69416d67b522e20bc294a9a9b405b31'
+        elif currency_symbol == "XXX":
+            self._CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000'
         else:
-            raise RuntimeError("Unknown currency_symbol {}".format(currency_symbol))
+            raise RuntimeError("Unknown currency_symbol {}, need to add address to enclavesdex.py".format(currency_symbol))
 
         self.last_updated_time = 0
 

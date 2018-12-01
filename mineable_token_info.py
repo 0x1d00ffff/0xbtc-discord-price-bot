@@ -59,7 +59,8 @@ class MineableTokenInfo():
 
             abi = mineable_token_abis.abis[self.SYMBOL]
         else:
-            raise RuntimeError("constants for this contract address are missing")
+            fmt_str = "constants for this contract address {} are missing, need to edit mineable_token_info.py"
+            raise RuntimeError(fmt_str.format(token_address))
 
         # TODO: change this out with a different one, this is used on the stats
         # site

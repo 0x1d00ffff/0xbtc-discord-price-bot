@@ -33,7 +33,7 @@ _known_addresses = {
     "0xe03c23519e18d64f144d2800e30e81b0065c48b5" : "Mercatox",
 }
 
-def update_saved_holders_chart(token_address, total_supply):
+def update_saved_holders_chart(token_name, token_address, total_supply):
     try:
         holders = _get_top_1000_token_holders(token_address)
     except (TimeoutError,
@@ -43,9 +43,9 @@ def update_saved_holders_chart(token_address, total_supply):
             socket.timeout,
             URLError):
         raise TimeoutError('Failed to get holders info')
-    _generate_holders_chart(holders, total_supply, saved_holders_chart_filename)
+    _generate_holders_chart(token_name, holders, total_supply, saved_holders_chart_filename)
 
-def _generate_holders_chart(holders, total_supply, output_filename):
+def _generate_holders_chart(token_name, holders, total_supply, output_filename):
     supply_included = 0  # percentage of the pie chart as it fills up
     labels = []
     slices = []
@@ -101,8 +101,8 @@ def _generate_holders_chart(holders, total_supply, output_filename):
         wedge.set_edgecolor('white')
         wedge.set_linewidth(0.04)
     
-    fmt_str = "0xBitcoin Distribution as of {}"
-    ax.set_title(fmt_str.format(datetime.datetime.now(tz=datetime.timezone.utc).strftime("%c UTC")));
+    fmt_str = "{} Distribution as of {}"
+    ax.set_title(fmt_str.format(token_name, datetime.datetime.now(tz=datetime.timezone.utc).strftime("%c UTC")));
 
     ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
     pyplot.tight_layout()
@@ -149,7 +149,7 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     import test_data
-    _generate_holders_chart(test_data.top_1000_holders, 3307650, './holders_chart.png')
+    _generate_holders_chart('0xBitcoin', test_data.top_1000_holders, 3307650, './holders_chart.png')
 
     return
 

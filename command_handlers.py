@@ -32,8 +32,9 @@ async def cmd_compare_price_vs(apis, item_name="lambo", item_price=200000):
     if token_price_usd == 0:
         return ":shrug:"
 
-    return "1 {} = **{}** 0xBTC (${})".format(item_name, 
-                                              prettify_decimals(item_price / token_price_usd), 
+    return "1 {} = **{}** {} (${})".format(item_name, 
+                                              prettify_decimals(item_price / token_price_usd),
+                                              config.CURRENCY
                                               to_readable_thousands(item_price))
 
 def show_price_from_source(apis, source='aggregate'):
@@ -109,7 +110,7 @@ async def cmd_price(command_str, discord_message, apis):
 async def cmd_price_all(command_str, discord_message, apis):
     msg = ""
     for api in sorted(apis.exchanges.alive_apis, key=lambda a: a.api_name):
-        # this skips CMC and apis not directly tracking 0xbtc
+        # skip CMC and apis not directly tracking the main currency
         if api.currency_symbol != config.CURRENCY or api.api_name == "Coin Market Cap":
             continue
         single_line = show_price_from_source(apis, source=api.api_name)
@@ -547,7 +548,7 @@ async def cmd_volume(command_str, discord_message, apis):
     response = ""
 
     for api in sorted(apis.exchanges.alive_apis, key=lambda a: a.api_name):
-        # this skips CMC and apis not directly tracking 0xbtc
+        # skip CMC and apis not directly tracking main currency
         if api.currency_symbol != config.CURRENCY or api.api_name == "Coin Market Cap":
             continue
 
@@ -589,7 +590,7 @@ async def cmd_ratio(command_str, discord_message, apis):
     if token_price_usd == 0:
         return ":shrug:"
 
-    return "1 BTC : {:,.0f} 0xBTC".format(apis.exchanges.btc_price_usd() / token_price_usd)
+    return "1 BTC : {:,.0f} {}".format(apis.exchanges.btc_price_usd() / token_price_usd, config.CURRENCY)
 
 async def cmd_rank(command_str, discord_message, apis):
     api_name = "Coin Market Cap"
@@ -618,6 +619,9 @@ def convert(amount, src, dest, apis):
     usd_value, result = None, None
 
     token_price_usd = apis.exchanges.price_eth(config.CURRENCY) * apis.exchanges.eth_price_usd()
+
+    if config.CURRENCY != "0xBTC":
+        logging.warning("unknown currency {}; !convert command assumes 0xBTC".format(config.CURRENCY))
 
     if src in ['0xbtc', '0xbitcoins', '0xbitcoin']:
         usd_value = token_price_usd * amount
@@ -695,7 +699,7 @@ async def cmd_convert(command_str, discord_message, apis):
     except ValueError:
         pass
     except:
-        return "Something went wrong :sob: try this: `!convert 1 eth to 0xbtc`"
+        return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.CURRENCY)
     else:
         return convert(amount, src, dest, apis)
     
@@ -705,9 +709,9 @@ async def cmd_convert(command_str, discord_message, apis):
     except ValueError:
         pass
     except:
-        return "Something went wrong :sob: try this: `!convert 1 eth to 0xbtc`"
+        return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.CURRENCY)
     else:
         return convert(amount, src, dest, apis)
 
     # ValueError exceptions lead here
-    return "Something went wrong :sob: try this: `!convert 1 eth to 0xbtc`"
+    return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.CURRENCY)

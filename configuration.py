@@ -2,6 +2,7 @@
 #
 
 CURRENCY = '0xBTC'
+TOKEN_NAME = '0xBitcoin'
 TOKEN_ETH_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31"
 
 UPDATE_RATE = 120  # how often to update all APIs (in seconds)

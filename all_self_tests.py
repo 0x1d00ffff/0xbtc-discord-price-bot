@@ -216,7 +216,7 @@ class TestMineableTokenInfo(unittest.TestCase):
     def setUp(self):
         from mineable_token_info import MineableTokenInfo
         from web3 import Web3
-        self.m = MineableTokenInfo("0xB6eD7644C69416d67B522e20bC294A9a9B405B31")
+        self.m = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
         self.m.update()
 
     def test_reading_0xbtc_values(self):

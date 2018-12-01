@@ -62,7 +62,7 @@ class CoinMarketCapAPI():
         elif self.currency_symbol == '0xBTC':
             self.currency_id = 2837
         else:
-            raise RuntimeError("unsupported currency")
+            raise RuntimeError("unsupported currency, need to add currency_id to coinmarketcap.py")
 
         self.price_eth = None
         self.price_usd = None

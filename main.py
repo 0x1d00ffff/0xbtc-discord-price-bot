@@ -39,7 +39,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.2.3"
+_VERSION = "0.3.0"
 
 
 old_status_string = None
@@ -69,7 +69,8 @@ async def background_update():
 
         if (time.time() - apis.storage.last_holders_update_timestamp.get()) / 3600.0 > config.TOKEN_HOLDER_UPDATE_RATE_HOURS:
             try:
-                etherscan.update_saved_holders_chart(config.TOKEN_ETH_ADDRESS,
+                etherscan.update_saved_holders_chart(config.TOKEN_NAME,
+                                                     config.TOKEN_ETH_ADDRESS,
                                                      apis.token.tokens_minted)
                 apis.storage.last_holders_update_timestamp.set(time.time())
             except TimeoutError:
@@ -334,7 +335,7 @@ def main():
 
     global client, apis
     
-    parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot v{}'.format(_VERSION),
+    parser = argparse.ArgumentParser(description='{} v{}'.format(_PROGRAM_NAME, _VERSION),
                                      epilog='<3 0x1d00ffff')
     # TODO: make show_channels a keyboard shortcut and remove this param
     parser.add_argument('--show_channels', action='store_true', default=False,
