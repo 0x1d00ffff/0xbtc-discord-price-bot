@@ -3,7 +3,7 @@ bot to monitor/post price etc to the 0xbtc discord server
 
 Installation:
  - Clone this repository
- - Install python 3.6+
+ - Install python 3.6 (NOT 3.5 or 3.7)
    - For debian 9 users: Debian 9 repositories only go up to python 3.5, so to
      install the latest 3.6.x python version:
      - install prerequisites:

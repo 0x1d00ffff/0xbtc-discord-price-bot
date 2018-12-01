@@ -1,17 +1,11 @@
+
 import logging
 import collections
-import random
-import datetime  # !help !ath
-import time  # !uptime !price
 
 # import socket  # unused
 
 import configuration as config
 import util
-
-from web3 import Web3  # !mine command
-
-import ping_wrapper  # !ping command
 
 import command_handlers
 
@@ -75,9 +69,6 @@ _TRADING_COMMANDS = [
         ['vol', 'völ', 'vil'],
         command_handlers.cmd_volume),
     CmdDef(
-        ['bettervolume'],
-        lambda: ':star2:'*10 + '\n' + command_handlers.cmd_volume() + '\n' + ':star2:'*10),
-    CmdDef(
         ['zj'],
         "If you have to ask big man, you can't afford it."),
     CmdDef(
@@ -100,7 +91,7 @@ _TRADING_COMMANDS = [
         "Sup :sunglasses:"),
     CmdDef(
         ['uptime'],
-        lambda: "Uptime: {}".format(seconds_to_time(time.time() - start_time))),
+        command_handlers.cmd_uptime),
     CmdDef(
         ['marketcap', 'mcap'],
         command_handlers.cmd_marketcap),
@@ -109,13 +100,10 @@ _TRADING_COMMANDS = [
         command_handlers.cmd_difficulty),
     CmdDef(
         ['block time', 'block rate', 'reward time', 'reward rate'],
-        command_handlers.cmd_difficulty),
+        command_handlers.cmd_blocktime),
     CmdDef(
         ['hashrate'],
-        command_handlers.cmd_difficulty),
-    CmdDef(
-        ['difficulty', 'diff', 'retarget', 'readjustment'],
-        command_handlers.cmd_difficulty),
+        command_handlers.cmd_hashrate),
     CmdDef(
         ['minted', 'circulating', 'supply', 'tokens minted'],
         command_handlers.cmd_tokens_minted),
@@ -147,6 +135,9 @@ _TRADING_COMMANDS = [
         ['setath'],
         command_handlers.cmd_set_all_time_high),
     CmdDef(
+        ['setbestshare'],
+        command_handlers.cmd_set_bestshare),
+    CmdDef(
         ['bot command'],
         command_handlers.cmd_bot_command),
     CmdDef(
@@ -158,30 +149,30 @@ _TRADING_COMMANDS = [
 ]
 
 
-async def handle_global_command(command_str, discord_message):
+async def handle_global_command(command_str, discord_message, apis):
     for cmd_def in _GLOBAL_COMMANDS:
         if util.string_contains_any(command_str, cmd_def.keywords):
-            try:
-                return cmd_def.response(command_str, discord_message)
-            except TypeError:
+            if isinstance(cmd_def.response, str):
                 return cmd_def.response
+            else:
+                return await cmd_def.response(command_str, discord_message, apis)
     return None
 
-async def handle_trading_command(command_str, discord_message):
+async def handle_trading_command(command_str, discord_message, apis):
     msg = None
 
     for cmd_def in _TRADING_COMMANDS:
         if util.string_contains_any(command_str, cmd_def.keywords):
-            try:
-                return cmd_def.response(command_str, discord_message)
-            except TypeError:
+            if isinstance(cmd_def.response, str):
                 return cmd_def.response
+            else:
+                return await cmd_def.response(command_str, discord_message, apis)
 
     # TODO: move this into _TRADING_COMMANDS somehow
     for price, names in config.EXPENSIVE_STUFF:
         if util.string_contains_any(command_str, names, exhaustive_search=True):
             correct_name = names[0]
-            msg = cmd_compare_price_vs(correct_name, price)
+            msg = cmd_compare_price_vs(apis, correct_name, price)
             break
 
     return msg

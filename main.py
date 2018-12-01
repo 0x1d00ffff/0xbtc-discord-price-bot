@@ -14,7 +14,6 @@ import websocket  # for websocket.enableTrace(False)
 import websockets  # for websockets.exceptions.ConnectionClosed
 import asyncio
 import logging
-import re
 import discord
 from secret_info import TOKEN
 from reconnecting_bot import keep_running
@@ -36,6 +35,9 @@ import commands
 from persistent_storage import Storage
 import configuration as config
 
+from mock_discord_classes import MockClient, MockMessage, MockAuthor
+
+
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
 _VERSION = "0.2.3"
 
@@ -52,24 +54,24 @@ async def background_update():
     await client.wait_until_ready()
     while not client.is_closed:
         try:
-            exchanges.update()
+            apis.exchanges.update()
         except RuntimeError as e:
             logging.warning('Failed to update exchange APIs: {}'.format(str(e)))
         except:
             logging.exception('Failed to update exchange APIs')
 
         try:
-            token.update()
+            apis.token.update()
         except RuntimeError as e:
             logging.warning('Failed to update contract info: {}'.format(str(e)))
         except:
             logging.exception('Failed to update contract info')
 
-        if (time.time() - storage.last_holders_update_timestamp.get()) / 3600.0 > config.TOKEN_HOLDER_UPDATE_RATE_HOURS:
+        if (time.time() - apis.storage.last_holders_update_timestamp.get()) / 3600.0 > config.TOKEN_HOLDER_UPDATE_RATE_HOURS:
             try:
                 etherscan.update_saved_holders_chart(config.TOKEN_ETH_ADDRESS,
-                                                     token.tokens_minted)
-                storage.last_holders_update_timestamp.set(time.time())
+                                                     apis.token.tokens_minted)
+                apis.storage.last_holders_update_timestamp.set(time.time())
             except TimeoutError:
                 logging.warning('Failed to update token holders chart')
             except:
@@ -78,33 +80,33 @@ async def background_update():
                 logging.info('Updated token holders chart')
 
         try:
-            price_eth = exchanges.price_eth(config.CURRENCY)
-            price_usd = exchanges.price_eth(config.CURRENCY) * exchanges.eth_price_usd()
-            if price_usd > storage.all_time_high_usd_price.get():
+            price_eth = apis.exchanges.price_eth(config.CURRENCY)
+            price_usd = apis.exchanges.price_eth(config.CURRENCY) * apis.exchanges.eth_price_usd()
+            if price_usd > apis.storage.all_time_high_usd_price.get():
                 logging.info('New usd ATH! ${}'.format(price_usd))
-                storage.all_time_high_usd_price.set(price_usd)
-                storage.all_time_high_usd_timestamp.set(time.time())
-            if price_eth > storage.all_time_high_eth_price.get():
+                apis.storage.all_time_high_usd_price.set(price_usd)
+                apis.storage.all_time_high_usd_timestamp.set(time.time())
+            if price_eth > apis.storage.all_time_high_eth_price.get():
                 logging.info('New eth ATH! {}Ξ'.format(price_eth))
-                storage.all_time_high_eth_price.set(price_eth)
-                storage.all_time_high_eth_timestamp.set(time.time())
+                apis.storage.all_time_high_eth_price.set(price_eth)
+                apis.storage.all_time_high_eth_timestamp.set(time.time())
         except:
             logging.exception('Failed to save ATH data')
 
         try:
-            price_eth = exchanges.price_eth(config.CURRENCY)
-            price_usd = exchanges.price_eth(config.CURRENCY) * exchanges.eth_price_usd()
+            price_eth = apis.exchanges.price_eth(config.CURRENCY)
+            price_usd = apis.exchanges.price_eth(config.CURRENCY) * apis.exchanges.eth_price_usd()
             # usd price is hidden if it is 0 (an error)
             usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
 
             # show hashrate if available, otherwise show 'time since last update'
-            if token.estimated_hashrate is not None and token.estimated_hashrate > 0:
-                end_of_status = to_readable_thousands(token.estimated_hashrate, unit_type='short_hashrate')
+            if apis.token.estimated_hashrate is not None and apis.token.estimated_hashrate > 0:
+                end_of_status = to_readable_thousands(apis.token.estimated_hashrate, unit_type='short_hashrate')
             else:
-                end_of_status = formatting_helpers.seconds_to_n_time_ago(time.time()-exchanges.last_updated_time())
+                end_of_status = formatting_helpers.seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time())
 
             # wait until at least one successful update to show status
-            if exchanges.last_updated_time() != 0:
+            if apis.exchanges.last_updated_time() != 0:
                 fmt_str = "{}{} Ξ ({})"
                 await update_status(client, fmt_str.format(usd_str,
                                                            prettify_decimals(price_eth),
@@ -163,17 +165,17 @@ def configure_discord_client(show_channels=False):
 
         if message.channel.id in config.BLACKLISTED_CHANNEL_IDS:
             # check only global commands in a blacklisted channel
-            response = await commands.handle_global_command(message_contents, message)
+            response = await commands.handle_global_command(message_contents, message, apis)
             if response:
                 await send_discord_msg(message.channel, response)
                 return
         else:
             # check all commands in a normal channel
-            response = await commands.handle_global_command(message_contents, message)
+            response = await commands.handle_global_command(message_contents, message, apis)
             if response:
                 await send_discord_msg(message.channel, response)
                 return
-            response = await commands.handle_trading_command(message_contents, message)
+            response = await commands.handle_trading_command(message_contents, message, apis)
             if response:
                 await send_discord_msg(message.channel, response)
                 return
@@ -248,30 +250,38 @@ def setup_logging(path):
 def manual_api_update():
     logging.info('updating apis...')
     try:
-        exchanges.update()
-        token.update()
+        apis.exchanges.update()
+        apis.token.update()
     except Exception as e:
         logging.exception('failed to update prices / contract info')
 
+
+def manual_command(cmd, apis):
+    try:
+        tasks = (
+            commands.handle_global_command(cmd, MockMessage(), apis),
+            commands.handle_trading_command(cmd, MockMessage(), apis)
+        )
+
+        responses = asyncio.get_event_loop().run_until_complete(asyncio.gather(*tasks))
+        if responses[0] != None and responses[1] != None:
+            logging.warning("Command '{}' has both a global and trading response; only the global response will be shown")
+        
+        if responses[0] != None:
+            for line in responses[0].split('\n'):
+                logging.info('>' + line)
+            return
+        if responses[1] != None:
+            for line in responses[1].split('\n'):
+                logging.info('>' + line)
+            return
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except:
+        logging.exception('Got exception from command handler')
+
 def command_test():
-    global client
-
-    class MockClient():
-        def __init__(self):
-            self.is_closed = False
-        def wait_until_ready(self):
-            pass
-        def change_presence(self, game=None, status=None, afk=None):
-            args = {'game':game, 'status':status, 'afk':afk}
-            logging.debug('Call to change_presence: {}'.format(args))
-    class MockAuthor():
-        name = "Test Name"
-        id = '0'
-    class MockMessage():
-        author = MockAuthor()
-        timestamp = time.time()
-
-    client = MockClient()
+    global apis
 
     # todo: start background_update instead?
     manual_api_update()
@@ -283,39 +293,46 @@ def command_test():
         if cmd == "update" or cmd == "api":
             manual_api_update()
             continue
-        try:
-            mock_message = MockMessage()
-            tasks = (
-                commands.handle_global_command(cmd, mock_message),
-                commands.handle_trading_command(cmd, mock_message)
-            )
+        if cmd == "runall":
+            from commands import _GLOBAL_COMMANDS, _TRADING_COMMANDS
 
-            responses = asyncio.get_event_loop().run_until_complete(asyncio.gather(*tasks))
-            logging.info('Global response:')
-            if responses[0] != None:
-                for line in responses[0].split('\n'):
-                    logging.info('>' + line)
-            logging.info('Trading response:')
-            if responses[1] != None:
-                for line in responses[1].split('\n'):
-                    logging.info('>' + line)
-        except (KeyboardInterrupt, SystemExit):
-            raise
-        except:
-            logging.exception('Got exception from command handler')
+            for cmd_def in _GLOBAL_COMMANDS + _TRADING_COMMANDS:
+                cmd = config.COMMAND_CHARACTER + cmd_def.keywords[0]
+                if "convert" in cmd:
+                    cmd += " 1 eth to usd"
+                if "income" in cmd:
+                    cmd += " 100mh"
+                if "mine" in cmd:
+                    cmd += " 123"
+                if "set address" in cmd:
+                    cmd += " 0x0000000000000000000000000000000000000000"
+                if "setath" in cmd:
+                    cmd += " 0.001 2001-02-03 4.05 2006-07-08"
+                logging.info("")
+                logging.info("--- Running command '{}' ---".format(cmd))
+                manual_command(cmd, apis)
+            continue
+
+        manual_command(cmd, apis)
 
 # todo: encapsulate these
 client = None
-storage = None
-exchanges = None
-token = None
-start_time = None
+apis = None
+
+class APIWrapper():
+    def __init__(self, client, storage, exchanges, token, start_time):
+        self.client = client
+        self.storage = storage
+        self.exchanges = exchanges
+        self.token = token
+
+        self.start_time = start_time
 
 def main():
     import argparse
     import os
 
-    global client, storage, exchanges, token, start_time
+    global client, apis
     
     parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot v{}'.format(_VERSION),
                                      epilog='<3 0x1d00ffff')
@@ -337,14 +354,12 @@ def main():
 
     start_time = time.time()
 
-    if args.self_test:
-        import all_self_tests
-        all_self_tests.run_all()
-        return
+    if args.self_test or args.command_test:
+        config.DATA_FOLDER = './test_data/databases/'
 
-    if not os.path.exists(os.path.split(args.log_location)[0]):
-        os.makedirs(os.path.split(args.log_location)[0])
-    setup_logging(args.log_location)
+    if not os.path.exists(config.DATA_FOLDER):
+        os.makedirs(config.DATA_FOLDER)
+    setup_logging(os.path.join(config.DATA_FOLDER, 'debug.log'))
 
     exchanges = MultiApiManager(
     [
@@ -361,24 +376,31 @@ def main():
     token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
     storage = Storage(config.DATA_FOLDER)
 
-    if args.command_test:
-        storage = Storage('./test_data/databases/')
+    apis = APIWrapper(client, storage, exchanges, token, start_time)
+
+    if args.self_test:
+        import all_self_tests
+        client = MockClient()
+        apis.client = client
+        all_self_tests.run_all()
+    elif args.command_test:
+        client = MockClient()
+        apis.client = client
         command_test()
-        return
+    else:
+        client = discord.Client()
+        configure_discord_client(args.show_channels)
 
-    client = discord.Client()
-    configure_discord_client(args.show_channels)
-
-    while True:
-        try:
-            asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
-        except SystemExit:
-            raise
-        except KeyboardInterrupt:
-            raise
-        except:
-            logging.exception('Unexpected error from Discord... retrying')
-            time.sleep(10)  # wait a little time to prevent cpu spins
+        while True:
+            try:
+                asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
+            except SystemExit:
+                raise
+            except KeyboardInterrupt:
+                raise
+            except:
+                logging.exception('Unexpected error from Discord... retrying')
+                time.sleep(10)  # wait a little time to prevent cpu spins
 
 if __name__ == "__main__":
     main()
