@@ -163,17 +163,17 @@ def configure_discord_client():
 
         if message.channel.id in config.BLACKLISTED_CHANNEL_IDS:
             # check only global commands in a blacklisted channel
-            response = await commands.handle_global_command(message_contents, message.author.id, message)
+            response = await commands.handle_global_command(message_contents, message)
             if response:
                 await send_discord_msg(message.channel, response)
                 return
         else:
             # check all commands in a normal channel
-            response = await commands.handle_global_command(message_contents, message.author.id, message)
+            response = await commands.handle_global_command(message_contents, message)
             if response:
                 await send_discord_msg(message.channel, response)
                 return
-            response = await commands.handle_trading_command(message_contents, message.author.id, message)
+            response = await commands.handle_trading_command(message_contents, message)
             if response:
                 await send_discord_msg(message.channel, response)
                 return
@@ -286,8 +286,8 @@ def command_test():
         try:
             mock_message = MockMessage()
             tasks = (
-                commands.handle_global_command(cmd, mock_message.author.id, mock_message), 
-                commands.handle_trading_command(cmd, mock_message.author.id, mock_message)
+                commands.handle_global_command(cmd, mock_message),
+                commands.handle_trading_command(cmd, mock_message)
             )
 
             responses = asyncio.get_event_loop().run_until_complete(asyncio.gather(*tasks))
