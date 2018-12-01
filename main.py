@@ -336,6 +336,7 @@ def main():
     
     parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot v{}'.format(_VERSION),
                                      epilog='<3 0x1d00ffff')
+    # TODO: make show_channels a keyboard shortcut and remove this param
     parser.add_argument('--show_channels', action='store_true', default=False,
                         help='Show all visible channels/permissions during init')
     parser.add_argument('--command_test', action='store_true', default=False,
@@ -343,11 +344,6 @@ def main():
                               "run a CLI interface to allow command tests."))
     parser.add_argument('--self_test', action='store_true', default=False,
                         help=("Run unittests"))
-    parser.add_argument('--log_location',
-                        default=os.path.join(config.DATA_FOLDER, 'debug.log'),
-                        help=("Set the location of the debug log file. By "
-                              "default it will go to the DATA_FOLDER set in "
-                              "configuration.py"))
     parser.add_argument('--version', action='version', 
                         version='%(prog)s v{}'.format(_VERSION))
     args = parser.parse_args()

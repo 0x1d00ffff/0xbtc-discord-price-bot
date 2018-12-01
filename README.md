@@ -45,6 +45,7 @@ Bugs:
    the response from whatever command runs last.
 
 Todo:
+ - add keyboard shortcuts / letters (ie press 'c' to show all channels)
  - generalize the command interface
    - pass (client, message, storage, exchanges, token, start_time, settings) to commands
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
