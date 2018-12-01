@@ -132,7 +132,7 @@ async def send_discord_msg(channel, message):
     except discord.errors.Forbidden:
         logging.debug('no permission in channel: {} [{}]'.format(channel.name, channel.id))
 
-def configure_discord_client():
+def configure_discord_client(show_channels=False):
     client.loop.create_task(background_update())
 
     @client.event
@@ -184,15 +184,15 @@ def configure_discord_client():
 
     @client.event
     async def on_ready():
-        show_startup_info(client)
+        show_startup_info(client, show_channels)
 
-def show_startup_info(client):
+def show_startup_info(client, show_channels):
     logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
     logging.debug('discord.py version {}'.format(discord.__version__))
     logging.info('Logged in to {} servers as {} id:{}'.format(len(client.servers),
                                                               client.user.name,
                                                               client.user.id))
-    if settings['show_channels']:
+    if show_channels:
         for server in client.servers:
             logging.info('  - {} - {} Members - id:{} '.format(server.name, 
                                                                server.member_count,
@@ -310,13 +310,12 @@ storage = None
 exchanges = None
 token = None
 start_time = None
-settings = {}
 
 def main():
     import argparse
     import os
 
-    global client, storage, exchanges, token, start_time, settings
+    global client, storage, exchanges, token, start_time
     
     parser = argparse.ArgumentParser(description='0xBitcoin Server Price Bot v{}'.format(_VERSION),
                                      epilog='<3 0x1d00ffff')
@@ -343,8 +342,6 @@ def main():
         all_self_tests.run_all()
         return
 
-    settings['show_channels'] = args.show_channels
-
     if not os.path.exists(os.path.split(args.log_location)[0]):
         os.makedirs(os.path.split(args.log_location)[0])
     setup_logging(args.log_location)
@@ -370,7 +367,7 @@ def main():
         return
 
     client = discord.Client()
-    configure_discord_client()
+    configure_discord_client(args.show_channels)
 
     while True:
         try:
