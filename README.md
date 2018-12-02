@@ -2,6 +2,7 @@
 bot to monitor/post price etc to the 0xbtc discord server
 
 Installation:
+
  - Clone this repository
  - Install python 3.6 (NOT 3.5 or 3.7)
    - For debian 9 users: Debian 9 repositories only go up to python 3.5, so to
@@ -46,6 +47,17 @@ Bugs:
 Todo:
  - make configuration text-based so it does not need python imports etc
  - add keyboard shortcuts / letters (ie press 'c' to show all channels)
+ - support commas as decimals in '!convert'
+ 
+```python
+# if no decimals (.) then assume commas are decimal separators
+if '.' not in msg:
+    msg = msg.replace(',', '.')
+# if decimals exist then simply remove commas
+else:
+    msg = msg.replace(',', '')
+```
+
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
  - make exchanges module
  - generalize command categories (currently only trading and global)
