@@ -42,9 +42,7 @@ class TestPriceCommand(unittest.TestCase):
         return response
 
     def test_that_all_commands_run(self):
-        from commands import _GLOBAL_COMMANDS, _TRADING_COMMANDS
-
-        command_strings = [cmd_def.keywords[0] for cmd_def in _GLOBAL_COMMANDS + _TRADING_COMMANDS]
+        command_strings = [cmd_def.keywords[0] for cmd_def in config.GLOBAL_COMMANDS + config.TRADING_COMMANDS]
         # add some commands not found by automatically scanning the command list
         command_strings += ['bettervolume',
                             'price enclaves',

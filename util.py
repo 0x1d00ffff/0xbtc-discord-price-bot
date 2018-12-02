@@ -1,4 +1,11 @@
+
+import collections
+
 import configuration as config
+
+
+CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
+
 
 # look through an input_string, return True if it looks like a match for command
 # if exhaustive_search is true, look in the middle of string for commands - otherwise only check beginning

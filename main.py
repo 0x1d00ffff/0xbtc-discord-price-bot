@@ -295,9 +295,7 @@ def command_test():
             manual_api_update()
             continue
         if cmd == "runall":
-            from commands import _GLOBAL_COMMANDS, _TRADING_COMMANDS
-
-            for cmd_def in _GLOBAL_COMMANDS + _TRADING_COMMANDS:
+            for cmd_def in config.GLOBAL_COMMANDS + config.TRADING_COMMANDS:
                 cmd = config.COMMAND_CHARACTER + cmd_def.keywords[0]
                 if cmd == "!convert":
                     cmd += " 1 eth to usd"
