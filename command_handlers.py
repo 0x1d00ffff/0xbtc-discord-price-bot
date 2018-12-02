@@ -33,9 +33,9 @@ async def cmd_compare_price_vs(apis, item_name="lambo", item_price=200000):
         return ":shrug:"
 
     return "1 {} = **{}** {} (${})".format(item_name, 
-                                              prettify_decimals(item_price / token_price_usd),
-                                              config.CURRENCY
-                                              to_readable_thousands(item_price))
+                                           prettify_decimals(item_price / token_price_usd),
+                                           config.CURRENCY,
+                                           to_readable_thousands(item_price))
 
 def show_price_from_source(apis, source='aggregate'):
     if (apis.exchanges.last_updated_time(api_name=source) == 0):
@@ -69,6 +69,9 @@ def show_price_from_source(apis, source='aggregate'):
 async def cmd_price(command_str, discord_message, apis):
     msg = ""
     if util.string_contains_any(command_str, [
+            'ethex'], exhaustive_search=True, require_cmd_char=False):
+        msg = show_price_from_source(apis, source="Ethex")
+    elif util.string_contains_any(command_str, [
             'enclaves',
             'encalves'], exhaustive_search=True, require_cmd_char=False):
         msg = show_price_from_source(apis, source="Enclaves DEX")
@@ -92,16 +95,16 @@ async def cmd_price(command_str, discord_message, apis):
     elif util.string_contains_any(command_str, [
             'btc',
             'bitcoin'], exhaustive_search=True, require_cmd_char=False):
-        msg = cmd_bitcoinprice()
+        msg = await cmd_bitcoinprice(command_str, discord_message, apis)
     elif util.string_contains_any(command_str, [
             'eth',
             'ethereum'], exhaustive_search=True, require_cmd_char=False):
-        msg = cmd_ethereumprice()
+        msg = await cmd_ethereumprice(command_str, discord_message, apis)
     elif util.string_contains_any(command_str, [
             'all',
             'al',
             'prices'], exhaustive_search=True, require_cmd_char=False):
-        msg  = cmd_price_all(command_str, discord_message, apis)
+        msg  = await cmd_price_all(command_str, discord_message, apis)
     else:
         msg = show_price_from_source(apis)
 
@@ -129,7 +132,7 @@ async def cmd_bitcoinprice(command_str, discord_message, apis):
     if apis.exchanges.btc_price_usd() == 0:
         return ":shrug:"
 
-    fmt_str = "{}: **${:.0f}**"
+    fmt_str = "Bitcoin price {}: **${:.0f}**"
     result = fmt_str.format(seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time()),
                             apis.exchanges.btc_price_usd())
     return result
@@ -141,7 +144,7 @@ async def cmd_ethereumprice(command_str, discord_message, apis):
     if apis.exchanges.eth_price_usd() == 0:
         return ":shrug:"
 
-    fmt_str = "{}: **${:.0f}**"
+    fmt_str = "Ethereum price {}: **${:.0f}**"
     result = fmt_str.format(seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time()), 
                             apis.exchanges.eth_price_usd())
     return result
@@ -330,7 +333,7 @@ async def cmd_mine(command_str, discord_message, apis):
         return "not sure yet... waiting on my APIs :sob:"
 
     if 'test' in command_str:
-        return cmd_mine_test(command_str, discord_message, apis)
+        return await cmd_mine_test(command_str, discord_message, apis)
 
     try:
         address = apis.storage.user_addresses.get(discord_message.author.id)
@@ -369,8 +372,13 @@ async def cmd_mine_test(command_str, discord_message, apis):
         return "Bad command; try `mine test <challenge_number> <address> <nonce>`"
 
     try:
+        address = Web3.toChecksumAddress(address)
+    except:
+        return "Error parsing address"
+
+    try:
         nonce, digest = apis.token.get_digest_for_nonce_str(nonce, 
-                                                            Web3.toChecksumAddress(address), 
+                                                            address, 
                                                             challenge_number)
     except RuntimeError as e:
         return str(e)

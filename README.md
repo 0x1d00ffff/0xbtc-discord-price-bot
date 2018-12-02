@@ -45,6 +45,7 @@ Bugs:
    the response from whatever command runs last.
 
 Todo:
+ - make currency_symbol not optional for exchange apis and multi_api_manager
  - add keyboard shortcuts / letters (ie press 'c' to show all channels)
  - generalize the command interface
    - pass (client, message, storage, exchanges, token, start_time, settings) to commands

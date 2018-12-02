@@ -56,7 +56,7 @@ from weighted_average import WeightedAverage
 
 
 class IDEXAPI():
-    def __init__(self, currency_symbol="0xBTC"):
+    def __init__(self, currency_symbol):
         self._SERVER_URL = "https://api.idex.market"
         self.currency_symbol = currency_symbol
         self.api_name = "IDEX"

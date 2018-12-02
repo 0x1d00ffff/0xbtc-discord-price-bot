@@ -47,7 +47,7 @@ import json
 
 
 class CoinMarketCapAPI():
-    def __init__(self, currency_symbol="ETH"):
+    def __init__(self, currency_symbol):
         self._SERVER_URL = "https://api.coinmarketcap.com/v2"
         self.currency_symbol = currency_symbol
         self.api_name = "Coin Market Cap"

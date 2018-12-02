@@ -49,7 +49,7 @@ from weighted_average import WeightedAverage
 
 
 class LiveCoinWatchAPI():
-    def __init__(self, currency_symbol="0xBTC", allowed_apis='all'):
+    def __init__(self, currency_symbol, allowed_apis='all'):
         self._SERVER_URL = "https://www.livecoinwatch.com/api"
         self.currency_symbol = currency_symbol
         self.allowed_apis = allowed_apis

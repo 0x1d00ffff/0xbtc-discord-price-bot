@@ -29,7 +29,7 @@ def wei_to_ether(amount_in_wei):
     return int(amount_in_wei) / 1000000000000000000.0
 
 class EnclavesAPI():
-    def __init__(self, currency_symbol="0xBTC"):
+    def __init__(self, currency_symbol):
         self._WEBSOCKET_URL = "ws://app.enclaves.io:80/socket.io/?EIO=3&transport=websocket";
 
         if currency_symbol == "0xBTC":

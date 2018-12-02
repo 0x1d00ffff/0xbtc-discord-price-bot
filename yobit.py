@@ -20,7 +20,7 @@ from weighted_average import WeightedAverage
 
 
 class YobitAPI():
-    def __init__(self, currency_symbol="0xBTC"):
+    def __init__(self, currency_symbol):
         self._SERVER_URL = "https://yobit.io/api/3/ticker"
         self.api_name = "Yobit"
         self.last_updated_time = 0

@@ -266,7 +266,7 @@ def manual_command(cmd, apis):
 
         responses = asyncio.get_event_loop().run_until_complete(asyncio.gather(*tasks))
         if responses[0] != None and responses[1] != None:
-            logging.warning("Command '{}' has both a global and trading response; only the global response will be shown")
+            logging.warning("Command '{}' has both a global and trading response; only the global response will be shown".format(cmd))
         
         if responses[0] != None:
             for line in responses[0].split('\n'):
@@ -299,16 +299,18 @@ def command_test():
 
             for cmd_def in _GLOBAL_COMMANDS + _TRADING_COMMANDS:
                 cmd = config.COMMAND_CHARACTER + cmd_def.keywords[0]
-                if "convert" in cmd:
+                if cmd == "!convert":
                     cmd += " 1 eth to usd"
-                if "income" in cmd:
+                if cmd == "!income":
                     cmd += " 100mh"
-                if "mine" in cmd:
+                if cmd == "!mine":
                     cmd += " 123"
-                if "set address" in cmd:
+                if cmd == "!set address":
                     cmd += " 0x0000000000000000000000000000000000000000"
-                if "setath" in cmd:
+                if cmd == "!setath":
                     cmd += " 0.001 2001-02-03 4.05 2006-07-08"
+                if cmd == "!setbestshare":
+                    cmd += " Username0 0 0x00 0"
                 logging.info("")
                 logging.info("--- Running command '{}' ---".format(cmd))
                 manual_command(cmd, apis)

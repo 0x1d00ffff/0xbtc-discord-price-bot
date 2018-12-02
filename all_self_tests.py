@@ -4,17 +4,22 @@ import datetime
 
 from mock_discord_classes import MockClient, MockMessage
 
+import configuration as config
+
 
 class TestPriceCommand(unittest.TestCase):
     def setUp(self):
+        pass
+
+    @classmethod
+    def setUpClass(cls):
         from main import apis, manual_api_update
         manual_api_update()
-        self.apis = apis
+        cls.apis = apis
 
     def run_command(self, command_str, add_command_char=True, check_for_errors=True):
         import asyncio
         from commands import handle_global_command, handle_trading_command
-        import configuration as config
 
         if add_command_char:
             command_str = config.COMMAND_CHARACTER + command_str
@@ -39,16 +44,33 @@ class TestPriceCommand(unittest.TestCase):
     def test_that_all_commands_run(self):
         from commands import _GLOBAL_COMMANDS, _TRADING_COMMANDS
 
-        for cmd_def in _GLOBAL_COMMANDS + _TRADING_COMMANDS:
-            command_str = cmd_def.keywords[0]
+        command_strings = [cmd_def.keywords[0] for cmd_def in _GLOBAL_COMMANDS + _TRADING_COMMANDS]
+        # add some commands not found by automatically scanning the command list
+        command_strings += ['bettervolume',
+                            'price enclaves',
+                            'price fd',
+                            'price idex',
+                            'price merc',
+                            'price ethex',
+                            'price eth',
+                            'mine test 0x0 0x0 0x0']
+
+        for command_str in command_strings:
             with self.subTest(command_str=command_str):
+                # commands that we expect to fail - the first couple need args
                 if ( 'convert' in command_str
                      or 'income' in command_str
                      or 'mine' in command_str
                      or 'set address' in command_str
                      or 'setath' in command_str
-                     or 'setbestshare' in command_str):
-                    # these commands need args, so we expect them to fail
+                     or 'setbestshare' in command_str
+                     # individual exchange apis may fail; so we don't care what
+                     # the response is - only that is does not throw an exception
+                     or 'price enclaves' in command_str
+                     or 'price fd' in command_str
+                     or 'price idex' in command_str
+                     or 'price merc' in command_str
+                     or 'price ethex' in command_str):
                     response = self.run_command(command_str, check_for_errors=False)
                 else:
                     response = self.run_command(command_str)
@@ -219,6 +241,8 @@ class TestMineableTokenInfo(unittest.TestCase):
         self.m = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
         self.m.update()
 
+    @unittest.skipIf(config.CURRENCY != "0xBTC",
+                     "This test assumes 0xBTC and must be modified for other currencies")
     def test_reading_0xbtc_values(self):
         m = self.m
 
@@ -309,8 +333,10 @@ def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestDecimalFormatting("test_prettify_decimals"))
     suite.addTest(TestDecimalFormatting("test_round_to_n"))
+
     suite.addTest(TestMineableTokenInfo("test_reading_0xbtc_values"))
     suite.addTest(TestMineableTokenInfo("test_hashing_nonces"))
+
     suite.addTest(TestPriceCommand('test_that_all_commands_run'))
     suite.addTest(TestPriceCommand('test_specific_commands'))
     return suite

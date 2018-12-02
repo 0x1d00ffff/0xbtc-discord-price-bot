@@ -66,7 +66,7 @@ _TRADING_COMMANDS = [
         ['exchanges', 'wheretobuy'],
         command_handlers.cmd_price_all),
     CmdDef(
-        ['vol', 'völ', 'vil'],
+        ['vol', 'völ', 'vil', 'bettervolume'],
         command_handlers.cmd_volume),
     CmdDef(
         ['zj'],
