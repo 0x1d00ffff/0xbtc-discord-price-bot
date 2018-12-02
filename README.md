@@ -43,6 +43,7 @@ Bugs:
    to explicitly check for this.
  - if a command string matches two commands it will run both and return
    the response from whatever command runs last.
+ - close matplotlib plots `/usr/local/lib/python3.6/site-packages/matplotlib/pyplot.py:514: RuntimeWarning: More than 20 figures have been opened. Figures created through the pyplot interface (matplotlib.pyplot.figure) are retained until explicitly closed and may consume too much memory.`
 
 Todo:
  - make configuration text-based so it does not need python imports etc
