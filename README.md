@@ -46,6 +46,10 @@ Bugs:
  - close matplotlib plots `/usr/local/lib/python3.6/site-packages/matplotlib/pyplot.py:514: RuntimeWarning: More than 20 figures have been opened. Figures created through the pyplot interface (matplotlib.pyplot.figure) are retained until explicitly closed and may consume too much memory.`
 
 Todo:
+ - api timeouts should not be warnings. modify exchange apis so they
+   raise TimeoutError instead of logging a message, and have multi_api_manager
+   track which apis timeout. APIs that timeout three times in a row should be
+   reported, but then maybe only once every few hours after that.
  - make configuration text-based so it does not need python imports etc
  - add keyboard shortcuts / letters (ie press 'c' to show all channels)
  - support commas as decimals in '!convert'
