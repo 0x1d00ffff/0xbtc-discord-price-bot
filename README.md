@@ -40,19 +40,16 @@ Bugs:
  - `!mine test` fails since it expects a checksum address
  - occasionally APIs return NaN as a data point.. which is a valid float. Need
    to explicitly check for this.
- - `--command_test` bypasses command preprocessing (.lower().strip()) etc
  - if a command string matches two commands it will run both and return
    the response from whatever command runs last.
 
 Todo:
- - make currency_symbol not optional for exchange apis and multi_api_manager
+ - make configuration text-based so it does not need python imports etc
  - add keyboard shortcuts / letters (ie press 'c' to show all channels)
- - generalize the command interface
-   - pass (client, message, storage, exchanges, token, start_time, settings) to commands
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
  - make exchanges module
  - generalize command categories (currently only trading and global)
- - typos/new commands
+ - new commands
    - !binance (to show current listing price in usd)
    - !orderbooks mercatox
  - Need a new 'Pairing' class to handle pairings in a more generic way. This
@@ -60,7 +57,6 @@ Todo:
  - volume_eth and volume_usd are not strictly defined - sometimes it means total
    volume across all pairs (converted to eth), sometimes it means volume in eth
    only and volume_btc means volume in btc only.
- - ATH announcements
  - 24h high/low/average
  - ascii chart?
  - enable hotbit?

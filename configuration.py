@@ -14,6 +14,10 @@ DATA_FOLDER = './databases/'  # folder to store persistent data (all-time high p
 # URL for your Ethereum provider. Get one for free at infura.io
 ETHEREUM_NODE_URL = "https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"
 
+# Channel ID to send announcements (for now, all-time-high prices)
+#ANNOUNCEMENT_CHANNEL_ID = "412483801265078273"  # 0xbitcoin - trading
+ANNOUNCEMENT_CHANNEL_ID = "440707824876650498"  # bot-dev - general
+
 # Channels listed here will be ignored by the bot for all but 'global' commands
 BLACKLISTED_CHANNEL_IDS = [
     # 0xbitcoin server
@@ -220,6 +224,9 @@ TRADING_COMMANDS = [
     CmdDef(
         ['setath'],
         command_handlers.cmd_set_all_time_high),
+    CmdDef(
+        ['setathfilename'],
+        command_handlers.cmd_set_all_time_high_image_filename),
     CmdDef(
         ['setbestshare'],
         command_handlers.cmd_set_bestshare),

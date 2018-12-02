@@ -6,6 +6,7 @@ TODO: move commands out of main.py, this file is getting long
 """
 
 import sys
+import os
 # TODO: after upgrading discord.py to rewrite, change to >=3.6
 assert sys.version_info != (3,6), "requires python 3.6"
 
@@ -50,6 +51,67 @@ async def update_status(client, status_string):
                                      status=discord.Status('online'),
                                      afk=False)
 
+async def send_message_to_user_by_id(apis, user_id, message):
+    user = discord.utils.get(apis.client.get_all_members(), id=user_id)
+
+    if user is not None:
+        await apis.client.send_message(user, message)
+    else:
+        raise RuntimeError("send_message_to_user_by_id could not find user id {}".format(user_id))
+
+async def send_message_to_channel_by_id(apis, channel_id, message):
+    channel = apis.client.get_channel(channel_id)
+
+    if channel is not None:
+        await apis.client.send_message(channel, message)
+    else:
+        raise RuntimeError("send_message_to_channel_by_id could not find channel id {}".format(channel_id))
+
+async def send_file_to_channel_by_id(apis, channel_id, filepath):
+    channel = apis.client.get_channel(channel_id)
+
+    if channel is not None:
+        await apis.client.send_file(channel,
+                                    filepath)
+    else:
+        raise RuntimeError("send_file_to_channel_by_id could not find channel id {}".format(channel_id))
+
+async def send_all_time_high_announcement(apis, message):
+    if apis.storage.all_time_high_image_filename.get() is not None:
+        try:
+            await send_file_to_channel_by_id(apis, 
+                                             config.ANNOUNCEMENT_CHANNEL_ID, 
+                                             os.path.join(config.DATA_FOLDER,
+                                                          apis.storage.all_time_high_image_filename.get()))
+        except Exception as e:
+            logging.warning('Failed to send image to channel: {}'.format(str(e)))
+        else:
+            # wait some time to make sure image is uploaded
+            asyncio.sleep(5.0)
+            # once the image is sent, clear the filename in storage
+            apis.storage.all_time_high_image_filename.set(None)
+
+    await send_message_to_channel_by_id(apis, config.ANNOUNCEMENT_CHANNEL_ID, msg)
+
+    logging.info(msg)
+
+async def check_update_all_time_high(apis):
+    try:
+        price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
+        price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
+        if price_usd > apis.storage.all_time_high_usd_price.get():
+            msg = 'New USD all-time-high **${}**'.format(prettify_decimals(price_usd))
+            await send_all_time_high_announcement(msg)
+            apis.storage.all_time_high_usd_price.set(price_usd)
+            apis.storage.all_time_high_usd_timestamp.set(time.time())
+        if price_eth > apis.storage.all_time_high_eth_price.get():
+            msg = 'New Ethereum all-time-high **{}Ξ**'.format(prettify_decimals(price_eth))
+            await send_all_time_high_announcement(msg)
+            apis.storage.all_time_high_eth_price.set(price_eth)
+            apis.storage.all_time_high_eth_timestamp.set(time.time())
+    except:
+        logging.exception('Failed to save ATH data')
+
 async def background_update():
     await client.wait_until_ready()
     while not client.is_closed:
@@ -80,19 +142,7 @@ async def background_update():
             else:
                 logging.info('Updated token holders chart')
 
-        try:
-            price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
-            price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
-            if price_usd > apis.storage.all_time_high_usd_price.get():
-                logging.info('New usd ATH! ${}'.format(price_usd))
-                apis.storage.all_time_high_usd_price.set(price_usd)
-                apis.storage.all_time_high_usd_timestamp.set(time.time())
-            if price_eth > apis.storage.all_time_high_eth_price.get():
-                logging.info('New eth ATH! {}Ξ'.format(price_eth))
-                apis.storage.all_time_high_eth_price.set(price_eth)
-                apis.storage.all_time_high_eth_timestamp.set(time.time())
-        except:
-            logging.exception('Failed to save ATH data')
+        await check_update_all_time_high(apis)
 
         try:
             price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
@@ -124,7 +174,7 @@ async def background_update():
     # in normal operation we should never reach this
     raise RuntimeError('background_update loop stopped - something is wrong')
 
-async def send_discord_msg(channel, message):
+async def send_discord_msg_to_channel(channel, message):
     # don't send messages that are only 'OK-noresponse' (this indicates
     # command ran, but no output is expected
     if message == "OK-noresponse":
@@ -134,6 +184,22 @@ async def send_discord_msg(channel, message):
         await client.send_message(channel, message)
     except discord.errors.Forbidden:
         logging.debug('no permission in channel: {} [{}]'.format(channel.name, channel.id))
+
+def preprocess(message):
+    message = message.lower().strip()
+
+    # allow '! command' since some platforms autocorrect to add a space
+    if message.startswith(config.COMMAND_CHARACTER + ' '):
+        message = config.COMMAND_CHARACTER + message[2:]
+
+    # allow '!!command', its a common typo
+    if message.startswith(config.COMMAND_CHARACTER+config.COMMAND_CHARACTER):
+        message = config.COMMAND_CHARACTER + message[2:]
+
+    # allow unicode ! (replace with ascii version)
+    if config.COMMAND_CHARACTER == '!':
+        if message.startswith('！'):
+            message = '!' + message[1:]
 
 def configure_discord_client(show_channels=False):
     client.loop.create_task(background_update())
@@ -149,41 +215,28 @@ def configure_discord_client(show_channels=False):
         if message.author.bot:
             return
 
-        message_contents = message.content.lower().strip()
-
-        # allow '! command' since some platforms autocorrect to add a space
-        if message_contents.startswith(config.COMMAND_CHARACTER + ' '):
-            message_contents = config.COMMAND_CHARACTER + message_contents[2:]
-
-        # allow '!!command', its a common typo
-        if message_contents.startswith(config.COMMAND_CHARACTER+config.COMMAND_CHARACTER):
-            message_contents = config.COMMAND_CHARACTER + message_contents[2:]
-
-        # allow unicode ! (replace with ascii version)
-        if config.COMMAND_CHARACTER == '!':
-            if message_contents.startswith('！'):
-                message_contents = '!' + message_contents[1:]
+        command_str = preprocess(message.contents)
 
         if message.channel.id in config.BLACKLISTED_CHANNEL_IDS:
             # check only global commands in a blacklisted channel
-            response = await commands.handle_global_command(message_contents, message, apis)
+            response = await commands.handle_global_command(command_str, message, apis)
             if response:
-                await send_discord_msg(message.channel, response)
+                await send_discord_msg_to_channel(message.channel, response)
                 return
         else:
             # check all commands in a normal channel
-            response = await commands.handle_global_command(message_contents, message, apis)
+            response = await commands.handle_global_command(command_str, message, apis)
             if response:
-                await send_discord_msg(message.channel, response)
+                await send_discord_msg_to_channel(message.channel, response)
                 return
-            response = await commands.handle_trading_command(message_contents, message, apis)
+            response = await commands.handle_trading_command(command_str, message, apis)
             if response:
-                await send_discord_msg(message.channel, response)
+                await send_discord_msg_to_channel(message.channel, response)
                 return
 
         # If command starts with config.COMMAND_CHARACTER and we have not returned yet, it was unrecognized.
-        if message_contents.startswith(config.COMMAND_CHARACTER):
-            logging.info('UNKNOWN cmd {}'.format(repr(message_contents)))
+        if command_str.startswith(config.COMMAND_CHARACTER):
+            logging.info('UNKNOWN cmd {}'.format(repr(command_str)))
 
     @client.event
     async def on_ready():
@@ -258,6 +311,7 @@ def manual_api_update():
 
 
 def manual_command(cmd, apis):
+    cmd = preprocess(cmd)
     try:
         tasks = (
             commands.handle_global_command(cmd, MockMessage(), apis),

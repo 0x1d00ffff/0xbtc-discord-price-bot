@@ -35,7 +35,7 @@ class TestPriceCommand(unittest.TestCase):
                                  'Bad command',
                                  'Bad nonce',
                                  'Bad hashrate',
-                                 'Error parsing']:
+                                 'Error']:
                 with self.subTest(error_string=error_string):
                     self.assertFalse(error_string in response)
 

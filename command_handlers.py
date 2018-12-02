@@ -4,6 +4,7 @@ import time
 import random
 import datetime  # !help !ath
 import re
+import os
 
 import configuration as config
 import util
@@ -419,6 +420,7 @@ async def cmd_all_time_high(command_str, discord_message, apis):
     return result
 
 async def cmd_set_all_time_high(command_str, discord_message, apis):
+    # !setath 0.007719 2018-06-06 4.68 2018-06-06
     if discord_message.author.id not in config.PRIVILEGED_USER_IDS:
         fmt_str = 'User not allowed to run cmd_set_all_time_high: {} ({})'
         logging.info(fmt_str.format(discord_message.author.id, discord_message.author.name))
@@ -442,6 +444,37 @@ async def cmd_set_all_time_high(command_str, discord_message, apis):
     apis.storage.all_time_high_usd_timestamp.set(time_usd)
 
     return "New ATH set!\n---\n{}".format(await cmd_all_time_high(command_str, discord_message, apis))
+
+async def cmd_set_all_time_high_image_filename(command_str, discord_message, apis):
+    if discord_message.author.id not in config.PRIVILEGED_USER_IDS:
+        fmt_str = 'User not allowed to run cmd_set_all_time_high_image_filename: {} ({})'
+        logging.info(fmt_str.format(discord_message.author.id, discord_message.author.name))
+        return
+
+    try:
+        command, image_filename = command_str.split()
+    except:
+        return "Error parsing; try `!set ath filename image.img`"
+
+    # to clear the filename, run the command with filename of 'none'
+    if image_filename == "none":
+        apis.storage.all_time_high_image_filename.set(None)
+        return "All-time-high image filename cleared"
+
+    if not os.path.isfile(os.path.join(config.DATA_FOLDER,
+                                       image_filename)):
+        return "Error; could not find image"
+
+    try:
+        apis.storage.all_time_high_image_filename.set(image_filename)
+    except:
+        return "Error setting image filename. Try again later."
+    else:
+        await apis.client.send_file(discord_message.channel,
+                                    os.path.join(config.DATA_FOLDER,
+                                                 apis.storage.all_time_high_image_filename.get()))
+        asyncio.sleep(5.0)
+        return "New all-time-high filename set! `{}`".format(image_filename)
 
 async def cmd_set_bestshare(command_str, discord_message, apis):
     if discord_message.author.id not in config.PRIVILEGED_USER_IDS:

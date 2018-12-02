@@ -84,6 +84,8 @@ class Storage:
         self.all_time_high_eth_price = SingleValueStore(self._database_folder,"all_time_high_eth_price", 0.007719)
         self.all_time_high_eth_timestamp = SingleValueStore(self._database_folder,"all_time_high_eth_timestamp", 1528286400.0)
 
+        self.all_time_high_image_filename = SingleValueStore(self._database_folder,"all_time_high_image_filename")
+
 
 if __name__ == "__main__":
     s = Storage('./databases')
