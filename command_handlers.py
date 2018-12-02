@@ -192,8 +192,9 @@ async def cmd_hashrate(command_str, discord_message, apis):
     if apis.token.estimated_hashrate == None:
         return ":shrug:"
 
-    fmt_str = "Estimated hashrate: **{}**"
-    result = fmt_str.format(to_readable_thousands(apis.token.estimated_hashrate, unit_type="hashrate", decimals=2))
+    fmt_str = "Estimated hashrate: **{}** (average over the last {})"
+    result = fmt_str.format(to_readable_thousands(apis.token.estimated_hashrate, unit_type="hashrate", decimals=2),
+                            seconds_to_time(apis.token.seconds_since_readjustment, granularity=2))
     return result
 
 async def cmd_tokens_minted(command_str, discord_message, apis):
