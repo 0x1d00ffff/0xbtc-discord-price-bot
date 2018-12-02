@@ -15,8 +15,7 @@ DATA_FOLDER = './databases/'  # folder to store persistent data (all-time high p
 ETHEREUM_NODE_URL = "https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"
 
 # Channel ID to send announcements (for now, all-time-high prices)
-#ANNOUNCEMENT_CHANNEL_ID = "412483801265078273"  # 0xbitcoin - trading
-ANNOUNCEMENT_CHANNEL_ID = "440707824876650498"  # bot-dev - general
+ANNOUNCEMENT_CHANNEL_ID = "412483801265078273"  # 0xbitcoin - trading
 
 # Channels listed here will be ignored by the bot for all but 'global' commands
 BLACKLISTED_CHANNEL_IDS = [
