@@ -109,6 +109,7 @@ def _generate_holders_chart(token_name, holders, total_supply, output_filename):
 
     pyplot.savefig(fname=output_filename, dpi=None, quality=None, format='png',
                    facecolor='#a9a9a9', transparent=False)
+    pyplot.close()
 
 # get a single page of token holders from etherscan (50 per page)
 def get_page_of_token_holders(address, etherscan_page, timeout=10.0):

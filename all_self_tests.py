@@ -61,6 +61,7 @@ class TestPriceCommand(unittest.TestCase):
                      or 'mine' in command_str
                      or 'set address' in command_str
                      or 'setath' in command_str
+                     or 'setathfilename' in command_str
                      or 'setbestshare' in command_str
                      # individual exchange apis may fail; so we don't care what
                      # the response is - only that is does not throw an exception

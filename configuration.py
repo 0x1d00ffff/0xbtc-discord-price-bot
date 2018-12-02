@@ -221,10 +221,10 @@ TRADING_COMMANDS = [
         ['ath', 'all time high'],
         command_handlers.cmd_all_time_high),
     CmdDef(
-        ['set ath filename', 'set ath image'],
+        ['setathfilename', 'setathimage'],
         command_handlers.cmd_set_all_time_high_image_filename),
     CmdDef(
-        ['set ath'],
+        ['setath'],
         command_handlers.cmd_set_all_time_high),
     CmdDef(
         ['setbestshare'],
