@@ -204,6 +204,7 @@ class MineableTokenInfo():
         try:
             return self._update()
         except (requests.exceptions.ConnectionError,
+                requests.exceptions.ReadTimeout,
                 URLError):
             raise RuntimeError("Could not connect to infura.io")
 

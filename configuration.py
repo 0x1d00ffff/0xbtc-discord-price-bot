@@ -93,7 +93,7 @@ EXPENSIVE_STUFF = [
     (650,
      ['magnum domperignon', 'domperignon', 'champagne', 'donperignon']),
     (200,
-     ['microsoft windows license', 'microsoft windows', 'windows']),
+     ['microsoft windows license', 'microsoft', 'windows']),
 ]
 
 
@@ -200,7 +200,7 @@ TRADING_COMMANDS = [
         ['era', 'halving', 'halvening'],
         command_handlers.cmd_era),
     CmdDef(
-        ['burn', 'burned', 'address 0'],
+        ['burn', 'burned', 'address 0', 'thevoid'],
         command_handlers.cmd_tokens_burned),
     CmdDef(
         ['holders', 'distribution', 'dist'],
