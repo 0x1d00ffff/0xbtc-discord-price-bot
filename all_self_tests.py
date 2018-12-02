@@ -241,7 +241,7 @@ class TestMineableTokenInfo(unittest.TestCase):
         self.m = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
         self.m.update()
 
-    @unittest.skipIf(config.CURRENCY != "0xBTC",
+    @unittest.skipIf(config.TOKEN_SYMBOL != "0xBTC",
                      "This test assumes 0xBTC and must be modified for other currencies")
     def test_reading_0xbtc_values(self):
         m = self.m

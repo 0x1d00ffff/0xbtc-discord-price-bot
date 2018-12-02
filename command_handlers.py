@@ -27,21 +27,21 @@ async def cmd_compare_price_vs(apis, item_name="lambo", item_price=200000):
     if apis.exchanges.last_updated_time() == 0:
         return ":shrug:"
 
-    token_price_usd = apis.exchanges.price_eth(config.CURRENCY) * apis.exchanges.eth_price_usd()
+    token_price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
 
     if token_price_usd == 0:
         return ":shrug:"
 
     return "1 {} = **{}** {} (${})".format(item_name, 
                                            prettify_decimals(item_price / token_price_usd),
-                                           config.CURRENCY,
+                                           config.TOKEN_SYMBOL,
                                            to_readable_thousands(item_price))
 
 def show_price_from_source(apis, source='aggregate'):
     if (apis.exchanges.last_updated_time(api_name=source) == 0):
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(api_name=source))
     
-    token_price = apis.exchanges.price_eth(config.CURRENCY, api_name=source) * apis.exchanges.eth_price_usd()
+    token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, api_name=source) * apis.exchanges.eth_price_usd()
     eth_price_on_this_exchange = float(apis.exchanges.eth_price_usd(api_name=source))
 
     # Enclaves usually fails this way
@@ -49,18 +49,18 @@ def show_price_from_source(apis, source='aggregate'):
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(api_name=source))
 
     percent_change_str = ""
-    if apis.exchanges.change_24h(config.CURRENCY, api_name=source) == None:
+    if apis.exchanges.change_24h(config.TOKEN_SYMBOL, api_name=source) == None:
         percent_change_str = ""
-    elif apis.exchanges.change_24h(config.CURRENCY, api_name=source) == 0:
+    elif apis.exchanges.change_24h(config.TOKEN_SYMBOL, api_name=source) == 0:
         percent_change_str = "**0**% "
     else:
-        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.exchanges.change_24h(config.CURRENCY, api_name=source),
-                                                       percent_change_to_emoji(apis.exchanges.change_24h(config.CURRENCY, api_name=source)),)
+        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.exchanges.change_24h(config.TOKEN_SYMBOL, api_name=source),
+                                                       percent_change_to_emoji(apis.exchanges.change_24h(config.TOKEN_SYMBOL, api_name=source)),)
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
     result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
                             seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time(api_name=source)),
                             '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
-                            apis.exchanges.price_eth(config.CURRENCY, api_name=source), 
+                            apis.exchanges.price_eth(config.TOKEN_SYMBOL, api_name=source), 
                             percent_change_str,
                             '' if eth_price_on_this_exchange == 0 else '(ETH: **${:.0f}**) '.format(eth_price_on_this_exchange), 
                             apis.exchanges.short_url(api_name=source))
@@ -114,7 +114,7 @@ async def cmd_price_all(command_str, discord_message, apis):
     msg = ""
     for api in sorted(apis.exchanges.alive_apis, key=lambda a: a.api_name):
         # skip CMC and apis not directly tracking the main currency
-        if api.currency_symbol != config.CURRENCY or api.api_name == "Coin Market Cap":
+        if api.currency_symbol != config.TOKEN_SYMBOL or api.api_name == "Coin Market Cap":
             continue
         single_line = show_price_from_source(apis, source=api.api_name)
         # TODO: remove this when 'alive_apis' excludes apis correctly
@@ -153,7 +153,7 @@ async def cmd_marketcap(command_str, discord_message, apis):
     if apis.exchanges.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url())
 
-    token_price = apis.exchanges.price_eth(config.CURRENCY) * apis.exchanges.eth_price_usd()
+    token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
     marketcap = apis.token.tokens_minted * token_price
 
     if marketcap == 0:
@@ -558,11 +558,11 @@ async def cmd_volume(command_str, discord_message, apis):
 
     for api in sorted(apis.exchanges.alive_apis, key=lambda a: a.api_name):
         # skip CMC and apis not directly tracking main currency
-        if api.currency_symbol != config.CURRENCY or api.api_name == "Coin Market Cap":
+        if api.currency_symbol != config.TOKEN_SYMBOL or api.api_name == "Coin Market Cap":
             continue
 
-        volume_eth = apis.exchanges.volume_eth(config.CURRENCY, api_name=api.api_name)
-        volume_btc = apis.exchanges.volume_btc(config.CURRENCY, api_name=api.api_name)
+        volume_eth = apis.exchanges.volume_eth(config.TOKEN_SYMBOL, api_name=api.api_name)
+        volume_btc = apis.exchanges.volume_btc(config.TOKEN_SYMBOL, api_name=api.api_name)
         if volume_eth == 0 and volume_btc == 0:
             continue
 
@@ -595,11 +595,11 @@ async def cmd_ratio(command_str, discord_message, apis):
     if apis.exchanges.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url())
 
-    token_price_usd = apis.exchanges.price_eth(config.CURRENCY) * apis.exchanges.eth_price_usd()
+    token_price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
     if token_price_usd == 0:
         return ":shrug:"
 
-    return "1 BTC : {:,.0f} {}".format(apis.exchanges.btc_price_usd() / token_price_usd, config.CURRENCY)
+    return "1 BTC : {:,.0f} {}".format(apis.exchanges.btc_price_usd() / token_price_usd, config.TOKEN_SYMBOL)
 
 async def cmd_rank(command_str, discord_message, apis):
     api_name = "Coin Market Cap"
@@ -608,7 +608,7 @@ async def cmd_rank(command_str, discord_message, apis):
     if apis.exchanges.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(api_url)
 
-    rank = apis.exchanges.rank(currency_symbol=config.CURRENCY,
+    rank = apis.exchanges.rank(currency_symbol=config.TOKEN_SYMBOL,
                      api_name=api_name)
     if rank is None:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(api_url)
@@ -627,10 +627,10 @@ def convert(amount, src, dest, apis):
 
     usd_value, result = None, None
 
-    token_price_usd = apis.exchanges.price_eth(config.CURRENCY) * apis.exchanges.eth_price_usd()
+    token_price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
 
-    if config.CURRENCY != "0xBTC":
-        logging.warning("unknown currency {}; !convert command assumes 0xBTC".format(config.CURRENCY))
+    if config.TOKEN_SYMBOL != "0xBTC":
+        logging.warning("unknown currency {}; !convert command assumes 0xBTC".format(config.TOKEN_SYMBOL))
 
     if src in ['0xbtc', '0xbitcoins', '0xbitcoin']:
         usd_value = token_price_usd * amount
@@ -708,7 +708,7 @@ async def cmd_convert(command_str, discord_message, apis):
     except ValueError:
         pass
     except:
-        return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.CURRENCY)
+        return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.TOKEN_SYMBOL)
     else:
         return convert(amount, src, dest, apis)
     
@@ -718,9 +718,9 @@ async def cmd_convert(command_str, discord_message, apis):
     except ValueError:
         pass
     except:
-        return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.CURRENCY)
+        return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.TOKEN_SYMBOL)
     else:
         return convert(amount, src, dest, apis)
 
     # ValueError exceptions lead here
-    return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.CURRENCY)
+    return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.TOKEN_SYMBOL)

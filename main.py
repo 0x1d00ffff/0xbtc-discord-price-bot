@@ -81,8 +81,8 @@ async def background_update():
                 logging.info('Updated token holders chart')
 
         try:
-            price_eth = apis.exchanges.price_eth(config.CURRENCY)
-            price_usd = apis.exchanges.price_eth(config.CURRENCY) * apis.exchanges.eth_price_usd()
+            price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
+            price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
             if price_usd > apis.storage.all_time_high_usd_price.get():
                 logging.info('New usd ATH! ${}'.format(price_usd))
                 apis.storage.all_time_high_usd_price.set(price_usd)
@@ -95,8 +95,8 @@ async def background_update():
             logging.exception('Failed to save ATH data')
 
         try:
-            price_eth = apis.exchanges.price_eth(config.CURRENCY)
-            price_usd = apis.exchanges.price_eth(config.CURRENCY) * apis.exchanges.eth_price_usd()
+            price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
+            price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
             # usd price is hidden if it is 0 (an error)
             usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
 
@@ -362,15 +362,15 @@ def main():
 
     exchanges = MultiApiManager(
     [
-        CoinMarketCapAPI(config.CURRENCY),
+        CoinMarketCapAPI(config.TOKEN_SYMBOL),
         CoinMarketCapAPI('ETH'),
         CoinMarketCapAPI('BTC'),
-        EnclavesAPI(config.CURRENCY),
-        ForkDeltaAPI(config.CURRENCY),
-        IDEXAPI(config.CURRENCY),
-        MercatoxAPI(config.CURRENCY),
-        EthexAPI(config.CURRENCY),
-        #HotbitAPI(config.CURRENCY),
+        EnclavesAPI(config.TOKEN_SYMBOL),
+        ForkDeltaAPI(config.TOKEN_SYMBOL),
+        IDEXAPI(config.TOKEN_SYMBOL),
+        MercatoxAPI(config.TOKEN_SYMBOL),
+        EthexAPI(config.TOKEN_SYMBOL),
+        #HotbitAPI(config.TOKEN_SYMBOL),
     ])
     token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
     storage = Storage(config.DATA_FOLDER)
