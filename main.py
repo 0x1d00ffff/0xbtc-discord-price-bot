@@ -76,37 +76,51 @@ async def send_file_to_channel_by_id(apis, channel_id, filepath):
     else:
         raise RuntimeError("send_file_to_channel_by_id could not find channel id {}".format(channel_id))
 
+async def show_all_time_high_image(apis):
+    try:
+        apis.storage.all_time_high_image_filename.get()
+    except KeyError:
+        return
+
+    if apis.storage.all_time_high_image_filename.get() == None:
+        return
+
+    logging.info("Showing ath image. Filename is '{}'".format(apis.storage.all_time_high_image_filename.get()))
+    try:
+        await send_file_to_channel_by_id(apis, 
+                                         config.ANNOUNCEMENT_CHANNEL_ID, 
+                                         os.path.join(config.DATA_FOLDER,
+                                                      apis.storage.all_time_high_image_filename.get()))
+    except Exception as e:
+        logging.warning('Failed to send image to channel: {}'.format(str(e)))
+    else:
+        # wait some time to make sure image is uploaded
+        await asyncio.sleep(5.0)
+        # once the image is sent, clear the filename in storage
+        apis.storage.all_time_high_image_filename.set(None)
+
 async def send_all_time_high_announcement(apis, message):
-    if apis.storage.all_time_high_image_filename.get() is not None:
-        try:
-            await send_file_to_channel_by_id(apis, 
-                                             config.ANNOUNCEMENT_CHANNEL_ID, 
-                                             os.path.join(config.DATA_FOLDER,
-                                                          apis.storage.all_time_high_image_filename.get()))
-        except Exception as e:
-            logging.warning('Failed to send image to channel: {}'.format(str(e)))
-        else:
-            # wait some time to make sure image is uploaded
-            asyncio.sleep(5.0)
-            # once the image is sent, clear the filename in storage
-            apis.storage.all_time_high_image_filename.set(None)
+    await show_all_time_high_image(apis)
 
-    await send_message_to_channel_by_id(apis, config.ANNOUNCEMENT_CHANNEL_ID, msg)
-
-    logging.info(msg)
+    await send_message_to_channel_by_id(apis, config.ANNOUNCEMENT_CHANNEL_ID, message)
+    logging.info('Sending announcement: {}'.format(message))
 
 async def check_update_all_time_high(apis):
     try:
         price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
         price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
-        if price_usd > apis.storage.all_time_high_usd_price.get():
-            msg = 'New USD all-time-high **${}**'.format(prettify_decimals(price_usd))
-            await send_all_time_high_announcement(msg)
+        if (price_usd > apis.storage.all_time_high_usd_price.get()
+            and formatting_helpers.prettify_decimals(price_usd)
+                != formatting_helpers.prettify_decimals(apis.storage.all_time_high_usd_price.get())):
+            msg = 'New USD all-time-high **${}**'.format(formatting_helpers.prettify_decimals(price_usd))
+            await send_all_time_high_announcement(apis, msg)
             apis.storage.all_time_high_usd_price.set(price_usd)
             apis.storage.all_time_high_usd_timestamp.set(time.time())
-        if price_eth > apis.storage.all_time_high_eth_price.get():
-            msg = 'New Ethereum all-time-high **{}Ξ**'.format(prettify_decimals(price_eth))
-            await send_all_time_high_announcement(msg)
+        if (price_eth > apis.storage.all_time_high_eth_price.get()
+            and formatting_helpers.prettify_decimals(price_eth)
+                != formatting_helpers.prettify_decimals(apis.storage.all_time_high_eth_price.get())):
+            msg = 'New Ethereum all-time-high **{}Ξ**'.format(formatting_helpers.prettify_decimals(price_eth))
+            await send_all_time_high_announcement(apis, msg)
             apis.storage.all_time_high_eth_price.set(price_eth)
             apis.storage.all_time_high_eth_timestamp.set(time.time())
     except:
@@ -152,7 +166,7 @@ async def background_update():
 
             # show hashrate if available, otherwise show 'time since last update'
             if apis.token.estimated_hashrate is not None and apis.token.estimated_hashrate > 0:
-                end_of_status = to_readable_thousands(apis.token.estimated_hashrate, unit_type='short_hashrate')
+                end_of_status = formatting_helpers.to_readable_thousands(apis.token.estimated_hashrate, unit_type='short_hashrate')
             else:
                 end_of_status = formatting_helpers.seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time())
 
@@ -160,7 +174,7 @@ async def background_update():
             if apis.exchanges.last_updated_time() != 0:
                 fmt_str = "{}{} Ξ ({})"
                 await update_status(client, fmt_str.format(usd_str,
-                                                           prettify_decimals(price_eth),
+                                                           formatting_helpers.prettify_decimals(price_eth),
                                                            end_of_status))
         except (websockets.exceptions.ConnectionClosed,
                 RuntimeError) as e:
@@ -201,6 +215,8 @@ def preprocess(message):
         if message.startswith('！'):
             message = '!' + message[1:]
 
+    return message
+
 def configure_discord_client(show_channels=False):
     client.loop.create_task(background_update())
 
@@ -215,7 +231,7 @@ def configure_discord_client(show_channels=False):
         if message.author.bot:
             return
 
-        command_str = preprocess(message.contents)
+        command_str = preprocess(message.content)
 
         if message.channel.id in config.BLACKLISTED_CHANNEL_IDS:
             # check only global commands in a blacklisted channel
@@ -427,19 +443,18 @@ def main():
     token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
     storage = Storage(config.DATA_FOLDER)
 
-    apis = APIWrapper(client, storage, exchanges, token, start_time)
-
     if args.self_test:
         import all_self_tests
         client = MockClient()
-        apis.client = client
+        apis = APIWrapper(client, storage, exchanges, token, start_time)
         all_self_tests.run_all()
     elif args.command_test:
         client = MockClient()
-        apis.client = client
+        apis = APIWrapper(client, storage, exchanges, token, start_time)
         command_test()
     else:
         client = discord.Client()
+        apis = APIWrapper(client, storage, exchanges, token, start_time)
         configure_discord_client(args.show_channels)
 
         while True:

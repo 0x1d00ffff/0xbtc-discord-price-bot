@@ -5,6 +5,7 @@ import random
 import datetime  # !help !ath
 import re
 import os
+import asyncio
 
 import configuration as config
 import util
@@ -473,7 +474,7 @@ async def cmd_set_all_time_high_image_filename(command_str, discord_message, api
         await apis.client.send_file(discord_message.channel,
                                     os.path.join(config.DATA_FOLDER,
                                                  apis.storage.all_time_high_image_filename.get()))
-        asyncio.sleep(5.0)
+        await asyncio.sleep(5.0)
         return "New all-time-high filename set! `{}`".format(image_filename)
 
 async def cmd_set_bestshare(command_str, discord_message, apis):

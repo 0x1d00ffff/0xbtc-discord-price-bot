@@ -3,6 +3,8 @@
 import configuration as config
 import util
 
+from command_handlers import cmd_compare_price_vs
+
 
 async def handle_global_command(command_str, discord_message, apis):
     for cmd_def in config.GLOBAL_COMMANDS:
@@ -27,7 +29,7 @@ async def handle_trading_command(command_str, discord_message, apis):
     for price, names in config.EXPENSIVE_STUFF:
         if util.string_contains_any(command_str, names, exhaustive_search=True):
             correct_name = names[0]
-            msg = cmd_compare_price_vs(apis, correct_name, price)
+            msg = await cmd_compare_price_vs(apis, correct_name, price)
             break
 
     return msg

@@ -109,19 +109,20 @@ class MercatoxAPI():
 
             #pprint.pprint(pair_info)
 
-            if base_pair == "BTC":
-                self.price_btc = float(pair_info['last'])
-                self.volume_btc = float(pair_info['quoteVolume'])
+            try:
+                if base_pair == "BTC":
+                    self.price_btc = float(pair_info['last'])
+                    self.volume_btc = float(pair_info['quoteVolume'])
 
-                # TODO: this should be tracked per-base pair
-                #self.change_24h = float(pair_info['percentChange']) / 100.0
+                if base_pair == "ETH":
+                    self.price_eth = float(pair_info['last'])
+                    self.volume_eth = float(pair_info['quoteVolume'])
 
-            if base_pair == "ETH":
-                self.price_eth = float(pair_info['last'])
-                self.volume_eth = float(pair_info['quoteVolume'])
+                    # TODO: this should be tracked per-base pair
+                    self.change_24h = float(pair_info['percentChange']) / 100.0
 
-                # TODO: this should be tracked per-base pair
-                self.change_24h = float(pair_info['percentChange']) / 100.0
+            except TypeError as e:
+                raise TimeoutError("Could not convert data to float") from e
 
 
         if self.currency_symbol == "ETH":
