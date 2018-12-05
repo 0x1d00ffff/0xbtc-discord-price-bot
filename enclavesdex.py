@@ -40,6 +40,7 @@ class EnclavesAPI():
             raise RuntimeError("Unknown currency_symbol {}, need to add address to enclavesdex.py".format(currency_symbol))
 
         self.last_updated_time = 0
+        self.update_failure_count = 0
 
         self.currency_symbol = currency_symbol
         self.api_name = "Enclaves DEX"
@@ -110,9 +111,12 @@ class EnclavesAPI():
                 socket.gaierror,
                 socket.timeout,
                 URLError) as e:
-            logging.warning('api timeout {}'.format(self.api_name))
+            #logging.warning('api timeout {}'.format(self.api_name))
+            raise TimeoutError('api timeout {}: {}'.format(self.api_name, str(e))) from e
+            self.update_failure_count += 1
         else:
             self.last_updated_time = time.time()
+            self.update_failure_count = 0
 
     def print_all_values(self):
         print(self.api_name, self.currency_symbol, 'price_eth    ', self.price_eth)

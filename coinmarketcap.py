@@ -54,6 +54,7 @@ class CoinMarketCapAPI():
         self.command_names = ['cmc', 'coinmarketcap']
         self.short_url = "https://bit.ly/1hJ8ztr"
         self.last_updated_time = 0
+        self.update_failure_count = 0
 
         if currency_symbol == "ETH":
             self.currency_id = 1027
@@ -118,9 +119,12 @@ class CoinMarketCapAPI():
                 socket.gaierror,
                 socket.timeout,
                 URLError) as e:
-            logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
+            #logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
+            raise TimeoutError('api timeout {}: {}'.format(self.api_name, str(e))) from e
+            self.update_failure_count += 1
         else:
             self.last_updated_time = time.time()
+            self.update_failure_count = 0
 
     def print_all_values(self):
         print(self.api_name, self.currency_symbol, 'price_eth    ', self.price_eth)

@@ -3,6 +3,8 @@ incorporating multiple sources. """
 
 import time
 import logging
+
+import configuration as config
 from weighted_average import WeightedAverage
 
 # data older than this is completely ignored
@@ -16,7 +18,22 @@ class MultiApiManager():
         for api_obj in self.api_obj_list:
             try:
                 api_obj.update()
-                #logging.debug('updated {} successfully'.format(api_obj.api_name))
+            except TimeoutError as e:
+                # ignore a single failure, but log 2nd, 3rd, and once an hour
+                # from then on
+                if api_obj.update_failure_count == 2:
+                    fmt_str = 'Timeout {} (2 failures): {}'
+                    logging.warning(fmt_str.format(api_obj.api_name,
+                                                   str(e)))
+                if api_obj.update_failure_count == 3:
+                    fmt_str = 'Timeout {} (3 failures): {}. Silencing for now.'
+                    logging.warning(fmt_str.format(api_obj.api_name,
+                                                   str(e)))
+                if api_obj.update_failure_count % (3600 / config.UPDATE_RATE) == 0:
+                    fmt_str = 'Timeout {} ({} failures): {}'
+                    logging.warning(fmt_str.format(api_obj.api_name,
+                                                   api_obj.update_failure_count,
+                                                   str(e)))
             except:
                 logging.exception('Unhandled Exception updating {}'.format(api_obj.api_name))
 

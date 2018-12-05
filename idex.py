@@ -63,6 +63,7 @@ class IDEXAPI():
         self.command_names = ['idex', 'idx']
         self.short_url = "https://bit.ly/2stRdvt"
         self.last_updated_time = 0
+        self.update_failure_count = 0
 
         self.price_eth = None
         self.price_usd = None
@@ -136,9 +137,12 @@ class IDEXAPI():
                 socket.gaierror,
                 socket.timeout,
                 URLError) as e:
-            logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
+            #logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
+            raise TimeoutError('api timeout {}: {}'.format(self.api_name, str(e))) from e
+            self.update_failure_count += 1
         else:
             self.last_updated_time = time.time()
+            self.update_failure_count = 0
 
     def print_all_values(self):
         print(self.api_name, self.currency_symbol, 'price_eth    ', repr(self.price_eth))

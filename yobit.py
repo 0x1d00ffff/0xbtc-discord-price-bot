@@ -24,6 +24,7 @@ class YobitAPI():
         self._SERVER_URL = "https://yobit.io/api/3/ticker"
         self.api_name = "Yobit"
         self.last_updated_time = 0
+        self.update_failure_count = 0
 
         self.currency_symbol = currency_symbol
         if currency_symbol == "SEDO":
@@ -78,10 +79,12 @@ class YobitAPI():
                 socket.timeout,
                 socket.gaierror,
                 URLError) as e:
-            logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
+            #logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
+            raise TimeoutError('api timeout {}: {}'.format(self.api_name, str(e))) from e
+            self.update_failure_count += 1
         else:
             self.last_updated_time = time.time()
-            logging.info('successfully updated Yobit')
+            self.update_failure_count = 0
 
     def print_all_values(self):
         print(self.api_name, self.currency_symbol, 'price_eth    ', repr(self.price_eth))
