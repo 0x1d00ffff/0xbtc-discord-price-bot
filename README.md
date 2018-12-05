@@ -49,6 +49,7 @@ bot to monitor/post price etc to the 0xbtc discord server
  - make configuration text-based so it does not need python imports etc
  - add keyboard shortcuts / letters (ie press 'c' to show all channels)
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
+   `pip install -U git+https://github.com/Rapptz/discord.py@rewrite#egg=discord.py[voice]`
  - make exchanges module
  - generalize command categories (currently only trading and global)
  - new commands
