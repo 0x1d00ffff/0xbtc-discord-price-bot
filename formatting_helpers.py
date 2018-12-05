@@ -1,6 +1,15 @@
 
+def string_to_float(value):
+    """custom version of float() that supports commas as decimal separators
+    when the input contains no periods"""
+    # if no periods (.) then assume commas are decimal separators
+    if '.' not in value:
+        value = value.replace(',', '.')
+    # if decimals exist then simply remove commas
+    else:
+        value = value.replace(',', '')
 
-
+    return float(value)
 
 def percent_change_to_emoji(percent_change):
     values = [

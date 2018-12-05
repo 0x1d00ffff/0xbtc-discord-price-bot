@@ -40,7 +40,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.3.0"
+_VERSION = "0.3.1"
 
 
 old_status_string = None
@@ -259,8 +259,6 @@ def configure_discord_client(show_channels=False):
         show_startup_info(client, show_channels)
 
 def show_startup_info(client, show_channels):
-    logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
-    logging.debug('discord.py version {}'.format(discord.__version__))
     logging.info('Logged in to {} servers as {} id:{}'.format(len(client.servers),
                                                               client.user.name,
                                                               client.user.id))
@@ -309,6 +307,7 @@ def setup_logging(path):
 
     # make libraries be quiet
     websocket.enableTrace(False)
+    logging.getLogger('asyncio').setLevel(logging.WARNING)
     logging.getLogger('websockets').setLevel(logging.WARNING)
     logging.getLogger('web3').setLevel(logging.INFO)
     logging.getLogger("urllib3").setLevel(logging.INFO)
@@ -453,6 +452,8 @@ def main():
         apis = APIWrapper(client, storage, exchanges, token, start_time)
         command_test()
     else:
+        logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
+        logging.debug('discord.py version {}'.format(discord.__version__))
         client = discord.Client()
         apis = APIWrapper(client, storage, exchanges, token, start_time)
         configure_discord_client(args.show_channels)

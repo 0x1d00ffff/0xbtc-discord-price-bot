@@ -132,10 +132,27 @@ class TestPriceCommand(unittest.TestCase):
             response = self.run_command(command_str)
             self.assertTrue("1.000 eth =" in response)
             self.assertTrue("usd" in response)
+        command_str='convert 0,89 eth to usd'
+        with self.subTest(command_str=command_str):
+            response = self.run_command(command_str)
+            self.assertTrue("0.89 eth =" in response)
+            self.assertTrue("usd" in response)
         command_str='income 3'
         with self.subTest(command_str=command_str):
             response = self.run_command(command_str)
             self.assertTrue("Income for 3.0 Gh/s:" in response)
+            self.assertTrue(" tokens/" in response)
+            self.assertTrue("per block solo" in response)
+        command_str='income 3.5mh'
+        with self.subTest(command_str=command_str):
+            response = self.run_command(command_str)
+            self.assertTrue("Income for 3.5 Mh/s:" in response)
+            self.assertTrue(" tokens/" in response)
+            self.assertTrue("per block solo" in response)
+        command_str='income 3,5mh'
+        with self.subTest(command_str=command_str):
+            response = self.run_command(command_str)
+            self.assertTrue("Income for 3.5 Mh/s:" in response)
             self.assertTrue(" tokens/" in response)
             self.assertTrue("per block solo" in response)
         command_str='setaddress 0x0000000000000000000000000000000000000000'
@@ -230,7 +247,17 @@ class TestDecimalFormatting(unittest.TestCase):
         self.assertEqual(prettify_decimals(12345678901234567),      '1.23e16')
         self.assertEqual(prettify_decimals(123456789012345678),     '1.23e17')
 
+    def test_str_to_float(self):
+        from formatting_helpers import string_to_float
 
+        self.assertEqual(string_to_float('0.89'),           0.89)
+        self.assertEqual(string_to_float('1000.5'),         1000.5)
+        self.assertEqual(string_to_float('0,89'),           0.89)
+        self.assertEqual(string_to_float('1,000.5'),        1000.5)
+
+        self.assertEqual(string_to_float('0.00000012345'),  0.00000012345)
+        self.assertEqual(string_to_float('0.00012345'),     0.00012345)
+        self.assertEqual(string_to_float('1234567'),        1234567)
 
 class TestMineableTokenInfo(unittest.TestCase):
     
@@ -332,6 +359,7 @@ def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestDecimalFormatting("test_prettify_decimals"))
     suite.addTest(TestDecimalFormatting("test_round_to_n"))
+    suite.addTest(TestDecimalFormatting("test_str_to_float"))
 
     suite.addTest(TestMineableTokenInfo("test_reading_0xbtc_values"))
     suite.addTest(TestMineableTokenInfo("test_hashing_nonces"))

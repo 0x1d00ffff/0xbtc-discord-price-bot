@@ -14,7 +14,12 @@ import ping_wrapper  # !ping command
 from web3 import Web3  # !mine command
 import etherscan  # !holders command
 
-from formatting_helpers import prettify_decimals, percent_change_to_emoji, seconds_to_n_time_ago, seconds_to_time, to_readable_thousands
+from formatting_helpers import (prettify_decimals, 
+                                percent_change_to_emoji,
+                                seconds_to_n_time_ago,
+                                seconds_to_time,
+                                to_readable_thousands,
+                                string_to_float)
 
 
 async def cmd_help(command_str, discord_message, apis):
@@ -275,10 +280,10 @@ async def cmd_income(command_str, discord_message, apis):
         if char in hashrate:
             selected_multiplier = mult
 
-    match = re.match("([<\d.]+)", hashrate)
+    match = re.match("([<\d.,]+)", hashrate)
     if not match:
         return "Bad hashrate; try `!income 5`, `!income 300mh`, or `!income 2.8gh`"
-    hashrate = float(match.group(1)) * selected_multiplier
+    hashrate = string_to_float(match.group(1)) * selected_multiplier
 
     tokens_per_day = 0.8 * 86400 * apis.token.reward * hashrate / ((2**22) * apis.token.difficulty)
     seconds_per_block = 1.2 * ((2**22) * apis.token.difficulty) / hashrate
@@ -657,7 +662,7 @@ amount of source currency. Example:
 def convert(amount, src, dest, apis):
     src = src.lower()
     dest = dest.lower()
-    amount = float(amount)
+    amount = string_to_float(amount)
 
     usd_value, result = None, None
 
@@ -739,22 +744,18 @@ async def cmd_convert(command_str, discord_message, apis):
     split = command_str.split()
     try:
         _, amount, src, _, dest = split
+        return convert(amount, src, dest, apis)
     except ValueError:
         pass
     except:
         return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.TOKEN_SYMBOL)
-    else:
-        return convert(amount, src, dest, apis)
-    
+
     # example input: '!convert 1 usd 0xbtc'
     try:
         _, amount, src, dest = split
-    except ValueError:
-        pass
+        return convert(amount, src, dest, apis)
     except:
         return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.TOKEN_SYMBOL)
-    else:
-        return convert(amount, src, dest, apis)
 
     # ValueError exceptions lead here
     return "Something went wrong :sob: try this: `!convert 1 eth to {}`".format(config.TOKEN_SYMBOL)
