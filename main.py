@@ -19,14 +19,15 @@ import discord
 from secret_info import TOKEN
 from reconnecting_bot import keep_running
 
-from coinmarketcap import CoinMarketCapAPI
-from enclavesdex import EnclavesAPI
-from forkdelta import ForkDeltaAPI
-from mercatox import MercatoxAPI
-from idex import IDEXAPI
-from ethex import EthexAPI
-from coinexchange import CoinExchangeAPI
-from multi_exchange_manager import MultiExchangeManager
+# from coinmarketcap import CoinMarketCapAPI
+# from enclavesdex import EnclavesAPI
+# from forkdelta import ForkDeltaAPI
+# from mercatox import MercatoxAPI
+# from idex import IDEXAPI
+# from ethex import EthexAPI
+# from coinexchange import CoinExchangeAPI
+# from multi_exchange_manager import MultiExchangeManager
+import exchanges
 
 from mineable_token_info import MineableTokenInfo
 import etherscan
@@ -425,18 +426,18 @@ def main():
         os.makedirs(config.DATA_FOLDER)
     setup_logging(os.path.join(config.DATA_FOLDER, 'debug.log'))
 
-    exchanges = MultiExchangeManager(
+    exchange_manager = exchanges.MultiExchangeManager(
     [
-        CoinMarketCapAPI(config.TOKEN_SYMBOL),
-        CoinMarketCapAPI('ETH'),
-        CoinMarketCapAPI('BTC'),
-        EnclavesAPI(config.TOKEN_SYMBOL),
-        ForkDeltaAPI(config.TOKEN_SYMBOL),
-        IDEXAPI(config.TOKEN_SYMBOL),
-        MercatoxAPI(config.TOKEN_SYMBOL),
-        #HotbitAPI(config.TOKEN_SYMBOL),
-        EthexAPI(config.TOKEN_SYMBOL),
-        CoinExchangeAPI(config.TOKEN_SYMBOL),
+        exchanges.CoinMarketCapAPI(config.TOKEN_SYMBOL),
+        exchanges.CoinMarketCapAPI('ETH'),
+        exchanges.CoinMarketCapAPI('BTC'),
+        exchanges.EnclavesAPI(config.TOKEN_SYMBOL),
+        exchanges.ForkDeltaAPI(config.TOKEN_SYMBOL),
+        exchanges.IDEXAPI(config.TOKEN_SYMBOL),
+        exchanges.MercatoxAPI(config.TOKEN_SYMBOL),
+        #exchanges.HotbitAPI(config.TOKEN_SYMBOL),
+        exchanges.EthexAPI(config.TOKEN_SYMBOL),
+        exchanges.CoinExchangeAPI(config.TOKEN_SYMBOL),
     ])
     token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
     storage = Storage(config.DATA_FOLDER)
@@ -444,17 +445,17 @@ def main():
     if args.self_test:
         import all_self_tests
         client = MockClient()
-        apis = APIWrapper(client, storage, exchanges, token, start_time)
+        apis = APIWrapper(client, storage, exchange_manager, token, start_time)
         all_self_tests.run_all()
     elif args.command_test:
         client = MockClient()
-        apis = APIWrapper(client, storage, exchanges, token, start_time)
+        apis = APIWrapper(client, storage, exchange_manager, token, start_time)
         asyncio.get_event_loop().run_until_complete(command_test())
     else:
         logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
         logging.debug('discord.py version {}'.format(discord.__version__))
         client = discord.Client()
-        apis = APIWrapper(client, storage, exchanges, token, start_time)
+        apis = APIWrapper(client, storage, exchange_manager, token, start_time)
         configure_discord_client(args.show_channels)
 
         while True:

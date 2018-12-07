@@ -5,7 +5,7 @@ import time
 import logging
 import asyncio
 
-import configuration as config
+from configuration import UPDATE_RATE
 from weighted_average import WeightedAverage
 
 # data older than this is completely ignored
@@ -33,7 +33,7 @@ class MultiExchangeManager():
                     fmt_str = 'Timeout {} (3 failures): {}. Silencing for now.'
                     logging.warning(fmt_str.format(api_obj.exchange_name,
                                                    str(e)))
-                if api_obj.update_failure_count % (3600 / config.UPDATE_RATE) == 0:
+                if api_obj.update_failure_count % (3600 / UPDATE_RATE) == 0:
                     fmt_str = 'Timeout {} ({} failures): {}'
                     logging.warning(fmt_str.format(api_obj.exchange_name,
                                                    api_obj.update_failure_count,

@@ -37,11 +37,12 @@ import json
 
 import pprint
 
-from weighted_average import WeightedAverage
+from .base_exchange import BaseExchangeAPI
 
 
-class EthexAPI():
+class EthexAPI(BaseExchangeAPI):
     def __init__(self, currency_symbol):
+        super().__init__()
         self._SERVER_URL = "https://api.ethex.market:5055"
         self.currency_symbol = currency_symbol
         self.exchange_name = "Ethex"
@@ -49,17 +50,8 @@ class EthexAPI():
         self.short_url = "https://bit.ly/2SrmIl6"
         self.last_updated_time = 0
         self.update_failure_count = 0
-        self.price_eth = None
-        self.price_usd = None
-        self.price_btc = None
-        self.volume_usd = None
-        self.volume_eth = None
-        self.volume_btc = None
-        self.change_24h = None
-        self.eth_price_usd = None
-        self.btc_price_usd = None
 
-    def _update(self, timeout=10.0):
+    async def _update(self, timeout=10.0):
         method = "/ticker24"
 
         req = Request(
@@ -102,39 +94,10 @@ class EthexAPI():
             self.price_btc = 1
             self.btc_price_usd = self.price_usd
 
-    def update(self, timeout=10.0):
-        try:
-            self._update(timeout=timeout)
-        except (TimeoutError,
-                ConnectionResetError,
-                ConnectionRefusedError,
-                socket.gaierror,
-                socket.timeout,
-                URLError) as e:
-            #logging.warning('api timeout {}: {}'.format(self.exchange_name, str(e)))
-            self.update_failure_count += 1
-            raise TimeoutError(str(e)) from e
-        else:
-            self.last_updated_time = time.time()
-            self.update_failure_count = 0
-
-    def print_all_values(self):
-        print(self.exchange_name, self.currency_symbol, 'price_eth    ', repr(self.price_eth))
-        print(self.exchange_name, self.currency_symbol, 'price_usd    ', repr(self.price_usd))
-        print(self.exchange_name, self.currency_symbol, 'price_btc    ', repr(self.price_btc))
-        print(self.exchange_name, self.currency_symbol, 'volume_usd   ', repr(self.volume_usd))
-        print(self.exchange_name, self.currency_symbol, 'volume_eth   ', repr(self.volume_eth))
-        print(self.exchange_name, self.currency_symbol, 'volume_btc   ', repr(self.volume_btc))
-        print(self.exchange_name, self.currency_symbol, 'change_24h   ', repr(self.change_24h))
-        print(self.exchange_name, self.currency_symbol, 'eth_price_usd', repr(self.eth_price_usd))
-        print(self.exchange_name, self.currency_symbol, 'btc_price_usd', repr(self.btc_price_usd))
-
 if __name__ == "__main__":
 
     btc_api = EthexAPI('DAI')
-    btc_api.update()
-    btc_api.print_all_values()
+    btc_api.load_once_and_print_values()
 
     oxbtc_api = EthexAPI('0xBTC')
-    oxbtc_api.update()
-    oxbtc_api.print_all_values()
+    oxbtc_api.load_once_and_print_values()

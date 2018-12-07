@@ -92,7 +92,7 @@ from urllib.error import URLError
 import json
 
 from weighted_average import WeightedAverage
-
+from .base_exchange import BaseExchangeAPI
 
 import aiohttp
 import asyncio
@@ -115,8 +115,9 @@ async def get_json_from_url(url):
     else:
         return data
 
-class CoinExchangeAPI():
+class CoinExchangeAPI(BaseExchangeAPI):
     def __init__(self, currency_symbol):
+        super().__init__()
         self._SERVER_URL = "https://www.coinexchange.io/api/v1"
         self.currency_symbol = currency_symbol
         self.exchange_name = "Coin Exchange"
@@ -127,16 +128,6 @@ class CoinExchangeAPI():
         self.market_id_vs_eth = None
         self.market_id_vs_btc = None
         self.market_id_eth_btc = None
-
-        self.price_eth = None
-        self.price_usd = None
-        self.price_btc = None
-        self.volume_usd = None
-        self.volume_eth = None
-        self.volume_btc = None
-        self.change_24h = None
-        self.eth_price_usd = None
-        self.btc_price_usd = None
 
     async def _get_market_id(self, asset_code, currency_code):
         """Get market ID for the given asset code ("0xBTC", "LTC", etc) and 
@@ -182,38 +173,6 @@ class CoinExchangeAPI():
         average.add(change_btc, 1)
         self.change_24h = average.average()
 
-    async def update(self, timeout=10.0):
-        try:
-            await self._update(timeout=timeout)
-        except (TimeoutError,
-                ConnectionResetError,
-                ConnectionRefusedError,
-                socket.gaierror,
-                socket.timeout,
-                URLError) as e:
-            #logging.warning('api timeout {}: {}'.format(self.exchange_name, str(e)))
-            self.update_failure_count += 1
-            raise TimeoutError(str(e)) from e
-        else:
-            self.last_updated_time = time.time()
-            self.update_failure_count = 0
-
-    def print_all_values(self):
-        print(self.exchange_name, self.currency_symbol, 'price_eth    ', self.price_eth)
-        print(self.exchange_name, self.currency_symbol, 'price_btc    ', self.price_btc)
-        print(self.exchange_name, self.currency_symbol, 'price_usd    ', self.price_usd)
-        print(self.exchange_name, self.currency_symbol, 'volume_usd   ', self.volume_usd)
-        print(self.exchange_name, self.currency_symbol, 'volume_eth   ', self.volume_eth)
-        print(self.exchange_name, self.currency_symbol, 'volume_btc   ', self.volume_btc)
-        print(self.exchange_name, self.currency_symbol, 'change_24h   ', self.change_24h)
-        print(self.exchange_name, self.currency_symbol, 'eth_price_usd', self.eth_price_usd)
-        print(self.exchange_name, self.currency_symbol, 'btc_price_usd', self.btc_price_usd)
-
-async def main():
-    eth_api = CoinExchangeAPI('0xBTC')
-    await eth_api.update()
-    eth_api.print_all_values()
-
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    eth_api = CoinExchangeAPI('0xBTC')
+    eth_api.load_once_and_print_values()

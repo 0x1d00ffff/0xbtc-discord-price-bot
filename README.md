@@ -41,11 +41,15 @@ bot to monitor/post price etc to the 0xbtc discord server
    to explicitly check for this.
 
 ##### Todo:
+ - exchange module
+   - switch over all apis to use \_get_json_from_url in exchange base class
+   - remove `if __name__ == "__main__":` checks from exchanges or figure out
+     a way to keep and still test them individually
+     `cd 0xbtc-discord-price-bot; python -m exchanges.mercatox`
  - make configuration text-based so it does not need python imports etc
  - add keyboard shortcuts / letters (ie press 'c' to show all channels)
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
    `pip install -U git+https://github.com/Rapptz/discord.py@rewrite#egg=discord.py[voice]`
- - make exchanges module
  - generalize command categories (currently only trading and global)
  - new commands
    - !binance (to show current listing price in usd)

@@ -1,5 +1,5 @@
 """
-API for ForkDelta
+API for HotBit (https://hotbit.io)
 
 TODO: replace with real API instead of relying on livecoinwatch
 
@@ -33,21 +33,19 @@ data =
 
 
 """
-from livecoinwatch import LiveCoinWatchAPI
+from .livecoinwatch import LiveCoinWatchAPI
 
 
-class ForkDeltaAPI(LiveCoinWatchAPI):
+class HotbitAPI(LiveCoinWatchAPI):
     def __init__(self, currency_symbol):
-        super().__init__(currency_symbol, allowed_apis=['ForkDelta'])
-        self.exchange_name = "Fork Delta"
-        self.command_names = ['fd', 'fork delta']
-        self.short_url = "https://bit.ly/2xr7AO4"
+        super().__init__(currency_symbol, allowed_apis=['Hotbit'])
+        self.exchange_name = "Hotbit"
+        self.command_names = ['hot bit']
+        self.short_url = "https://bit.ly/2sPqHM9"
 
 if __name__ == "__main__":
-    oxbtc_api = ForkDeltaAPI('0xBTC')
-    oxbtc_api.update()
-    oxbtc_api.print_all_values()
+    oxbtc_api = HotbitAPI('0xBTC')
+    oxbtc_api.load_once_and_print_values()
 
-    dai_api = ForkDeltaAPI('OMG')
-    dai_api.update()
-    dai_api.print_all_values()
+    omg_api = HotbitAPI('OMG')
+    omg_api.load_once_and_print_values()

@@ -24,12 +24,15 @@ except:
 
 from urllib.error import URLError
 
+from .base_exchange import BaseExchangeAPI
+
 
 def wei_to_ether(amount_in_wei):
     return int(amount_in_wei) / 1000000000000000000.0
 
-class EnclavesAPI():
+class EnclavesAPI(BaseExchangeAPI):
     def __init__(self, currency_symbol):
+        super().__init__()
         self._WEBSOCKET_URL = "ws://app.enclaves.io:80/socket.io/?EIO=3&transport=websocket";
 
         if currency_symbol == "0xBTC":
@@ -39,26 +42,12 @@ class EnclavesAPI():
         else:
             raise RuntimeError("Unknown currency_symbol {}, need to add address to enclavesdex.py".format(currency_symbol))
 
-        self.last_updated_time = 0
-        self.update_failure_count = 0
-
         self.currency_symbol = currency_symbol
         self.exchange_name = "Enclaves DEX"
         self.command_names = ['enclaves', 'encalves']
         self.short_url = "https://bit.ly/2rnYA7b"
 
-        self.price_eth = None
-        self.price_usd = None
-        self.price_btc = None
-        self.volume_usd = None
-        self.volume_eth = None
-        self.volume_btc = None
-        self.change_24h = None
-        self.eth_price_usd = None
-        self.btc_price_usd = None
-
-
-    def _update(self, timeout=10.0):
+    async def _update(self, timeout=10.0):
         #print('connecting to', self._WEBSOCKET_URL)
 
         ws = websocket.create_connection(self._WEBSOCKET_URL, timeout=timeout)
@@ -104,37 +93,6 @@ class EnclavesAPI():
             raise RuntimeError('Response from Enclaves did not include indicated currency ({}).'.format(self.currency_symbol))
 
 
-    def update(self, timeout=10.0):
-        try:
-            self._update(timeout=timeout)
-        # todo: may not need to check for URLError when using websockets
-        except (websocket._exceptions.WebSocketTimeoutException,
-                websocket._exceptions.WebSocketBadStatusException,
-                websocket._exceptions.WebSocketAddressException,
-                socket.gaierror,
-                socket.timeout,
-                URLError,
-                TimeoutError) as e:
-            #logging.warning('api timeout {}'.format(self.exchange_name))
-            self.update_failure_count += 1
-            raise TimeoutError(str(e)) from e
-        else:
-            self.last_updated_time = time.time()
-            self.update_failure_count = 0
-
-    def print_all_values(self):
-        print(self.exchange_name, self.currency_symbol, 'price_eth    ', self.price_eth)
-        print(self.exchange_name, self.currency_symbol, 'price_usd    ', self.price_usd)
-        print(self.exchange_name, self.currency_symbol, 'volume_usd   ', self.volume_usd)
-        print(self.exchange_name, self.currency_symbol, 'volume_eth   ', self.volume_eth)
-        print(self.exchange_name, self.currency_symbol, 'change_24h   ', self.change_24h)
-        print(self.exchange_name, self.currency_symbol, 'eth_price_usd', self.eth_price_usd)
-        print(self.exchange_name, self.currency_symbol, 'btc_price_usd', self.btc_price_usd)
-
-
-
 if __name__ == "__main__":
     e = EnclavesAPI('0xBTC')
-
-    e.update()
-    e.print_all_values()
+    e.load_once_and_print_values()

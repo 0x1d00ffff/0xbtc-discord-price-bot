@@ -16,16 +16,15 @@ import json
 
 import pprint
 
-from weighted_average import WeightedAverage
+from .base_exchange import BaseExchangeAPI
 
 
-class YobitAPI():
+class YobitAPI(BaseExchangeAPI):
     def __init__(self, currency_symbol):
+        super().__init__()
         self._SERVER_URL = "https://yobit.io/api/3/ticker"
         self.exchange_name = "Yobit"
         self.command_names = ["yobit"]
-        self.last_updated_time = 0
-        self.update_failure_count = 0
 
         self.currency_symbol = currency_symbol
         if currency_symbol == "SEDO":
@@ -33,16 +32,6 @@ class YobitAPI():
             self._currency_name_on_exchange = "sedo"
         else:
             raise RuntimeError("Unknown currency {}; need to edit yobit.py".format(currency_symbol))
-
-        self.price_eth = None
-        self.price_usd = None
-        self.price_btc = None
-        self.volume_usd = None
-        self.volume_eth = None
-        self.volume_btc = None
-        self.change_24h = None
-        self.eth_price_usd = None
-        self.btc_price_usd = None
 
     def _update(self, timeout=10.0):
         method = "/{0}_btc-{0}_eth-eth_usd-btc_usd".format(self._currency_name_on_exchange)
@@ -71,35 +60,7 @@ class YobitAPI():
         self.eth_price_usd = float(data['eth_usd']['last'])
         self.btc_price_usd = float(data['btc_usd']['last'])
 
-    def update(self, timeout=10.0):
-        try:
-            self._update(timeout=timeout)
-        except (TimeoutError,
-                ConnectionResetError,
-                ConnectionRefusedError,
-                socket.timeout,
-                socket.gaierror,
-                URLError) as e:
-            #logging.warning('api timeout {}: {}'.format(self.exchange_name, str(e)))
-            raise TimeoutError(str(e)) from e
-            self.update_failure_count += 1
-        else:
-            self.last_updated_time = time.time()
-            self.update_failure_count = 0
-
-    def print_all_values(self):
-        print(self.exchange_name, self.currency_symbol, 'price_eth    ', repr(self.price_eth))
-        print(self.exchange_name, self.currency_symbol, 'price_usd    ', repr(self.price_usd))
-        print(self.exchange_name, self.currency_symbol, 'price_btc    ', repr(self.price_btc))
-        print(self.exchange_name, self.currency_symbol, 'volume_usd   ', repr(self.volume_usd))
-        print(self.exchange_name, self.currency_symbol, 'volume_eth   ', repr(self.volume_eth))
-        print(self.exchange_name, self.currency_symbol, 'volume_btc   ', repr(self.volume_btc))
-        print(self.exchange_name, self.currency_symbol, 'change_24h   ', repr(self.change_24h))
-        print(self.exchange_name, self.currency_symbol, 'eth_price_usd', repr(self.eth_price_usd))
-        print(self.exchange_name, self.currency_symbol, 'btc_price_usd', repr(self.btc_price_usd))
-
 if __name__ == "__main__":
 
     sedo_api = YobitAPI('SEDO')
-    sedo_api.update()
-    sedo_api.print_all_values()
+    sedo_api.load_once_and_print_values()
