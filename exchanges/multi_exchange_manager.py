@@ -23,23 +23,23 @@ class MultiExchangeManager():
                 else:
                     api_obj.update()
             except TimeoutError as e:
-                # ignore a single failure, but log 2nd, 3rd, and once an hour
-                # from then on
+                # ignore a single failure, but log 2nd, 3rd, and once every 2
+                # hours from then on
                 if api_obj.update_failure_count == 2:
-                    fmt_str = 'Timeout {} (2 failures): {}'
+                    fmt_str = "Timeout {} (2 failures): '{}'"
                     logging.warning(fmt_str.format(api_obj.exchange_name,
                                                    str(e)))
                 if api_obj.update_failure_count == 3:
-                    fmt_str = 'Timeout {} (3 failures): {}. Silencing for now.'
+                    fmt_str = "Timeout {} (3 failures): '{}'. Silencing for now."
                     logging.warning(fmt_str.format(api_obj.exchange_name,
                                                    str(e)))
-                if api_obj.update_failure_count % (3600 / UPDATE_RATE) == 0:
-                    fmt_str = 'Timeout {} ({} failures): {}'
+                if api_obj.update_failure_count % (7200 / UPDATE_RATE) == 0:
+                    fmt_str = "Timeout {} ({} failures): '{}'"
                     logging.warning(fmt_str.format(api_obj.exchange_name,
                                                    api_obj.update_failure_count,
                                                    str(e)))
             except:
-                logging.exception('Unhandled Exception updating {}'.format(api_obj.exchange_name))
+                logging.exception("Unhandled Exception updating {}".format(api_obj.exchange_name))
 
     @property
     def all_exchanges(self):
