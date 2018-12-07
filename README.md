@@ -26,6 +26,29 @@ bot to monitor/post price etc to the 0xbtc discord server
 7. (Optional) run `python3 /path/to/price-bot/ --self_test`
 8. run `python3 /path/to/price-bot/`
 
+##### Adding an Exchange:
+1. Create a new file for the exchange in exchanges/, a good idea is to copy + 
+   paste one - for example `mercatox.py`
+2. Edit the class name, properties and `_update()` fn to work for the exchange
+3. (Optional) Test the new exchange file: 
+
+        cd 0xbtc-discord-price-bot
+        python -m exchanges.mercatox
+
+4. Edit `exchanges/__init__.py` to import the new class
+5. Add an entry to the MultiExchangeManager init at the bottom of `main.py`
+
+##### Adding a Command:
+1. If the command is simple and always returns the same message, you can skip
+   to step 3.
+2. Edit `command_handlers.py` and create a new function to do something. Copy
+   an existing function to get the correct prototype. Typically the function
+   names start with the prefix `cmd_`, and they always return a string - either
+   a good response or an explicit error message.
+3. Edit `configuration.py` and add a new entry to GLOBAL_COMMANDS or
+   TRADING_COMMANDS that references your new function. If its a string only 
+   command, a string can be used in place of a function name.
+
 ##### Requires:
  - python3
  - websocket
@@ -43,9 +66,6 @@ bot to monitor/post price etc to the 0xbtc discord server
 ##### Todo:
  - exchange module
    - switch over all apis to use \_get_json_from_url in exchange base class
-   - remove `if __name__ == "__main__":` checks from exchanges or figure out
-     a way to keep and still test them individually
-     `cd 0xbtc-discord-price-bot; python -m exchanges.mercatox`
  - make configuration text-based so it does not need python imports etc
  - add keyboard shortcuts / letters (ie press 'c' to show all channels)
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)

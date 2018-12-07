@@ -194,11 +194,11 @@ class MultiExchangeManager():
         return result
 
 if __name__ == "__main__":
-    from coinmarketcap import CoinMarketCapAPI
-    from enclavesdex import EnclavesAPI
-    from livecoinwatch import LiveCoinWatchAPI
-    from forkdelta import ForkDeltaAPI
-    from mercatox import MercatoxAPI
+    from .coinmarketcap import CoinMarketCapAPI
+    from .enclavesdex import EnclavesAPI
+    from .livecoinwatch import LiveCoinWatchAPI
+    from .forkdelta import ForkDeltaAPI
+    from .mercatox import MercatoxAPI
 
     apis = [
         EnclavesAPI('0xBTC'), 
