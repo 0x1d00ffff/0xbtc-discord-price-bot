@@ -50,7 +50,7 @@ class CoinMarketCapAPI():
     def __init__(self, currency_symbol):
         self._SERVER_URL = "https://api.coinmarketcap.com/v2"
         self.currency_symbol = currency_symbol
-        self.api_name = "Coin Market Cap"
+        self.exchange_name = "Coin Market Cap"
         self.command_names = ['cmc', 'coinmarketcap']
         self.short_url = "https://bit.ly/1hJ8ztr"
         self.last_updated_time = 0
@@ -119,7 +119,7 @@ class CoinMarketCapAPI():
                 socket.gaierror,
                 socket.timeout,
                 URLError) as e:
-            #logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
+            #logging.warning('api timeout {}: {}'.format(self.exchange_name, str(e)))
             self.update_failure_count += 1
             raise TimeoutError(str(e)) from e
         else:
@@ -127,15 +127,15 @@ class CoinMarketCapAPI():
             self.update_failure_count = 0
 
     def print_all_values(self):
-        print(self.api_name, self.currency_symbol, 'price_eth    ', self.price_eth)
-        print(self.api_name, self.currency_symbol, 'price_btc    ', self.price_btc)
-        print(self.api_name, self.currency_symbol, 'price_usd    ', self.price_usd)
-        print(self.api_name, self.currency_symbol, 'volume_usd   ', self.volume_usd)
-        print(self.api_name, self.currency_symbol, 'volume_eth   ', self.volume_eth)
-        print(self.api_name, self.currency_symbol, 'volume_btc   ', self.volume_btc)
-        print(self.api_name, self.currency_symbol, 'change_24h   ', self.change_24h)
-        print(self.api_name, self.currency_symbol, 'eth_price_usd', self.eth_price_usd)
-        print(self.api_name, self.currency_symbol, 'btc_price_usd', self.btc_price_usd)
+        print(self.exchange_name, self.currency_symbol, 'price_eth    ', self.price_eth)
+        print(self.exchange_name, self.currency_symbol, 'price_btc    ', self.price_btc)
+        print(self.exchange_name, self.currency_symbol, 'price_usd    ', self.price_usd)
+        print(self.exchange_name, self.currency_symbol, 'volume_usd   ', self.volume_usd)
+        print(self.exchange_name, self.currency_symbol, 'volume_eth   ', self.volume_eth)
+        print(self.exchange_name, self.currency_symbol, 'volume_btc   ', self.volume_btc)
+        print(self.exchange_name, self.currency_symbol, 'change_24h   ', self.change_24h)
+        print(self.exchange_name, self.currency_symbol, 'eth_price_usd', self.eth_price_usd)
+        print(self.exchange_name, self.currency_symbol, 'btc_price_usd', self.btc_price_usd)
 
 if __name__ == "__main__":
     eth_api = CoinMarketCapAPI('ETH')

@@ -39,7 +39,7 @@ from livecoinwatch import LiveCoinWatchAPI
 class ForkDeltaAPI(LiveCoinWatchAPI):
     def __init__(self, currency_symbol):
         super().__init__(currency_symbol, allowed_apis=['ForkDelta'])
-        self.api_name = "Fork Delta"
+        self.exchange_name = "Fork Delta"
         self.command_names = ['fd', 'fork delta']
         self.short_url = "https://bit.ly/2xr7AO4"
 

@@ -11,7 +11,7 @@ from weighted_average import WeightedAverage
 # data older than this is completely ignored
 _OLDEST_ALLOWED_DATA_SECONDS = 600
 
-class MultiApiManager():
+class MultiExchangeManager():
     def __init__(self, api_obj_list):
         self.api_obj_list = api_obj_list
     
@@ -27,26 +27,26 @@ class MultiApiManager():
                 # from then on
                 if api_obj.update_failure_count == 2:
                     fmt_str = 'Timeout {} (2 failures): {}'
-                    logging.warning(fmt_str.format(api_obj.api_name,
+                    logging.warning(fmt_str.format(api_obj.exchange_name,
                                                    str(e)))
                 if api_obj.update_failure_count == 3:
                     fmt_str = 'Timeout {} (3 failures): {}. Silencing for now.'
-                    logging.warning(fmt_str.format(api_obj.api_name,
+                    logging.warning(fmt_str.format(api_obj.exchange_name,
                                                    str(e)))
                 if api_obj.update_failure_count % (3600 / config.UPDATE_RATE) == 0:
                     fmt_str = 'Timeout {} ({} failures): {}'
-                    logging.warning(fmt_str.format(api_obj.api_name,
+                    logging.warning(fmt_str.format(api_obj.exchange_name,
                                                    api_obj.update_failure_count,
                                                    str(e)))
             except:
-                logging.exception('Unhandled Exception updating {}'.format(api_obj.api_name))
+                logging.exception('Unhandled Exception updating {}'.format(api_obj.exchange_name))
 
     @property
-    def all_apis(self):
+    def all_exchanges(self):
         return self.api_obj_list
 
     @property
-    def alive_apis(self):
+    def alive_exchanges(self):
         time_now = time.time()
         for a in self.api_obj_list:
             # skip apis that have never been updated
@@ -60,132 +60,132 @@ class MultiApiManager():
     @property
     def alive_api_names(self):
         all_names = []
-        for a in self.alive_apis:
-            all_names.append(a.api_name)
+        for a in self.alive_exchanges:
+            all_names.append(a.exchange_name)
 
         # convert to set to remove duplicates 
         return list(set(all_names))
 
-    def short_url(self, api_name='aggregate'):
+    def short_url(self, exchange_name='aggregate'):
         default_url = "http://bitly.com/2LvDE6u"
-        if api_name == "aggregate":
+        if exchange_name == "aggregate":
             return default_url
 
         for a in self.api_obj_list:
-            if a.api_name == api_name:
+            if a.exchange_name == exchange_name:
                 return a.short_url
         return default_url
 
-    def price_eth(self, currency_symbol, api_name='aggregate'):
+    def price_eth(self, currency_symbol, exchange_name='aggregate'):
         result = WeightedAverage()
-        for a in self.alive_apis:
+        for a in self.alive_exchanges:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.price_eth == None:
                 continue
             if a.volume_eth == None:
                 continue
-            if api_name == 'aggregate' or a.api_name == api_name:
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 result.add(a.price_eth, a.volume_eth)
         return result.average()
 
-    def price_usd(self, currency_symbol, api_name='aggregate'):
+    def price_usd(self, currency_symbol, exchange_name='aggregate'):
         result = WeightedAverage()
-        for a in self.alive_apis:
+        for a in self.alive_exchanges:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.price_usd == None:
                 continue
             if a.volume_eth == None:
                 continue
-            if api_name == 'aggregate' or a.api_name == api_name:
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 result.add(a.price_usd, a.volume_eth)
         return result.average()
 
-    def volume_usd(self, currency_symbol, api_name='aggregate'):
+    def volume_usd(self, currency_symbol, exchange_name='aggregate'):
         result = 0
-        for a in self.alive_apis:
+        for a in self.alive_exchanges:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.volume_usd == None:
                 continue
-            if api_name == 'aggregate' or a.api_name == api_name:
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 result += a.volume_usd
         return result
 
-    def volume_eth(self, currency_symbol, api_name='aggregate'):
+    def volume_eth(self, currency_symbol, exchange_name='aggregate'):
         result = 0
-        for a in self.alive_apis:
+        for a in self.alive_exchanges:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.volume_eth == None:
                 continue
-            if api_name == 'aggregate' or a.api_name == api_name:
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 result += a.volume_eth
         return result
 
-    def volume_btc(self, currency_symbol, api_name='aggregate'):
+    def volume_btc(self, currency_symbol, exchange_name='aggregate'):
         result = 0
-        for a in self.alive_apis:
+        for a in self.alive_exchanges:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.volume_btc == None:
                 continue
-            if api_name == 'aggregate' or a.api_name == api_name:
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 result += a.volume_btc
         return result
 
-    def change_24h(self, currency_symbol, api_name='aggregate'):
+    def change_24h(self, currency_symbol, exchange_name='aggregate'):
         result = WeightedAverage()
-        for a in self.alive_apis:
+        for a in self.alive_exchanges:
             if a.currency_symbol != currency_symbol:
                 continue
             if a.change_24h == None:
                 continue
-            if api_name == 'aggregate' or a.api_name == api_name:
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 result.add(a.change_24h, a.volume_eth)
         return result.average()
 
-    def rank(self, currency_symbol, api_name='aggregate'):
+    def rank(self, currency_symbol, exchange_name='aggregate'):
         result = None
-        for a in self.alive_apis:
+        for a in self.alive_exchanges:
             if a.currency_symbol != currency_symbol:
                 continue
-            if api_name == 'aggregate' or a.api_name == api_name:
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 try:
                     result = a.rank
                 except AttributeError:
                     pass
         return result
 
-    def eth_price_usd(self, api_name='aggregate'):
+    def eth_price_usd(self, exchange_name='aggregate'):
         result = WeightedAverage()
-        for a in self.alive_apis:
+        for a in self.alive_exchanges:
             if a.eth_price_usd == None:
                 continue
-            if api_name == 'aggregate' or a.api_name == api_name:
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 if a.currency_symbol == 'ETH':
                     result.add(a.price_usd, a.volume_usd / a.price_usd)
                 else:
                     result.add(a.eth_price_usd, a.volume_eth)
         return result.average()
 
-    def btc_price_usd(self, api_name='aggregate'):
+    def btc_price_usd(self, exchange_name='aggregate'):
         result = WeightedAverage()
-        for a in self.alive_apis:
+        for a in self.alive_exchanges:
             if a.btc_price_usd == None:
                 continue
-            if api_name == 'aggregate' or a.api_name == api_name:
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 if a.currency_symbol == 'BTC':
                     result.add(a.price_usd, a.volume_usd / a.price_usd)
                 else:
                     result.add(a.btc_price_usd, a.volume_btc)
         return result.average()
 
-    def last_updated_time(self, api_name='aggregate'):
+    def last_updated_time(self, exchange_name='aggregate'):
         result = 0
-        for a in self.alive_apis:
-            if api_name == 'aggregate' or a.api_name == api_name:
+        for a in self.alive_exchanges:
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 # use the lowest last_updated time
                 #if result == 0 or a.last_updated_time < result:
                 # use the highest last_updated time as a hack for how
@@ -208,7 +208,7 @@ if __name__ == "__main__":
         CoinMarketCapAPI('ETH')
     ]
 
-    m = MultiApiManager(apis)
+    m = MultiExchangeManager(apis)
     m.update()
 
     print("m.eth_price_usd()", m.eth_price_usd())
@@ -221,5 +221,5 @@ if __name__ == "__main__":
     print("m.volume_btc('0xBTC')", m.volume_btc('0xBTC'))
     print("m.change_24h('0xBTC')", m.change_24h('0xBTC'))
 
-    print("m.change_24h('0xBTC', api_name='Mercatox')",      m.change_24h('0xBTC', api_name='Mercatox'))
+    print("m.change_24h('0xBTC', exchange_name='Mercatox')",      m.change_24h('0xBTC', exchange_name='Mercatox'))
 

@@ -45,49 +45,49 @@ async def cmd_compare_price_vs(apis, item_name="lambo", item_price=200000):
                                            to_readable_thousands(item_price))
 
 def show_price_from_source(apis, source='aggregate'):
-    if (apis.exchanges.last_updated_time(api_name=source) == 0):
-        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(api_name=source))
+    if (apis.exchanges.last_updated_time(exchange_name=source) == 0):
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(exchange_name=source))
     
-    token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, api_name=source) * apis.exchanges.eth_price_usd()
-    eth_price_on_this_exchange = float(apis.exchanges.eth_price_usd(api_name=source))
+    token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=source) * apis.exchanges.eth_price_usd()
+    eth_price_on_this_exchange = float(apis.exchanges.eth_price_usd(exchange_name=source))
 
     # Enclaves usually fails this way
     if token_price == 0:
-        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(api_name=source))
+        return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(exchange_name=source))
 
     percent_change_str = ""
-    if apis.exchanges.change_24h(config.TOKEN_SYMBOL, api_name=source) == None:
+    if apis.exchanges.change_24h(config.TOKEN_SYMBOL, exchange_name=source) == None:
         percent_change_str = ""
-    elif apis.exchanges.change_24h(config.TOKEN_SYMBOL, api_name=source) == 0:
+    elif apis.exchanges.change_24h(config.TOKEN_SYMBOL, exchange_name=source) == 0:
         percent_change_str = "**0**% "
     else:
-        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.exchanges.change_24h(config.TOKEN_SYMBOL, api_name=source),
-                                                       percent_change_to_emoji(apis.exchanges.change_24h(config.TOKEN_SYMBOL, api_name=source)),)
+        percent_change_str = "**{:+.2f}**% {} ".format(100.0 * apis.exchanges.change_24h(config.TOKEN_SYMBOL, exchange_name=source),
+                                                       percent_change_to_emoji(apis.exchanges.change_24h(config.TOKEN_SYMBOL, exchange_name=source)),)
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
     result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
-                            seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time(api_name=source)),
+                            seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time(exchange_name=source)),
                             '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
-                            apis.exchanges.price_eth(config.TOKEN_SYMBOL, api_name=source), 
+                            apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=source), 
                             percent_change_str,
                             '' if eth_price_on_this_exchange == 0 else '(ETH: **${:.0f}**) '.format(eth_price_on_this_exchange), 
-                            apis.exchanges.short_url(api_name=source))
+                            apis.exchanges.short_url(exchange_name=source))
     return result
 
 async def cmd_price(command_str, discord_message, apis):
     msg = ""
     # search through all exchanges, if the command contains a string in one of
     # exchanges command_names list, show only that exchange
-    for exchange in apis.exchanges.all_apis:
+    for exchange in apis.exchanges.all_exchanges:
         if util.string_contains_any(command_str,
                                     exchange.command_names,
                                     exhaustive_search=True,
                                     require_cmd_char=False):
             # skip CMC since it only tracks ETH and BTC price
             # skip LCW since its more of an aggregator
-            if (exchange.api_name == "Coin Market Cap"
-                or exchange.api_name == "Live Coin Watch"):
+            if (exchange.exchange_name == "Coin Market Cap"
+                or exchange.exchange_name == "Live Coin Watch"):
                 continue
-            return show_price_from_source(apis, source=exchange.api_name)
+            return show_price_from_source(apis, source=exchange.exchange_name)
     if util.string_contains_any(command_str, [
             'all',
             'al',
@@ -110,19 +110,19 @@ def exchange_has_low_volume(apis, exchange):
 
 async def cmd_price_all(command_str, discord_message, apis):
     msg = ""
-    for exchange in sorted(apis.exchanges.alive_apis, key=lambda a: a.api_name):
+    for exchange in sorted(apis.exchanges.alive_exchanges, key=lambda a: a.exchange_name):
         # skip CMC, LCW and apis not directly tracking the main currency
         if (exchange.currency_symbol != config.TOKEN_SYMBOL 
-            or exchange.api_name == "Coin Market Cap" 
-            or exchange.api_name == "Live Coin Watch"):
+            or exchange.exchange_name == "Coin Market Cap" 
+            or exchange.exchange_name == "Live Coin Watch"):
             continue
         # TODO: skip exchanges with <$100 volume in last 24h?
         # if exchange_has_low_volume(apis, exchange):
         #     continue
-        single_line = show_price_from_source(apis, source=exchange.api_name)
-        # TODO: remove this when 'alive_apis' excludes apis correctly
+        single_line = show_price_from_source(apis, source=exchange.exchange_name)
+        # TODO: remove this when 'alive_exchanges' excludes apis correctly
         if single_line.startswith('not sure yet'):
-            logging.warning("bugcheck: removed line 'not sure yet' from priceall ({})".format(exchange.api_name))
+            logging.warning("bugcheck: removed line 'not sure yet' from priceall ({})".format(exchange.exchange_name))
             continue
         msg += single_line + '\n'
     if msg == "":
@@ -592,22 +592,22 @@ async def cmd_volume(command_str, discord_message, apis):
     total_btc_volume = 0
     response = ""
 
-    for api in sorted(apis.exchanges.alive_apis, key=lambda a: a.api_name):
+    for api in sorted(apis.exchanges.alive_exchanges, key=lambda a: a.exchange_name):
         # skip CMC and apis not directly tracking main currency
-        if api.currency_symbol != config.TOKEN_SYMBOL or api.api_name == "Coin Market Cap":
+        if api.currency_symbol != config.TOKEN_SYMBOL or api.exchange_name == "Coin Market Cap":
             continue
 
-        volume_eth = apis.exchanges.volume_eth(config.TOKEN_SYMBOL, api_name=api.api_name)
-        volume_btc = apis.exchanges.volume_btc(config.TOKEN_SYMBOL, api_name=api.api_name)
+        volume_eth = apis.exchanges.volume_eth(config.TOKEN_SYMBOL, exchange_name=api.exchange_name)
+        volume_btc = apis.exchanges.volume_btc(config.TOKEN_SYMBOL, exchange_name=api.exchange_name)
         if volume_eth == 0 and volume_btc == 0:
             continue
 
         total_eth_volume += volume_eth
         total_btc_volume += volume_btc
         if apis.exchanges.eth_price_usd() == 0:
-            response += "{}: **{}Ξ** ".format(api.api_name, prettify_decimals(volume_eth))
+            response += "{}: **{}Ξ** ".format(api.exchange_name, prettify_decimals(volume_eth))
         else:
-            response += "{}: $**{}**({}Ξ) ".format(api.api_name, prettify_decimals(volume_eth * apis.exchanges.eth_price_usd()), prettify_decimals(volume_eth))
+            response += "{}: $**{}**({}Ξ) ".format(api.exchange_name, prettify_decimals(volume_eth * apis.exchanges.eth_price_usd()), prettify_decimals(volume_eth))
         if volume_btc != 0:
             if apis.exchanges.btc_price_usd() == 0:
                 response += "+ **{}₿** ".format(prettify_decimals(volume_btc))
@@ -639,13 +639,13 @@ async def cmd_ratio(command_str, discord_message, apis):
 
 async def cmd_rank(command_str, discord_message, apis):
     api_name = "Coin Market Cap"
-    api_url = apis.exchanges.short_url(api_name=api_name)
+    api_url = apis.exchanges.short_url(exchange_name=api_name)
 
     if apis.exchanges.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(api_url)
 
     rank = apis.exchanges.rank(currency_symbol=config.TOKEN_SYMBOL,
-                     api_name=api_name)
+                     exchange_name=api_name)
     if rank is None:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(api_url)
 

@@ -43,7 +43,7 @@ class EnclavesAPI():
         self.update_failure_count = 0
 
         self.currency_symbol = currency_symbol
-        self.api_name = "Enclaves DEX"
+        self.exchange_name = "Enclaves DEX"
         self.command_names = ['enclaves', 'encalves']
         self.short_url = "https://bit.ly/2rnYA7b"
 
@@ -97,6 +97,9 @@ class EnclavesAPI():
                 self.change_24h = float(token['change'])
                 data_was_updated = True
 
+        if self.price_eth == self.volume_eth == self.change_24h == 0.0:
+            raise TimeoutError('All values from enclaves read 0')
+
         if not data_was_updated:
             raise RuntimeError('Response from Enclaves did not include indicated currency ({}).'.format(self.currency_symbol))
 
@@ -110,8 +113,9 @@ class EnclavesAPI():
                 websocket._exceptions.WebSocketAddressException,
                 socket.gaierror,
                 socket.timeout,
-                URLError) as e:
-            #logging.warning('api timeout {}'.format(self.api_name))
+                URLError,
+                TimeoutError) as e:
+            #logging.warning('api timeout {}'.format(self.exchange_name))
             self.update_failure_count += 1
             raise TimeoutError(str(e)) from e
         else:
@@ -119,13 +123,13 @@ class EnclavesAPI():
             self.update_failure_count = 0
 
     def print_all_values(self):
-        print(self.api_name, self.currency_symbol, 'price_eth    ', self.price_eth)
-        print(self.api_name, self.currency_symbol, 'price_usd    ', self.price_usd)
-        print(self.api_name, self.currency_symbol, 'volume_usd   ', self.volume_usd)
-        print(self.api_name, self.currency_symbol, 'volume_eth   ', self.volume_eth)
-        print(self.api_name, self.currency_symbol, 'change_24h   ', self.change_24h)
-        print(self.api_name, self.currency_symbol, 'eth_price_usd', self.eth_price_usd)
-        print(self.api_name, self.currency_symbol, 'btc_price_usd', self.btc_price_usd)
+        print(self.exchange_name, self.currency_symbol, 'price_eth    ', self.price_eth)
+        print(self.exchange_name, self.currency_symbol, 'price_usd    ', self.price_usd)
+        print(self.exchange_name, self.currency_symbol, 'volume_usd   ', self.volume_usd)
+        print(self.exchange_name, self.currency_symbol, 'volume_eth   ', self.volume_eth)
+        print(self.exchange_name, self.currency_symbol, 'change_24h   ', self.change_24h)
+        print(self.exchange_name, self.currency_symbol, 'eth_price_usd', self.eth_price_usd)
+        print(self.exchange_name, self.currency_symbol, 'btc_price_usd', self.btc_price_usd)
 
 
 

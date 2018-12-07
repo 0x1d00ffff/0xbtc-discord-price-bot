@@ -50,8 +50,6 @@ from urllib.error import URLError
 
 import json
 
-import pprint
-
 from weighted_average import WeightedAverage
 
 
@@ -59,7 +57,7 @@ class MercatoxAPI():
     def __init__(self, currency_symbol):
         self._SERVER_URL = "https://mercatox.com/public"
         self.currency_symbol = currency_symbol
-        self.api_name = "Mercatox"
+        self.exchange_name = "Mercatox"
         self.command_names = ['merc', 
                               'mercatox', 
                               'meractox', 
@@ -107,12 +105,7 @@ class MercatoxAPI():
             if currency != self.currency_symbol:
                 continue
 
-
-            #pprint.pprint((currency, base_pair))
-
             pair_info = data['pairs'][pair_name]
-
-            #pprint.pprint(pair_info)
 
             try:
                 if base_pair == "BTC":
@@ -147,7 +140,6 @@ class MercatoxAPI():
                 socket.gaierror,
                 socket.timeout,
                 URLError) as e:
-            #logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
             self.update_failure_count += 1
             raise TimeoutError(str(e)) from e
         else:
@@ -155,25 +147,21 @@ class MercatoxAPI():
             self.update_failure_count = 0
 
     def print_all_values(self):
-        print(self.api_name, self.currency_symbol, 'price_eth    ', repr(self.price_eth))
-        print(self.api_name, self.currency_symbol, 'price_usd    ', repr(self.price_usd))
-        print(self.api_name, self.currency_symbol, 'price_btc    ', repr(self.price_btc))
-        print(self.api_name, self.currency_symbol, 'volume_usd   ', repr(self.volume_usd))
-        print(self.api_name, self.currency_symbol, 'volume_eth   ', repr(self.volume_eth))
-        print(self.api_name, self.currency_symbol, 'volume_btc   ', repr(self.volume_btc))
-        print(self.api_name, self.currency_symbol, 'change_24h   ', repr(self.change_24h))
-        print(self.api_name, self.currency_symbol, 'eth_price_usd', repr(self.eth_price_usd))
-        print(self.api_name, self.currency_symbol, 'btc_price_usd', repr(self.btc_price_usd))
+        print(self.exchange_name, self.currency_symbol, 'price_eth    ', repr(self.price_eth))
+        print(self.exchange_name, self.currency_symbol, 'price_usd    ', repr(self.price_usd))
+        print(self.exchange_name, self.currency_symbol, 'price_btc    ', repr(self.price_btc))
+        print(self.exchange_name, self.currency_symbol, 'volume_usd   ', repr(self.volume_usd))
+        print(self.exchange_name, self.currency_symbol, 'volume_eth   ', repr(self.volume_eth))
+        print(self.exchange_name, self.currency_symbol, 'volume_btc   ', repr(self.volume_btc))
+        print(self.exchange_name, self.currency_symbol, 'change_24h   ', repr(self.change_24h))
+        print(self.exchange_name, self.currency_symbol, 'eth_price_usd', repr(self.eth_price_usd))
+        print(self.exchange_name, self.currency_symbol, 'btc_price_usd', repr(self.btc_price_usd))
 
 if __name__ == "__main__":
 
     eth_api = MercatoxAPI('ETH')
     eth_api.update()
     eth_api.print_all_values()
-
-    # btc_api = MercatoxAPI('BTC')
-    # btc_api.update()
-    # btc_api.print_all_values()
 
     btc_api = MercatoxAPI('OMG')
     btc_api.update()

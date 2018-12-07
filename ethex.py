@@ -44,7 +44,7 @@ class EthexAPI():
     def __init__(self, currency_symbol):
         self._SERVER_URL = "https://api.ethex.market:5055"
         self.currency_symbol = currency_symbol
-        self.api_name = "Ethex"
+        self.exchange_name = "Ethex"
         self.command_names = ["ethex", "ethx"]
         self.short_url = "https://bit.ly/2SrmIl6"
         self.last_updated_time = 0
@@ -111,7 +111,7 @@ class EthexAPI():
                 socket.gaierror,
                 socket.timeout,
                 URLError) as e:
-            #logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
+            #logging.warning('api timeout {}: {}'.format(self.exchange_name, str(e)))
             self.update_failure_count += 1
             raise TimeoutError(str(e)) from e
         else:
@@ -119,15 +119,15 @@ class EthexAPI():
             self.update_failure_count = 0
 
     def print_all_values(self):
-        print(self.api_name, self.currency_symbol, 'price_eth    ', repr(self.price_eth))
-        print(self.api_name, self.currency_symbol, 'price_usd    ', repr(self.price_usd))
-        print(self.api_name, self.currency_symbol, 'price_btc    ', repr(self.price_btc))
-        print(self.api_name, self.currency_symbol, 'volume_usd   ', repr(self.volume_usd))
-        print(self.api_name, self.currency_symbol, 'volume_eth   ', repr(self.volume_eth))
-        print(self.api_name, self.currency_symbol, 'volume_btc   ', repr(self.volume_btc))
-        print(self.api_name, self.currency_symbol, 'change_24h   ', repr(self.change_24h))
-        print(self.api_name, self.currency_symbol, 'eth_price_usd', repr(self.eth_price_usd))
-        print(self.api_name, self.currency_symbol, 'btc_price_usd', repr(self.btc_price_usd))
+        print(self.exchange_name, self.currency_symbol, 'price_eth    ', repr(self.price_eth))
+        print(self.exchange_name, self.currency_symbol, 'price_usd    ', repr(self.price_usd))
+        print(self.exchange_name, self.currency_symbol, 'price_btc    ', repr(self.price_btc))
+        print(self.exchange_name, self.currency_symbol, 'volume_usd   ', repr(self.volume_usd))
+        print(self.exchange_name, self.currency_symbol, 'volume_eth   ', repr(self.volume_eth))
+        print(self.exchange_name, self.currency_symbol, 'volume_btc   ', repr(self.volume_btc))
+        print(self.exchange_name, self.currency_symbol, 'change_24h   ', repr(self.change_24h))
+        print(self.exchange_name, self.currency_symbol, 'eth_price_usd', repr(self.eth_price_usd))
+        print(self.exchange_name, self.currency_symbol, 'btc_price_usd', repr(self.btc_price_usd))
 
 if __name__ == "__main__":
 

@@ -26,7 +26,7 @@ from mercatox import MercatoxAPI
 from idex import IDEXAPI
 from ethex import EthexAPI
 from coinexchange import CoinExchangeAPI
-from multi_api_manager import MultiApiManager
+from multi_exchange_manager import MultiExchangeManager
 
 from mineable_token_info import MineableTokenInfo
 import etherscan
@@ -41,7 +41,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.3.1"
+_VERSION = "0.3.2"
 
 
 old_status_string = None
@@ -425,7 +425,7 @@ def main():
         os.makedirs(config.DATA_FOLDER)
     setup_logging(os.path.join(config.DATA_FOLDER, 'debug.log'))
 
-    exchanges = MultiApiManager(
+    exchanges = MultiExchangeManager(
     [
         CoinMarketCapAPI(config.TOKEN_SYMBOL),
         CoinMarketCapAPI('ETH'),
@@ -449,7 +449,6 @@ def main():
     elif args.command_test:
         client = MockClient()
         apis = APIWrapper(client, storage, exchanges, token, start_time)
-        #command_test()
         asyncio.get_event_loop().run_until_complete(command_test())
     else:
         logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
