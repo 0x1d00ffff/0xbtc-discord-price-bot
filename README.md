@@ -71,3 +71,4 @@ bot to monitor/post price etc to the 0xbtc discord server
    - cryptobridge (not yet)
    - ddex.io
    - Rootrex
+   - CoinExchange [link](https://www.coinexchange.io/market/0xBTC/BTC)
