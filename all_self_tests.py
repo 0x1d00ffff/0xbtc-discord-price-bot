@@ -14,7 +14,8 @@ class TestPriceCommand(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         from main import apis, manual_api_update
-        manual_api_update()
+        import asyncio
+        asyncio.get_event_loop().run_until_complete(manual_api_update())
         cls.apis = apis
 
     def run_command(self, command_str, add_command_char=True, check_for_errors=True):

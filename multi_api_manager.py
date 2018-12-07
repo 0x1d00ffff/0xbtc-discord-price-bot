@@ -3,6 +3,7 @@ incorporating multiple sources. """
 
 import time
 import logging
+import asyncio
 
 import configuration as config
 from weighted_average import WeightedAverage
@@ -14,10 +15,13 @@ class MultiApiManager():
     def __init__(self, api_obj_list):
         self.api_obj_list = api_obj_list
     
-    def update(self):
+    async def update(self):
         for api_obj in self.api_obj_list:
             try:
-                api_obj.update()
+                if asyncio.iscoroutinefunction(api_obj.update):
+                    await api_obj.update()
+                else:
+                    api_obj.update()
             except TimeoutError as e:
                 # ignore a single failure, but log 2nd, 3rd, and once an hour
                 # from then on

@@ -25,6 +25,7 @@ from forkdelta import ForkDeltaAPI
 from mercatox import MercatoxAPI
 from idex import IDEXAPI
 from ethex import EthexAPI
+from coinexchange import CoinExchangeAPI
 from multi_api_manager import MultiApiManager
 
 from mineable_token_info import MineableTokenInfo
@@ -130,7 +131,7 @@ async def background_update():
     await client.wait_until_ready()
     while not client.is_closed:
         try:
-            apis.exchanges.update()
+            await apis.exchanges.update()
         except RuntimeError as e:
             logging.warning('Failed to update exchange APIs: {}'.format(str(e)))
         except:
@@ -316,33 +317,30 @@ def setup_logging(path):
 
     logging.info('Logging debug info to {}'.format(path))
 
-def manual_api_update():
+async def manual_api_update():
     logging.info('updating apis...')
     try:
-        apis.exchanges.update()
+        await apis.exchanges.update()
         apis.token.update()
     except Exception as e:
         logging.exception('failed to update prices / contract info')
 
 
-def manual_command(cmd, apis):
+async def manual_command(cmd, apis):
     cmd = preprocess(cmd)
     try:
-        tasks = (
-            commands.handle_global_command(cmd, MockMessage(), apis),
-            commands.handle_trading_command(cmd, MockMessage(), apis)
-        )
+        global_response = await commands.handle_global_command(cmd, MockMessage(), apis)
+        trading_response = await commands.handle_trading_command(cmd, MockMessage(), apis)
 
-        responses = asyncio.get_event_loop().run_until_complete(asyncio.gather(*tasks))
-        if responses[0] != None and responses[1] != None:
+        if global_response != None and trading_response != None:
             logging.warning("Command '{}' has both a global and trading response; only the global response will be shown".format(cmd))
         
-        if responses[0] != None:
-            for line in responses[0].split('\n'):
+        if global_response != None:
+            for line in global_response.split('\n'):
                 logging.info('>' + line)
             return
-        if responses[1] != None:
-            for line in responses[1].split('\n'):
+        if trading_response != None:
+            for line in trading_response.split('\n'):
                 logging.info('>' + line)
             return
     except (KeyboardInterrupt, SystemExit):
@@ -350,18 +348,18 @@ def manual_command(cmd, apis):
     except:
         logging.exception('Got exception from command handler')
 
-def command_test():
+async def command_test():
     global apis
 
     # todo: start background_update instead?
-    manual_api_update()
+    await manual_api_update()
 
     while True:
         cmd = input('command: ')
         if cmd == "quit" or cmd == "exit":
             return
         if cmd == "update" or cmd == "api":
-            manual_api_update()
+            await manual_api_update()
             continue
         if cmd == "runall":
             for cmd_def in config.GLOBAL_COMMANDS + config.TRADING_COMMANDS:
@@ -380,10 +378,10 @@ def command_test():
                     cmd += " Username0 0 0x00 0"
                 logging.info("")
                 logging.info("--- Running command '{}' ---".format(cmd))
-                manual_command(cmd, apis)
+                await manual_command(cmd, apis)
             continue
 
-        manual_command(cmd, apis)
+        await manual_command(cmd, apis)
 
 # todo: encapsulate these
 client = None
@@ -436,8 +434,9 @@ def main():
         ForkDeltaAPI(config.TOKEN_SYMBOL),
         IDEXAPI(config.TOKEN_SYMBOL),
         MercatoxAPI(config.TOKEN_SYMBOL),
-        EthexAPI(config.TOKEN_SYMBOL),
         #HotbitAPI(config.TOKEN_SYMBOL),
+        EthexAPI(config.TOKEN_SYMBOL),
+        CoinExchangeAPI(config.TOKEN_SYMBOL),
     ])
     token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
     storage = Storage(config.DATA_FOLDER)
@@ -450,7 +449,8 @@ def main():
     elif args.command_test:
         client = MockClient()
         apis = APIWrapper(client, storage, exchanges, token, start_time)
-        command_test()
+        #command_test()
+        asyncio.get_event_loop().run_until_complete(command_test())
     else:
         logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
         logging.debug('discord.py version {}'.format(discord.__version__))
