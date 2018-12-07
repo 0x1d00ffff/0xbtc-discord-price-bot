@@ -75,57 +75,54 @@ def show_price_from_source(apis, source='aggregate'):
 
 async def cmd_price(command_str, discord_message, apis):
     msg = ""
+    # search through all exchanges, if the command contains a string in one of
+    # exchanges command_names list, show only that exchange
+    for exchange in apis.exchanges.all_apis:
+        if util.string_contains_any(command_str,
+                                    exchange.command_names,
+                                    exhaustive_search=True,
+                                    require_cmd_char=False):
+            # skip CMC since it only tracks ETH and BTC price
+            # skip LCW since its more of an aggregator
+            if (exchange.api_name == "Coin Market Cap"
+                or exchange.api_name == "Live Coin Watch"):
+                continue
+            return show_price_from_source(apis, source=exchange.api_name)
     if util.string_contains_any(command_str, [
-            'ethex'], exhaustive_search=True, require_cmd_char=False):
-        msg = show_price_from_source(apis, source="Ethex")
-    elif util.string_contains_any(command_str, [
-            'enclaves',
-            'encalves'], exhaustive_search=True, require_cmd_char=False):
-        msg = show_price_from_source(apis, source="Enclaves DEX")
-    elif util.string_contains_any(command_str, [
-            'fd',
-            'fork delta'], exhaustive_search=True, require_cmd_char=False):
-        msg = show_price_from_source(apis, source="Fork Delta")
-    elif util.string_contains_any(command_str, [
-            'merc', 
-            'mercatox', 
-            'meractox', 
-            'mecratox'], exhaustive_search=True, require_cmd_char=False):
-        msg = show_price_from_source(apis, source="Mercatox")
-    elif util.string_contains_any(command_str, [
-            'idex'], exhaustive_search=True, require_cmd_char=False):
-        msg = show_price_from_source(apis, source="IDEX")
-    #elif util.string_contains_any(command_str, [
-    #        'hotbit',
-    #        'hot bit'], exhaustive_search=True, require_cmd_char=False):
-    #    msg = show_price_from_source(apis, source="Hotbit")
-    elif util.string_contains_any(command_str, [
-            'btc',
-            'bitcoin'], exhaustive_search=True, require_cmd_char=False):
-        msg = await cmd_bitcoinprice(command_str, discord_message, apis)
-    elif util.string_contains_any(command_str, [
-            'eth',
-            'ethereum'], exhaustive_search=True, require_cmd_char=False):
-        msg = await cmd_ethereumprice(command_str, discord_message, apis)
-    elif util.string_contains_any(command_str, [
             'all',
             'al',
             'prices'], exhaustive_search=True, require_cmd_char=False):
-        msg  = await cmd_price_all(command_str, discord_message, apis)
+        return await cmd_price_all(command_str, discord_message, apis)
     else:
-        msg = show_price_from_source(apis)
+        return show_price_from_source(apis)
 
-    return msg
+def exchange_has_low_volume(apis, exchange):
+    volume_usd = 0
+    try:
+        volume_usd += apis.exchanges.btc_price_usd() * exchange.volume_btc
+    except TypeError:
+        pass
+    try:
+        volume_usd += apis.exchanges.eth_price_usd() * exchange.volume_eth
+    except TypeError:
+        pass
+    return volume_usd < 100
 
 async def cmd_price_all(command_str, discord_message, apis):
     msg = ""
-    for api in sorted(apis.exchanges.alive_apis, key=lambda a: a.api_name):
-        # skip CMC and apis not directly tracking the main currency
-        if api.currency_symbol != config.TOKEN_SYMBOL or api.api_name == "Coin Market Cap":
+    for exchange in sorted(apis.exchanges.alive_apis, key=lambda a: a.api_name):
+        # skip CMC, LCW and apis not directly tracking the main currency
+        if (exchange.currency_symbol != config.TOKEN_SYMBOL 
+            or exchange.api_name == "Coin Market Cap" 
+            or exchange.api_name == "Live Coin Watch"):
             continue
-        single_line = show_price_from_source(apis, source=api.api_name)
+        # TODO: skip exchanges with <$100 volume in last 24h?
+        # if exchange_has_low_volume(apis, exchange):
+        #     continue
+        single_line = show_price_from_source(apis, source=exchange.api_name)
         # TODO: remove this when 'alive_apis' excludes apis correctly
         if single_line.startswith('not sure yet'):
+            logging.warning("bugcheck: removed line 'not sure yet' from priceall ({})".format(exchange.api_name))
             continue
         msg += single_line + '\n'
     if msg == "":

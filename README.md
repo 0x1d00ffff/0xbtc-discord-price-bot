@@ -41,11 +41,10 @@ bot to monitor/post price etc to the 0xbtc discord server
    to explicitly check for this.
 
 ##### Todo:
+ - rename api_name property in exchanges to exchange_name
+ - rename alive_apis in multi_api_manager to alive_exchanges
+ - rename all_apis in multi_api_manager to alive_exchanges
  - add all the price comparison commands (!lambo etc) to --self_test
- - api timeouts should not be warnings. modify exchange apis so they
-   raise TimeoutError instead of logging a message, and have multi_api_manager
-   track which apis timeout. APIs that timeout three times in a row should be
-   reported, but then maybe only once every few hours after that.
  - make configuration text-based so it does not need python imports etc
  - add keyboard shortcuts / letters (ie press 'c' to show all channels)
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)

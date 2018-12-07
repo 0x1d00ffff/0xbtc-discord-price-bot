@@ -121,7 +121,7 @@ class CoinMarketCapAPI():
                 URLError) as e:
             #logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
             self.update_failure_count += 1
-            raise TimeoutError('api timeout {}: {}'.format(self.api_name, str(e))) from e
+            raise TimeoutError(str(e)) from e
         else:
             self.last_updated_time = time.time()
             self.update_failure_count = 0

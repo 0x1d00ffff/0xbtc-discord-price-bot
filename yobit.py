@@ -23,6 +23,7 @@ class YobitAPI():
     def __init__(self, currency_symbol):
         self._SERVER_URL = "https://yobit.io/api/3/ticker"
         self.api_name = "Yobit"
+        self.command_names = ["yobit"]
         self.last_updated_time = 0
         self.update_failure_count = 0
 
@@ -80,7 +81,7 @@ class YobitAPI():
                 socket.gaierror,
                 URLError) as e:
             #logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
-            raise TimeoutError('api timeout {}: {}'.format(self.api_name, str(e))) from e
+            raise TimeoutError(str(e)) from e
             self.update_failure_count += 1
         else:
             self.last_updated_time = time.time()

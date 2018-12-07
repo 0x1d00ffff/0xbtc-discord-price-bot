@@ -46,6 +46,7 @@ class TestPriceCommand(unittest.TestCase):
         command_strings = [cmd_def.keywords[0] for cmd_def in config.GLOBAL_COMMANDS + config.TRADING_COMMANDS]
         # add some commands not found by automatically scanning the command list
         command_strings += ['bettervolume',
+                            'price all',
                             'price enclaves',
                             'price fd',
                             'price idex',
@@ -66,6 +67,7 @@ class TestPriceCommand(unittest.TestCase):
                      or 'setbestshare' in command_str
                      # individual exchange apis may fail; so we don't care what
                      # the response is - only that is does not throw an exception
+                     or 'price all' in command_str
                      or 'price enclaves' in command_str
                      or 'price fd' in command_str
                      or 'price idex' in command_str
@@ -86,12 +88,27 @@ class TestPriceCommand(unittest.TestCase):
             self.assertTrue("$" in response)
             self.assertTrue("." in response)
             self.assertTrue("Ξ" in response)
-        command_str='price forkdelta'
+        command_str='price all'
         with self.subTest(command_str=command_str):
             response = self.run_command(command_str)
             self.assertTrue("$" in response)
             self.assertTrue("." in response)
             self.assertTrue("Ξ" in response)
+            self.assertTrue("Fork Delta" in response 
+                            or "Mercatox" in response 
+                            or "Fork Delta" in response 
+                            or "IDEX" in response)
+            self.assertTrue(len(response.split('\n')) > 1)
+        command_str='price forkdelta'
+        with self.subTest(command_str=command_str):
+            response = self.run_command(command_str, check_for_errors=False)
+            self.assertTrue("Fork Delta" in response or "not sure yet" in response)
+            self.assertTrue(len(response.split('\n')) == 1)
+        command_str='price enclaves'
+        with self.subTest(command_str=command_str):
+            response = self.run_command(command_str, check_for_errors=False)
+            self.assertTrue("Enclaves DEX" in response or "not sure yet" in response)
+            self.assertTrue(len(response.split('\n')) == 1)
         command_str='volume'
         with self.subTest(command_str=command_str):
             response = self.run_command(command_str)

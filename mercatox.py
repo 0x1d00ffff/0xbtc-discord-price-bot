@@ -60,6 +60,10 @@ class MercatoxAPI():
         self._SERVER_URL = "https://mercatox.com/public"
         self.currency_symbol = currency_symbol
         self.api_name = "Mercatox"
+        self.command_names = ['merc', 
+                              'mercatox', 
+                              'meractox', 
+                              'mecratox']
         self.short_url = "http://bitly.com/2LvDE6u"
         self.last_updated_time = 0
         self.update_failure_count = 0
@@ -145,7 +149,7 @@ class MercatoxAPI():
                 URLError) as e:
             #logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
             self.update_failure_count += 1
-            raise TimeoutError('api timeout {}: {}'.format(self.api_name, str(e))) from e
+            raise TimeoutError(str(e)) from e
         else:
             self.last_updated_time = time.time()
             self.update_failure_count = 0

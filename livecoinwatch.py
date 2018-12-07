@@ -54,6 +54,7 @@ class LiveCoinWatchAPI():
         self.currency_symbol = currency_symbol
         self.allowed_apis = allowed_apis
         self.api_name = "Live Coin Watch"
+        self.command_names = ['live coin watch']
         self.short_url = "https://bit.ly/2w6Q0P0"
         self.last_updated_time = 0
         self.update_failure_count = 0
@@ -179,7 +180,7 @@ class LiveCoinWatchAPI():
                 URLError) as e:
             #logging.warning('api timeout {}: {}'.format(self.api_name, str(e)))
             self.update_failure_count += 1
-            raise TimeoutError('api timeout {}: {}'.format(self.api_name, str(e))) from e
+            raise TimeoutError(str(e)) from e
         else:
             self.last_updated_time = time.time()
             self.update_failure_count = 0

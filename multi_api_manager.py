@@ -42,6 +42,10 @@ class MultiApiManager():
                 logging.exception('Unhandled Exception updating {}'.format(api_obj.api_name))
 
     @property
+    def all_apis(self):
+        return self.api_obj_list
+
+    @property
     def alive_apis(self):
         time_now = time.time()
         for a in self.api_obj_list:
