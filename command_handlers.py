@@ -562,7 +562,7 @@ async def cmd_mod_command(command_str, discord_message, apis):
             else:
                 return "Really? If you're sure run `!modcommand poweroff really`"
         if 'channels' in message_parts:
-            return get_visible_channels()
+            return get_visible_channels(apis)
 
     except SystemExit:
         raise
