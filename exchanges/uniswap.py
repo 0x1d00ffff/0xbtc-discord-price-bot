@@ -1,22 +1,13 @@
 """
-API for Enclaves distributed exchange (enclaves.io)
+API for Uniswap distributed exchange (uniswap.exchange)
+Price info is pulled from the smart contract
 
-example token entry:
-    {'addr': '0xb6ed7644c69416d67b522e20bc294a9a9b405b31',
-     'amountEther': '22230538924500000',
-     'amountToken': '3293413174',
-     'change': '-0.13460428979858716137',
-     'priceEnclaves': '0.000675',
-     'volumeEnclavesEther': '17921353316879564600',
-     'volumeEther': '21737691009396312760'},
+https://docs.uniswap.io/api/exchange
 """
-import websocket
-import json
 from web3 import Web3
 
 from .base_exchange import BaseExchangeAPI
 from .uniswap_abi import exchange_abi
-
 from configuration import ETHEREUM_NODE_URL
 
 
