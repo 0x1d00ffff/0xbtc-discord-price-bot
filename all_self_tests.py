@@ -175,6 +175,10 @@ class TestPriceCommand(unittest.TestCase):
             self.assertTrue("Income for 3.5 Mh/s:" in response)
             self.assertTrue(" tokens/" in response)
             self.assertTrue("per block solo" in response)
+        command_str='setaddress dontcare'
+        with self.subTest(command_str=command_str):
+            # this one doesn't respond, it just adds a reaction. could check log
+            response = self.run_command(command_str)
         command_str='setaddress 0x0000000000000000000000000000000000000000'
         with self.subTest(command_str=command_str):
             # this one doesn't respond, it just adds a reaction. could check log

@@ -9,6 +9,8 @@ from urllib.error import URLError
 import aiohttp
 import asyncio
 
+import json
+
 
 class BaseExchangeAPI():
     def __init__(self):
@@ -30,12 +32,19 @@ class BaseExchangeAPI():
         self.eth_price_usd = None
         self.btc_price_usd = None
 
+    # TODO: make this function, use it in enclaves
+    async def _get_json_from_websocket(self, url, commands):
+        pass
+
     async def _get_json_from_url(self, url):
         async def fetch(session, url):
             async with session.get(url) as response:
                 return await response.text()
-                
-        async with aiohttp.ClientSession() as session:
+        
+        headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
+        }
+        async with aiohttp.ClientSession(headers=headers) as session:
             response = await fetch(session, url)
 
         try:
@@ -47,9 +56,6 @@ class BaseExchangeAPI():
                 raise TimeoutError("api sent bad data ({})".format(repr(response)))
         else:
             return data
-
-    # async def _update(self, timeout=10.0):
-    #     raise NotImplementedError("_updated method must be implemented by child class")
 
     async def update(self, timeout=10.0):
         try:

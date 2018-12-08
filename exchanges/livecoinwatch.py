@@ -31,22 +31,8 @@ data =
 
 
 """
-import time
-import logging
-import socket
-try:
-    from urllib.request import urlopen
-except:
-    from urllib import urlopen
-
-from urllib.error import URLError
-
-import json
-
-import pprint
-
-from weighted_average import WeightedAverage
 from .base_exchange import BaseExchangeAPI
+from weighted_average import WeightedAverage
 
 
 class LiveCoinWatchAPI(BaseExchangeAPI):
@@ -62,15 +48,7 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
     async def _update(self, timeout=10.0):
         method = "/coin/{}".format(self.currency_symbol)
 
-        response = urlopen(self._SERVER_URL+method, timeout=timeout)
-        response = response.read().decode("utf-8") 
-        try:
-            data = json.loads(response)
-        except json.decoder.JSONDecodeError:
-            if "be right back" in response:
-                raise TimeoutError("api is down - got 404 page")
-            else:
-            	raise TimeoutError("api sent bad data ({})".format(repr(response)))
+        data = await self._get_json_from_url(self._SERVER_URL+method)
 
         volume_usd = 0
         volume_usd_eth = 0
@@ -107,8 +85,8 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
                 # allow BTC pairings to count towards volume
                 pass
             else:
+                #import pprint
                 #pprint.pprint(exchange_data)
-                #logging.debug('Unknown base_pair {}'.format(base_pair))
                 # if base pair is unknown, don't use for calcualted volume/price
                 continue
 

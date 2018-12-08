@@ -79,41 +79,9 @@ GET https://www.coinexchange.io/api/v1/getmarketsummaries
     ]
 }
 """
-import time
-import logging
-import socket
-try:
-    from urllib.request import urlopen
-except:
-    from urllib import urlopen
-
-from urllib.error import URLError
-
-import json
-
-from weighted_average import WeightedAverage
 from .base_exchange import BaseExchangeAPI
+from weighted_average import WeightedAverage
 
-import aiohttp
-import asyncio
-
-async def fetch(session, url):
-    async with session.get(url) as response:
-        return await response.text()
-
-async def get_json_from_url(url):
-    async with aiohttp.ClientSession() as session:
-        response = await fetch(session, url)
-
-    try:
-        data = json.loads(response)
-    except json.decoder.JSONDecodeError:
-        if "be right back" in response:
-            raise TimeoutError("api is down - got 404 page")
-        else:
-            raise TimeoutError("api sent bad data ({})".format(repr(response)))
-    else:
-        return data
 
 class CoinExchangeAPI(BaseExchangeAPI):
     def __init__(self, currency_symbol):
@@ -132,7 +100,7 @@ class CoinExchangeAPI(BaseExchangeAPI):
     async def _get_market_id(self, asset_code, currency_code):
         """Get market ID for the given asset code ("0xBTC", "LTC", etc) and 
         currency code ("BTC", "ETH", etc)"""
-        data = await get_json_from_url(self._SERVER_URL+"/getmarkets")
+        data = await self._get_json_from_url(self._SERVER_URL+"/getmarkets")
 
         for element in data["result"]:
             if (element["MarketAssetCode"] == asset_code
@@ -143,7 +111,7 @@ class CoinExchangeAPI(BaseExchangeAPI):
 
     async def _fetch_market_data(self, market_id):
         method = "/getmarketsummary?market_id={}".format(market_id)
-        data = await get_json_from_url(self._SERVER_URL+method)
+        data = await self._get_json_from_url(self._SERVER_URL+method)
         return (float(data["result"]["LastPrice"]), 
                 float(data["result"]["Volume"]), 
                 float(data["result"]["Change"]) / 100.0)

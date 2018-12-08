@@ -37,20 +37,6 @@ data =
                        ...
 
 """
-import time
-import logging
-import socket
-try:
-    from urllib.request import urlopen, Request
-except:
-    from urllib import urlopen, Request
-
-from urllib.error import URLError
-
-import json
-
-import pprint
-
 from .base_exchange import BaseExchangeAPI
 
 
@@ -65,22 +51,9 @@ class IDEXAPI(BaseExchangeAPI):
 
     async def _update(self, timeout=10.0):
         method = "/returnTicker"
+        data = await self._get_json_from_url(self._SERVER_URL+method)
 
-        req = Request(
-            self._SERVER_URL+method, 
-            data=None, 
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
-            }
-        )
-
-        response = urlopen(req, timeout=timeout)
-        response = response.read().decode("utf-8") 
-        try:
-            data = json.loads(response)
-        except json.decoder.JSONDecodeError:
-            raise TimeoutError("api sent bad data ({})".format(repr(response)))
-
+        #import pprint
         #pprint.pprint(data)
 
         volume_usd = 0

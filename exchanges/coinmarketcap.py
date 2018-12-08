@@ -33,18 +33,6 @@ data =
 https://api.coinmarketcap.com/v2/ticker/1027/
 
 """
-import time
-import logging
-import socket
-try:
-    from urllib.request import urlopen
-except:
-    from urllib import urlopen
-
-from urllib.error import URLError
-
-import json
-
 from .base_exchange import BaseExchangeAPI
 
 
@@ -71,15 +59,7 @@ class CoinMarketCapAPI(BaseExchangeAPI):
     async def _update(self, timeout=10.0):
         method = "/ticker/{}".format(self.currency_id)
 
-        response = urlopen(self._SERVER_URL+method, timeout=timeout)
-        response = response.read().decode("utf-8") 
-        try:
-            data = json.loads(response)
-        except json.decoder.JSONDecodeError:
-            if "be right back" in response:
-                raise TimeoutError("api is down - got 404 page")
-            else:
-            	raise TimeoutError("api sent bad data ({})".format(repr(response)))
+        data = await self._get_json_from_url(self._SERVER_URL+method)
 
         # CMC-only attributes; TODO: use market_cap in !market or something
         self.rank = int(data['data']['rank'])

@@ -343,7 +343,7 @@ async def cmd_mine(command_str, discord_message, apis):
     try:
         address = apis.storage.user_addresses.get(discord_message.author.id)
     except KeyError:
-        return "Looks like you don't have a public address set; run `!setaddress 0xAAA...` first"
+        return "Looks like you don't have a public address set; run `!setaddress 0xAAA...` first.\nProtip: You can PM me this if you like. Run `!setaddress dontcare` if you don't care."
 
     try:
         command, nonce = command_str.split(maxsplit=1)
@@ -513,7 +513,7 @@ async def cmd_set_user_address(command_str, discord_message, apis):
     try:
         address = command_str.split()[-1]
     except:
-        return "Something went wrong setting your public address... try `!setaddress 0xAAA...`"
+        return "Something went wrong setting your public address... try `!setaddress 0xAAA...` (Protip: You can PM me this if you like.  Run `!setaddress dontcare` if you don't care.)"
 
     if address == "dontcare":
         address = "0x0000000000000000000000000000000000000000"

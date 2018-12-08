@@ -1,21 +1,6 @@
 # API For Yobit exchange
 #
 # Thanks SEDO devs https://github.com/CryptoProjectDev/sedo-information-discord-bot/
-
-import time
-import logging
-import socket
-try:
-    from urllib.request import urlopen, Request
-except:
-    from urllib import urlopen, Request
-
-from urllib.error import URLError
-
-import json
-
-import pprint
-
 from .base_exchange import BaseExchangeAPI
 
 
@@ -33,23 +18,10 @@ class YobitAPI(BaseExchangeAPI):
         else:
             raise RuntimeError("Unknown currency {}; need to edit yobit.py".format(currency_symbol))
 
-    def _update(self, timeout=10.0):
+    async def _update(self, timeout=10.0):
         method = "/{0}_btc-{0}_eth-eth_usd-btc_usd".format(self._currency_name_on_exchange)
 
-        req = Request(
-            self._SERVER_URL+method, 
-            data=None, 
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
-            }
-        )
-
-        response = urlopen(req, timeout=timeout)
-        response = response.read().decode("utf-8") 
-        try:
-            data = json.loads(response)
-        except json.decoder.JSONDecodeError:
-            raise TimeoutError("bad reply from server ({})".format(repr(response)))
+        data = await self._get_json_from_url(self._SERVER_URL+method)
 
         volume_usd = 0
 

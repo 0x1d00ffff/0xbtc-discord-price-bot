@@ -10,19 +10,8 @@ example token entry:
      'volumeEnclavesEther': '17921353316879564600',
      'volumeEther': '21737691009396312760'},
 """
-import time
-import logging
-import socket
 import websocket
 import json
-import pprint
-
-try:
-    from urllib.request import urlopen
-except:
-    from urllib import urlopen
-
-from urllib.error import URLError
 
 from .base_exchange import BaseExchangeAPI
 
@@ -56,6 +45,7 @@ class EnclavesAPI(BaseExchangeAPI):
         #print('rcv')
         result = ws.recv()
         #print('result:')
+        #import pprint
         #pprint.pprint(result)
         #print('rcv')
         result = ws.recv()
