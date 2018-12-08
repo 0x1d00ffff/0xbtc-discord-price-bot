@@ -1,5 +1,5 @@
 """
-API for Mercatox (mercatox.com)
+API for IDEX (idex.market)
 # TODO: add multiple exchange support.. currently assumes only one (forkdelta)
 data = 
 {'24volume': '411695.9617',
