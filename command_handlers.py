@@ -531,7 +531,7 @@ async def cmd_set_user_address(command_str, discord_message, apis):
     await apis.client.add_reaction(discord_message,"\U0001F44D")  # :thumbsup:
     return "OK-noresponse"
 
-def get_visible_channels(apis):
+async def get_visible_channels(command_str, discord_message, apis):
     result = 'Logged in to {} servers as {} id:{}\n'.format(len(apis.client.servers),
                                                                 apis.client.user.name,
                                                                 apis.client.user.id)
@@ -545,7 +545,11 @@ def get_visible_channels(apis):
             result += '     - {} id:{} {}\n'.format(channel.name, 
                                                     channel.id,
                                                     allowed)
-    return result
+    for line in result.split("\n"):
+        await apis.client.send_message(discord_message.channel, message)
+        await asyncio.sleep(0.25)
+
+    return 'OK-noresponse'
 
 async def cmd_mod_command(command_str, discord_message, apis):
     if discord_message.author.id not in config.PRIVILEGED_USER_IDS:
@@ -562,7 +566,7 @@ async def cmd_mod_command(command_str, discord_message, apis):
             else:
                 return "Really? If you're sure run `!modcommand poweroff really`"
         if 'channels' in message_parts:
-            return get_visible_channels(apis)
+            return await get_visible_channels(command_str, discord_message, apis)
 
     except SystemExit:
         raise
