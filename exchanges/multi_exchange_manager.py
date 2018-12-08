@@ -145,8 +145,13 @@ class MultiExchangeManager():
                 continue
             if a.change_24h == None:
                 continue
+            if a.volume_eth == None:
+                # use 0 eth as fallback so it does not affect average
+                volume = 0
+            else:
+                volume = a.volume_eth
             if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
-                result.add(a.change_24h, a.volume_eth)
+                result.add(a.change_24h, volume)
         return result.average()
 
     def rank(self, currency_symbol, exchange_name='aggregate'):

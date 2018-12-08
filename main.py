@@ -56,6 +56,10 @@ async def update_status(client, status_string):
 async def send_message_to_user_by_id(apis, user_id, message):
     user = discord.utils.get(apis.client.get_all_members(), id=user_id)
 
+    if not isinstance(message, str):
+        logging.error("tried to respond with something other than a string - cancelling; message='{}' type={}".format(message, type(message)))
+        return
+
     if user is not None:
         await apis.client.send_message(user, message)
     else:
@@ -194,6 +198,14 @@ async def send_discord_msg_to_channel(channel, message):
     # don't send messages that are only 'OK-noresponse' (this indicates
     # command ran, but no output is expected
     if message == "OK-noresponse":
+        return
+
+    if not isinstance(message, str):
+        logging.error("tried to respond with something other than a string - cancelling; message='{}' type={}".format(message, type(message)))
+        return
+
+    if message.strip() == "":
+        logging.error("tried to respond with empty string - cancelling; message={}".format(repr(message)))
         return
 
     try:
