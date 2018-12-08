@@ -48,9 +48,9 @@ class UniswapAPI(BaseExchangeAPI):
 
     async def _update(self, timeout=10.0):
         # TODO: The amount of tokens 'purchased' to determine the price should
-        # not be a fixed value (100). Ideally, load the amount of tokens
+        # not be a fixed value (200). Ideally, load the amount of tokens
         # available in the contract and use a certain percentage.
-        amount_tokens = 100
+        amount_tokens = 200
 
         eth_amount_buy = wei_to_ether(self._exchange.functions.getEthToTokenOutputPrice(amount_tokens * 10**self._decimals).call())
         eth_amount_sell = wei_to_ether(self._exchange.functions.getTokenToEthInputPrice(amount_tokens * 10**self._decimals).call())

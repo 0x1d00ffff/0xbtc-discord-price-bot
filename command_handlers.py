@@ -531,26 +531,45 @@ async def cmd_set_user_address(command_str, discord_message, apis):
     await apis.client.add_reaction(discord_message,"\U0001F44D")  # :thumbsup:
     return "OK-noresponse"
 
-async def cmd_bot_command(command_str, discord_message, apis):
+def get_visible_channels(apis):
+    result = 'Logged in to {} servers as {} id:{}\n'.format(len(apis.client.servers),
+                                                                apis.client.user.name,
+                                                                apis.client.user.id)
+    for server in apis.client.servers:
+        result += '  - {} - {} Members - id:{}\n'.format(server.name, 
+                                                         server.member_count,
+                                                         server.id)
+        member = server.get_member(apis.client.user.id)
+        for channel in server.channels:
+            allowed = '[No send permission]' if not channel.permissions_for(member).send_messages else ''
+            result += '     - {} id:{} {}\n'.format(channel.name, 
+                                                    channel.id,
+                                                    allowed)
+    return result
+
+async def cmd_mod_command(command_str, discord_message, apis):
     if discord_message.author.id not in config.PRIVILEGED_USER_IDS:
-        fmt_str = 'User not allowed to run cmd_bot_command: {} ({})'
+        fmt_str = 'User not allowed to run cmd_mod_command: {} ({})'
         logging.info(fmt_str.format(discord_message.author.id, discord_message.author.name))
-        return
+        return "OK-noresponse"
 
     try:
         message_parts = command_str.split()
 
-        if message_parts[1] == 'poweroff':
-            if message_parts[-1] == 'really':
+        if 'poweroff' in message_parts:
+            if 'really' in message_parts:
                 raise SystemExit('Exit requested by user {}'.format(discord_message.author.name))
             else:
-                return "Really? If you're sure run `!botcommand poweroff really`"
+                return "Really? If you're sure run `!modcommand poweroff really`"
+        if 'channels' in message_parts:
+            return get_visible_channels()
+
     except SystemExit:
         raise
     except:
         return "Error parsing command"
-
-    return "OK-noresponse"
+    else:
+        return "modcommand (poweroff | channels)"
 
 async def cmd_ping(command_str, discord_message, apis):
     #logging.info('command_str is ')

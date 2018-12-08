@@ -230,8 +230,8 @@ TRADING_COMMANDS = [
         ['setbestshare'],
         command_handlers.cmd_set_bestshare),
     CmdDef(
-        ['bot command'],
-        command_handlers.cmd_bot_command),
+        ['mod command'],
+        command_handlers.cmd_mod_command),
     CmdDef(
         ['ping'],
         command_handlers.cmd_ping),

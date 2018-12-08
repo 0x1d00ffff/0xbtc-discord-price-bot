@@ -231,7 +231,7 @@ def preprocess(message):
 
     return message
 
-def configure_discord_client(show_channels=False):
+def configure_discord_client():
     client.loop.create_task(background_update())
 
     @client.event
@@ -270,23 +270,12 @@ def configure_discord_client(show_channels=False):
 
     @client.event
     async def on_ready():
-        show_startup_info(client, show_channels)
+        show_startup_info(client)
 
-def show_startup_info(client, show_channels):
+def show_startup_info(client):
     logging.info('Logged in to {} servers as {} id:{}'.format(len(client.servers),
                                                               client.user.name,
                                                               client.user.id))
-    if show_channels:
-        for server in client.servers:
-            logging.info('  - {} - {} Members - id:{} '.format(server.name, 
-                                                               server.member_count,
-                                                               server.id))
-            member = server.get_member(client.user.id)
-            for channel in server.channels:
-                allowed = '[No send permission]' if not channel.permissions_for(member).send_messages else ''
-                logging.info('     - {} id:{} {}'.format(channel.name, 
-                                                           channel.id,
-                                                           allowed))
 
 def setup_logging(path):
     class DiscordLogFilter(logging.Filter):
@@ -417,9 +406,6 @@ def main():
     
     parser = argparse.ArgumentParser(description='{} v{}'.format(_PROGRAM_NAME, _VERSION),
                                      epilog='<3 0x1d00ffff')
-    # TODO: make show_channels a keyboard shortcut and remove this param
-    parser.add_argument('--show_channels', action='store_true', default=False,
-                        help='Show all visible channels/permissions during init')
     parser.add_argument('--command_test', action='store_true', default=False,
                         help=("If set, don't connect to Discord - instead "
                               "run a CLI interface to allow command tests."))
@@ -469,7 +455,7 @@ def main():
         logging.debug('discord.py version {}'.format(discord.__version__))
         client = discord.Client()
         apis = APIWrapper(client, storage, exchange_manager, token, start_time)
-        configure_discord_client(args.show_channels)
+        configure_discord_client()
 
         while True:
             try:

@@ -21,7 +21,7 @@ bot to monitor/post price etc to the 0xbtc discord server
    `error: command 'C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\BIN\\link.exe' failed with exit status 1158`
    - The fix: Copy rc.exe and rcdll.dll from `C:\Program Files (x86)\Windows Kits\8.1\bin\x86` to `C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin`
 4. copy `template_secret_info.py` to `secret_info.py` and fill in your bot's authentication settings
-5. edit `configuration.py` (you can run the bot with `--show_channels` to get channel IDs)
+5. edit `configuration.py`
 6. (Optional) edit `exchanges` list at the end of `main.py`
 7. (Optional) run `python3 /path/to/price-bot/ --self_test`
 8. run `python3 /path/to/price-bot/`
@@ -39,7 +39,7 @@ bot to monitor/post price etc to the 0xbtc discord server
 5. Add an entry to the MultiExchangeManager init at the bottom of `main.py`
 
 ##### Adding a Command:
-1. If the command is simple and always returns the same message, you can skip
+1. If the command is simple and always returns the same string, you can skip
    to step 3.
 2. Edit `command_handlers.py` and create a new function to do something. Copy
    an existing function to get the correct prototype. Typically the function
@@ -65,7 +65,6 @@ bot to monitor/post price etc to the 0xbtc discord server
 
 ##### Todo:
  - make configuration text-based so it does not need python imports etc
- - add keyboard shortcuts / letters (ie press 'c' to show all channels)
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
    `pip install -U git+https://github.com/Rapptz/discord.py@rewrite#egg=discord.py[voice]`
  - generalize command categories (currently only trading and global)
