@@ -167,7 +167,7 @@ TRADING_COMMANDS = [
         ['ratio'],
         command_handlers.cmd_ratio),
     CmdDef(
-        ['rank'],
+        ['rank', 'cmc rank'],
         command_handlers.cmd_rank),
     CmdDef(
         ['bitcoin price', 'btc price', 'bitcoin', 'btc'],
@@ -227,11 +227,11 @@ TRADING_COMMANDS = [
         ['ath', 'all time high'],
         command_handlers.cmd_all_time_high),
     CmdDef(
-        ['setathfilename', 'setathimage'],
-        command_handlers.cmd_set_all_time_high_image_filename),
-    CmdDef(
         ['setath'],
         command_handlers.cmd_set_all_time_high),
+    CmdDef(
+        ['setathfilename', 'setathimage'],
+        command_handlers.cmd_set_all_time_high_image_filename),
     CmdDef(
         ['setbestshare'],
         command_handlers.cmd_set_bestshare),

@@ -31,6 +31,7 @@ _known_addresses = {
     "0xbf45f4280cfbe7c2d2515a7d984b8c71c15e82b7" : "Enclaves",
     "0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208" : "IDEX",
     "0xe03c23519e18d64f144d2800e30e81b0065c48b5" : "Mercatox",
+    "0x701564aa6e26816147d4fa211a0779f1b774bb9b" : "Uniswap",
 }
 
 def update_saved_holders_chart(token_name, token_address, total_supply):

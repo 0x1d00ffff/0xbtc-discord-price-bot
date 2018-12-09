@@ -41,7 +41,7 @@ class ForkDeltaAPI(LiveCoinWatchAPI):
         super().__init__(currency_symbol, allowed_apis=['ForkDelta'])
         self.exchange_name = "Fork Delta"
         self.command_names = ['fd', 'fork delta']
-        self.short_url = "https://bit.ly/2xr7AO4"
+        self.short_url = "https://bit.ly/2rqTGWB"
 
 if __name__ == "__main__":
     oxbtc_api = ForkDeltaAPI('0xBTC')

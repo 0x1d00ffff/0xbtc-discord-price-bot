@@ -584,7 +584,7 @@ async def cmd_pools(command_str, discord_message, apis):
     all_pools = (
         ("Token Mining Pool", "http://TokenMiningPool.com", "0xeabe"),
         ("mike.rs pool", "http://mike.rs", "0x5021"),
-        ("tosti.ro", "http://tosti.ro/", "0x540d"),
+        ("tosti.ro", "http://0xbtc.tosti.ro", "0x540d"),
         # TODO: uncomment when extremehash finds a block
         #("ExtremeHash.io", "http://0xbtc.extremehash.io/", "0xbbdf"),
         )

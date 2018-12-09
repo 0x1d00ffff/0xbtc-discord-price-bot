@@ -32,7 +32,8 @@ class UniswapAPI(BaseExchangeAPI):
         self.currency_symbol = currency_symbol
         self.exchange_name = "Uniswap"
         self.command_names = ["uniswap"]
-        self.short_url = "https://bit.ly/2PnLAre"
+        #self.short_url = "https://bit.ly/2PnLAre"  # main uniswap interface
+        self.short_url = "http://0xbitcoin.trade"  # 0xbtc version of the ui
 
         self._w3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
         self._exchange = self._w3.eth.contract(address=uniswap_exchange_address, abi=exchange_abi)
