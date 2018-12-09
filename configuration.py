@@ -144,6 +144,9 @@ GLOBAL_COMMANDS = [
     CmdDef(
         ["soliditysha3miner", "amano", "ss3"],
         "SoliditySHA3Miner: <https://github.com/lwYeo/SoliditySHA3Miner/releases>"),
+    CmdDef(
+        ["pools"],
+        command_handlers.cmd_pools),
 ]
 
 # commands that do not work in blacklisted channels
@@ -175,6 +178,9 @@ TRADING_COMMANDS = [
     CmdDef(
         ['convert', 'concert', 'conver', 'covert'],
         command_handlers.cmd_convert),
+    CmdDef(
+        ['hug'],
+        "*SQUEEEEEEEEEEEEE* There, there. It's alright now. Botty is gonna make it all better."),
     CmdDef(
         ['hi', 'hey bot'],
         "Sup :sunglasses:"),
@@ -235,7 +241,4 @@ TRADING_COMMANDS = [
     CmdDef(
         ['ping'],
         command_handlers.cmd_ping),
-    CmdDef(
-        ['pools'],
-        command_handlers.cmd_pools),
 ]

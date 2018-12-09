@@ -88,11 +88,21 @@ async def cmd_price(command_str, discord_message, apis):
                 or exchange.exchange_name == "Live Coin Watch"):
                 continue
             return show_price_from_source(apis, source=exchange.exchange_name)
-    if util.string_contains_any(command_str, [
-            'all',
-            'al',
-            'prices'], exhaustive_search=True, require_cmd_char=False):
+    if util.string_contains_any(command_str,
+                                ['all', 'al', 'prices'],
+                                exhaustive_search=True,
+                                require_cmd_char=False):
         return await cmd_price_all(command_str, discord_message, apis)
+    elif util.string_contains_any(command_str,
+                             ['btc', 'bitcoin'],
+                             exhaustive_search=True,
+                             require_cmd_char=False):
+        return await cmd_bitcoinprice(command_str, discord_message, apis)
+    elif util.string_contains_any(command_str,
+                             ['eth', 'ethereum'],
+                             exhaustive_search=True,
+                             require_cmd_char=False):
+        return await cmd_ethereumprice(command_str, discord_message, apis)
     else:
         return show_price_from_source(apis)
 

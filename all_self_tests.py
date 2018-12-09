@@ -111,6 +111,23 @@ class TestPriceCommand(unittest.TestCase):
             response = self.run_command(command_str, check_for_errors=False)
             self.assertTrue("Enclaves DEX" in response or "not sure yet" in response)
             self.assertTrue(len(response.split('\n')) == 1)
+
+        command_strings = ['price eth', 'eth']
+        for command_str in command_strings:
+            with self.subTest(command_str=command_str):
+                response = self.run_command(command_str, check_for_errors=False)
+                self.assertTrue("Ethereum price" in response)
+                self.assertTrue("$" in response)
+                self.assertTrue(len(response.split('\n')) == 1)
+
+        command_strings = ['price btc', 'btc']
+        for command_str in command_strings:
+            with self.subTest(command_str=command_str):
+                response = self.run_command(command_str, check_for_errors=False)
+                self.assertTrue("Bitcoin price" in response)
+                self.assertTrue("$" in response)
+                self.assertTrue(len(response.split('\n')) == 1)
+
         command_str='volume'
         with self.subTest(command_str=command_str):
             response = self.run_command(command_str)
@@ -223,6 +240,25 @@ class TestPriceCommand(unittest.TestCase):
             response = self.run_command(command_str)
             self.assertTrue("Best share digest" in response)
             self.assertTrue("by Test Name" in response)
+        command_str='pools'
+        with self.subTest(command_str=command_str):
+            response = self.run_command(command_str)
+            self.assertTrue("Token Mining Pool" in response)
+            self.assertTrue("mike.rs" in response)
+            self.assertTrue(len(response.split('\n')) > 1)
+        command_str='hug'
+        with self.subTest(command_str=command_str):
+            response = self.run_command(command_str)
+            self.assertTrue("SQUEE" in response)
+        command_str='hi'
+        with self.subTest(command_str=command_str):
+            response = self.run_command(command_str)
+            self.assertTrue("Sup" in response)
+        command_str='lambo'
+        with self.subTest(command_str=command_str):
+            response = self.run_command(command_str)
+            self.assertTrue("1 lambo =" in response)
+            self.assertTrue("$" in response)
 
 class TestDecimalFormatting(unittest.TestCase):
     def test_round_to_n(self):
