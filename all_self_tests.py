@@ -9,7 +9,7 @@ import configuration as config
 
 class TestPriceCommand(unittest.TestCase):
     def setUp(self):
-        pass
+        self.commands_run = 0
 
     @classmethod
     def setUpClass(cls):
@@ -21,6 +21,8 @@ class TestPriceCommand(unittest.TestCase):
     def run_command(self, command_str, add_command_char=True, check_for_errors=True):
         import asyncio
         from commands import handle_global_command, handle_trading_command
+
+        self.commands_run += 1
 
         if add_command_char:
             command_str = config.COMMAND_CHARACTER + command_str
@@ -42,20 +44,22 @@ class TestPriceCommand(unittest.TestCase):
 
         return response
 
+    def generate_command_list(self):
+        return ([cmd_def.keywords[0] for cmd_def in (config.GLOBAL_COMMANDS 
+                                                     + config.TRADING_COMMANDS)]
+                 + [entry[1][0] for entry in config.EXPENSIVE_STUFF]
+                 + ['bettervolume',
+                    'price all',
+                    'price enclaves',
+                    'price fd',
+                    'price idex',
+                    'price merc',
+                    'price ethex',
+                    'price eth',
+                    'mine test 0x0 0x0 0x0'])
+
     def test_that_all_commands_run(self):
-        command_strings = ([cmd_def.keywords[0] for cmd_def in (config.GLOBAL_COMMANDS 
-                                                                + config.TRADING_COMMANDS)]
-                           + [entry[1][0] for entry in config.EXPENSIVE_STUFF])
-        # add some commands not found by automatically scanning the command list
-        command_strings += ['bettervolume',
-                            'price all',
-                            'price enclaves',
-                            'price fd',
-                            'price idex',
-                            'price merc',
-                            'price ethex',
-                            'price eth',
-                            'mine test 0x0 0x0 0x0']
+        command_strings = self.generate_command_list()
 
         for command_str in command_strings:
             with self.subTest(command_str=command_str):
@@ -260,6 +264,50 @@ class TestPriceCommand(unittest.TestCase):
             self.assertTrue("1 lambo =" in response)
             self.assertTrue("$" in response)
 
+    def test_fuzzing_commands(self):
+        import random
+        import string
+        import logging
+        # iterations: seconds on i7-5700HQ
+        # 256:  13, 12
+        # 512:  14, 12
+        # 1024: 35, 35, 37, 43
+        # 2048: 58
+        # 8192: 217
+        # 32768: 759
+        iterations = 512
+
+        # fixed seed so randomness is repeatable
+        myrandom = random.Random("myseed1")
+        command_strings = self.generate_command_list()
+
+        # test combining commands + numbers together
+        for idx in range(iterations):
+
+            # generate numbers/bytes to mix in with the commands which are 
+            # changed every 128 iterations
+            if idx % 128 == 0:
+                # create a few random floats
+                numbers = ([myrandom.uniform(-1e30, 1e30) for _ in range(5)]
+                           + [myrandom.uniform(-100, 100) for _ in range(5)])
+                # add the integer versions also
+                numbers += [int(i) for i in numbers]
+                printable = [''.join(myrandom.choices(string.printable, k=8)) for _ in range(20)]
+                garbage = [''.join(chr(myrandom.randint(0,255)) for _ in range(8)) for _ in range(20)]
+                full_chunk_set = (command_strings 
+                                  + [str(i) for i in numbers]
+                                  + printable
+                                  + garbage)
+
+            # number of pieces to combine to create a command (2-5)
+            num_chunks = (idx % 4) + 2
+            command_str = ' '.join(myrandom.choices(full_chunk_set, k=num_chunks))
+
+            with self.subTest(command_str=command_str):
+                response = self.run_command(command_str, check_for_errors=False)
+                self.assertTrue(isinstance(response, str) or response is None)
+                self.assertTrue(response != "")
+
 class TestDecimalFormatting(unittest.TestCase):
     def test_round_to_n(self):
         from formatting_helpers import round_to_n_decimals
@@ -306,6 +354,28 @@ class TestDecimalFormatting(unittest.TestCase):
         self.assertEqual(prettify_decimals(1234567890123456),       '1.23e15')
         self.assertEqual(prettify_decimals(12345678901234567),      '1.23e16')
         self.assertEqual(prettify_decimals(123456789012345678),     '1.23e17')
+
+    def test_fuzzing_prettify_decimals(self):
+        from formatting_helpers import prettify_decimals
+        import random
+        iterations = 100000  # 4 seconds on an i7-5700HQ
+        min_value, max_value = -1e30, 1e30
+        # fixed seed so randomness is repeatable
+        myrandom = random.Random("myseed")
+        # test formatting integers
+        for _ in range(iterations):
+            number = myrandom.randint(min_value, max_value)
+            with self.subTest(number=number):
+                formatted = prettify_decimals(number)
+                self.assertTrue(isinstance(formatted, str))
+                self.assertTrue(len(formatted) <= 16)
+        # test formatting floats
+        for _ in range(iterations):
+            number = myrandom.uniform(min_value, max_value)
+            with self.subTest(number=number):
+                formatted = prettify_decimals(number)
+                self.assertTrue(isinstance(formatted, str))
+                self.assertTrue(len(formatted) <= 16)
 
     def test_str_to_float(self):
         from formatting_helpers import string_to_float
@@ -418,6 +488,7 @@ class TestMineableTokenInfo(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestDecimalFormatting("test_prettify_decimals"))
+    suite.addTest(TestDecimalFormatting("test_fuzzing_prettify_decimals"))
     suite.addTest(TestDecimalFormatting("test_round_to_n"))
     suite.addTest(TestDecimalFormatting("test_str_to_float"))
 
@@ -426,6 +497,8 @@ def suite():
 
     suite.addTest(TestPriceCommand('test_that_all_commands_run'))
     suite.addTest(TestPriceCommand('test_specific_commands'))
+    suite.addTest(TestPriceCommand('test_fuzzing_commands'))
+
     return suite
 
 def run_all():
