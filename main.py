@@ -244,14 +244,14 @@ async def process_message(message):
 
     # trading commands are ignored in blacklisted channels
     if message.channel.id not in config.BLACKLISTED_CHANNEL_IDS:
-        response = await handle_trading_command(message_contents, message.author.id, message)
+        response = await commands.handle_trading_command(message_contents, message, apis)
         if response:
-            await send_discord_msg(message.channel, response)
+            await send_discord_msg_to_channel(message.channel, response)
             return
 
-    response = await handle_global_command(message_contents, message.author.id, message)
+    response = await commands.handle_global_command(message_contents, message, apis)
     if response:
-        await send_discord_msg(message.channel, response)
+        await send_discord_msg_to_channel(message.channel, response)
         return
 
     # If command starts with config.COMMAND_CHARACTER and we have not returned yet, it was unrecognized.

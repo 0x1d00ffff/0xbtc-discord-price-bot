@@ -9,13 +9,13 @@ class MockClient():
         pass
     async def change_presence(self, game=None, status=None, afk=None):
         args = {'game':game, 'status':status, 'afk':afk}
-        logging.debug('Call to change_presence: {}'.format(args))
+        #logging.debug('Call to change_presence: {}'.format(args))
     async def add_reaction(self, discord_message=None, emoji=None):
         args = {'discord_message':discord_message, 'emoji':emoji}
-        logging.debug('Call to add_reaction: {}'.format(args))
+        #logging.debug('Call to add_reaction: {}'.format(args))
     async def send_file(self, channel=None, filename=None):
         args = {'channel':channel, 'filename':filename}
-        logging.debug('Call to add_reaction: {}'.format(args))
+        #logging.debug('Call to send_file: {}'.format(args))
 
 class MockAuthor():
     def __init__(self):
