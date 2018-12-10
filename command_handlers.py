@@ -290,7 +290,10 @@ async def cmd_income(command_str, discord_message, apis):
     match = re.match("([<\d.,]+)", hashrate)
     if not match:
         return "Bad hashrate; try `!income 5`, `!income 300mh`, or `!income 2.8gh`"
-    hashrate = string_to_float(match.group(1)) * selected_multiplier
+    try:
+        hashrate = string_to_float(match.group(1)) * selected_multiplier
+    except ValueError:
+        return "Bad hashrate; try `!income 5`, `!income 300mh`, or `!income 2.8gh`"
 
     tokens_per_day = 0.8 * 86400 * apis.token.reward * hashrate / ((2**22) * apis.token.difficulty)
     seconds_per_block = 1.2 * ((2**22) * apis.token.difficulty) / hashrate

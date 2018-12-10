@@ -71,7 +71,7 @@ def to_readable_thousands(value, unit_type='short', decimals=1):
             return "{:.1f}{}".format(value, unit)
         value /= 1000
 
-    fmt_str = "{:." + decimals + "f}{}"
+    fmt_str = "{:." + str(decimals) + "f}{}"
     return fmt_str.format(value*1000, units[-1])
 
 def seconds_to_n_time_ago(seconds):
