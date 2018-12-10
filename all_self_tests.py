@@ -1,3 +1,4 @@
+
 import unittest
 import time
 import datetime
@@ -7,9 +8,84 @@ from mock_discord_classes import MockClient, MockMessage
 import configuration as config
 
 
+def generate_command_list():
+    return ([cmd_def.keywords[0] for cmd_def in (config.GLOBAL_COMMANDS 
+                                                 + config.TRADING_COMMANDS)]
+             + [entry[1][0] for entry in config.EXPENSIVE_STUFF]
+             + ['bettervolume',
+                'price all',
+                'price enclaves',
+                'price fd',
+                'price idex',
+                'price merc',
+                'price ethex',
+                'price eth',
+                'mine test 0x0 0x0 0x0'])
+
+def get_fuzzing_iterator(seed=None):
+    import random
+    import string
+
+    myrandom = random.Random(seed)
+    command_strings = generate_command_list()
+    idx = 0
+
+    while(True):
+        # generate numbers/bytes to mix in with the commands which are 
+        # changed every 128 iterations
+        if idx % 128 == 0:
+            # create a few random floats
+            numbers = ([myrandom.uniform(-1e30, 1e30) for _ in range(5)]
+                       + [myrandom.uniform(-100, 100) for _ in range(5)])
+            # add the integer versions also
+            numbers += [int(i) for i in numbers]
+            printable = [''.join(myrandom.choices(string.printable, k=8)) for _ in range(20)]
+            garbage = [''.join(chr(myrandom.randint(0,255)) for _ in range(8)) for _ in range(20)]
+            full_chunk_set = (command_strings 
+                              + [str(i) for i in numbers]
+                              + printable
+                              + garbage)
+
+        # number of pieces to combine to create a command (2-5)
+        num_chunks = (idx % 4) + 2
+        yield ' '.join(myrandom.choices(full_chunk_set, k=num_chunks))
+        idx += 1
+
+def run_command_blocking(apis, command_str, add_command_char=True):
+    import asyncio
+    from commands import handle_global_command, handle_trading_command
+
+    if add_command_char:
+        command_str = config.COMMAND_CHARACTER + command_str
+    response = asyncio.get_event_loop().run_until_complete(handle_global_command(command_str, MockMessage(), apis))
+    if response is None:
+        response = asyncio.get_event_loop().run_until_complete(handle_trading_command(command_str, MockMessage(), apis))
+    return response
+
+def run_and_log_command(apis, command_str):
+    import logging
+    try:       
+        response = run_command_blocking(apis, command_str)
+    except:
+        logging.exception("Exception running command '{}'".format(repr(command_str)))
+    else:
+        if isinstance(response, str) or response is None:
+            pass
+        else:
+            logging.exception("Response '{}' while running command '{}'".format(repr(response), repr(command_str)))
+        if response == "":
+            logging.exception("Response '{}' while running command '{}'".format(repr(response), repr(command_str)))
+
 class TestPriceCommand(unittest.TestCase):
-    def setUp(self):
-        self.commands_run = 0
+
+    # def __init__(self, methodName='runTest', use_real_randomness=False, fuzz_iterations=None):
+    #     # calling the super class init varies for different python versions.  This works for 2.7
+    #     super(TestPriceCommand, self).__init__(methodName)
+    #     self._use_real_randomness = use_real_randomness
+    #     self._fuzz_iterations = use_real_randomness
+
+    # def setUp(self):
+    #     pass
 
     @classmethod
     def setUpClass(cls):
@@ -18,18 +94,9 @@ class TestPriceCommand(unittest.TestCase):
         asyncio.get_event_loop().run_until_complete(manual_api_update())
         cls.apis = apis
 
-    def run_command(self, command_str, add_command_char=True, check_for_errors=True):
-        import asyncio
-        from commands import handle_global_command, handle_trading_command
+    def run_and_verify_command(self, command_str, add_command_char=True, check_for_errors=True):
+        response = run_command_blocking(self.apis, command_str, add_command_char)
 
-        self.commands_run += 1
-
-        if add_command_char:
-            command_str = config.COMMAND_CHARACTER + command_str
-        response = asyncio.get_event_loop().run_until_complete(handle_global_command(command_str, MockMessage(), self.apis))
-        if response is None:
-            response = asyncio.get_event_loop().run_until_complete(handle_trading_command(command_str, MockMessage(), self.apis))
-        
         if check_for_errors:
             for error_string in [':shrug:', 
                                  'not sure yet... waiting on my APIs',
@@ -44,22 +111,8 @@ class TestPriceCommand(unittest.TestCase):
 
         return response
 
-    def generate_command_list(self):
-        return ([cmd_def.keywords[0] for cmd_def in (config.GLOBAL_COMMANDS 
-                                                     + config.TRADING_COMMANDS)]
-                 + [entry[1][0] for entry in config.EXPENSIVE_STUFF]
-                 + ['bettervolume',
-                    'price all',
-                    'price enclaves',
-                    'price fd',
-                    'price idex',
-                    'price merc',
-                    'price ethex',
-                    'price eth',
-                    'mine test 0x0 0x0 0x0'])
-
     def test_that_all_commands_run(self):
-        command_strings = self.generate_command_list()
+        command_strings = generate_command_list()
 
         for command_str in command_strings:
             with self.subTest(command_str=command_str):
@@ -79,9 +132,9 @@ class TestPriceCommand(unittest.TestCase):
                      or 'price idex' in command_str
                      or 'price merc' in command_str
                      or 'price ethex' in command_str):
-                    response = self.run_command(command_str, check_for_errors=False)
+                    response = self.run_and_verify_command(command_str, check_for_errors=False)
                 else:
-                    response = self.run_command(command_str)
+                    response = self.run_and_verify_command(command_str)
             
                 self.assertIsNotNone(response)
                 self.assertTrue(isinstance(response, str))
@@ -90,13 +143,13 @@ class TestPriceCommand(unittest.TestCase):
     def test_specific_commands(self):
         command_str='price'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("$" in response)
             self.assertTrue("." in response)
             self.assertTrue("Ξ" in response)
         command_str='price all'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("$" in response)
             self.assertTrue("." in response)
             self.assertTrue("Ξ" in response)
@@ -107,19 +160,19 @@ class TestPriceCommand(unittest.TestCase):
             self.assertTrue(len(response.split('\n')) > 1)
         command_str='price forkdelta'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str, check_for_errors=False)
+            response = self.run_and_verify_command(command_str, check_for_errors=False)
             self.assertTrue("Fork Delta" in response or "not sure yet" in response)
             self.assertTrue(len(response.split('\n')) == 1)
         command_str='price enclaves'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str, check_for_errors=False)
+            response = self.run_and_verify_command(command_str, check_for_errors=False)
             self.assertTrue("Enclaves DEX" in response or "not sure yet" in response)
             self.assertTrue(len(response.split('\n')) == 1)
 
         command_strings = ['price eth', 'eth']
         for command_str in command_strings:
             with self.subTest(command_str=command_str):
-                response = self.run_command(command_str, check_for_errors=False)
+                response = self.run_and_verify_command(command_str, check_for_errors=False)
                 self.assertTrue("Ethereum price" in response)
                 self.assertTrue("$" in response)
                 self.assertTrue(len(response.split('\n')) == 1)
@@ -127,110 +180,110 @@ class TestPriceCommand(unittest.TestCase):
         command_strings = ['price btc', 'btc']
         for command_str in command_strings:
             with self.subTest(command_str=command_str):
-                response = self.run_command(command_str, check_for_errors=False)
+                response = self.run_and_verify_command(command_str, check_for_errors=False)
                 self.assertTrue("Bitcoin price" in response)
                 self.assertTrue("$" in response)
                 self.assertTrue(len(response.split('\n')) == 1)
 
         command_str='volume'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("$" in response)
             self.assertTrue("." in response)
             self.assertTrue("Ξ" in response)
             self.assertTrue("Total:" in response)
         command_str='bettervolume'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue(":star2:" in response)
             self.assertTrue("Total:" in response)
         command_str='marketcap'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("$" in response)
             self.assertTrue("." in response)
             self.assertTrue("Marketcap:" in response)
             self.assertTrue("Circulating Supply:" in response)
         command_str='difficulty'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("difficulty:" in response)
         command_str='hashrate'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("hashrate" in response)
             self.assertTrue("/s" in response)
         command_str='era'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("Current era:" in response)
         command_str='ath'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("All time high" in response)
         command_str='convert 1 eth to usd'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("1.000 eth =" in response)
             self.assertTrue("usd" in response)
         command_str='convert 0,89 eth to usd'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("0.89 eth =" in response)
             self.assertTrue("usd" in response)
         command_str='income 3'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("Income for 3.0 Gh/s:" in response)
             self.assertTrue(" tokens/" in response)
             self.assertTrue("per block solo" in response)
         command_str='income 3.5mh'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("Income for 3.5 Mh/s:" in response)
             self.assertTrue(" tokens/" in response)
             self.assertTrue("per block solo" in response)
         command_str='income 3,5mh'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("Income for 3.5 Mh/s:" in response)
             self.assertTrue(" tokens/" in response)
             self.assertTrue("per block solo" in response)
         command_str='setaddress dontcare'
         with self.subTest(command_str=command_str):
             # this one doesn't respond, it just adds a reaction. could check log
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
         command_str='setaddress 0x0000000000000000000000000000000000000000'
         with self.subTest(command_str=command_str):
             # this one doesn't respond, it just adds a reaction. could check log
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
         command_str='setath 0.0 2000-01-01 0.0 2000-01-01'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("New ATH set!" in response)
-            response = self.run_command('ath')
+            response = self.run_and_verify_command('ath')
             self.assertTrue("All time high: **0Ξ** **$0** (Sat January 1 2000)" in response)
         command_str='setath 0.001 2001-02-03 4.05 2006-07-08'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("New ATH set!" in response)
-            response = self.run_command('ath')
+            response = self.run_and_verify_command('ath')
             self.assertTrue("All time high: \n**0.001Ξ** (Sat February 3 2001)  **$4.050** (Sat July 8 2006)" in response)
         command_str='setbestshare Username1 2 0x3 45'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("New best share set!" in response)
-            response = self.run_command('bestshare')
+            response = self.run_and_verify_command('bestshare')
             self.assertTrue("Best share digest: `0x03...` (Difficulty: 45.00) by Username1" in response)
         command_str='setbestshare Username0 0 0x00 0'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("New best share set!" in response)
-            response = self.run_command('bestshare')
+            response = self.run_and_verify_command('bestshare')
             self.assertTrue("Best share digest: `0x00...` (Difficulty: 0) by Username0" in response)
         command_str='mine 123'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("New best share!" in response)
             self.assertTrue("Previous was" in response)
             self.assertTrue("Difficulty: 0" in response)
@@ -241,32 +294,30 @@ class TestPriceCommand(unittest.TestCase):
             self.assertTrue("solution" in response)
         command_str='bestshare'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("Best share digest" in response)
             self.assertTrue("by Test Name" in response)
         command_str='pools'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("Token Mining Pool" in response)
             self.assertTrue("mike.rs" in response)
             self.assertTrue(len(response.split('\n')) > 1)
         command_str='hug'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("SQUEE" in response)
         command_str='hi'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("Sup" in response)
         command_str='lambo'
         with self.subTest(command_str=command_str):
-            response = self.run_command(command_str)
+            response = self.run_and_verify_command(command_str)
             self.assertTrue("1 lambo =" in response)
             self.assertTrue("$" in response)
 
     def test_fuzzing_commands(self):
-        import random
-        import string
         import logging
         # iterations: seconds on i7-5700HQ
         # 256:  13, 12
@@ -275,38 +326,21 @@ class TestPriceCommand(unittest.TestCase):
         # 2048: 58
         # 8192: 217
         # 32768: 759
-        iterations = 512
+        if self._fuzz_iterations:
+            iterations = self._fuzz_iterations
+        else:
+            iterations = 512
 
         # fixed seed so randomness is repeatable
-        myrandom = random.Random("myseed1")
-        command_strings = self.generate_command_list()
-
-        # test combining commands + numbers together
-        for idx in range(iterations):
-
-            # generate numbers/bytes to mix in with the commands which are 
-            # changed every 128 iterations
-            if idx % 128 == 0:
-                # create a few random floats
-                numbers = ([myrandom.uniform(-1e30, 1e30) for _ in range(5)]
-                           + [myrandom.uniform(-100, 100) for _ in range(5)])
-                # add the integer versions also
-                numbers += [int(i) for i in numbers]
-                printable = [''.join(myrandom.choices(string.printable, k=8)) for _ in range(20)]
-                garbage = [''.join(chr(myrandom.randint(0,255)) for _ in range(8)) for _ in range(20)]
-                full_chunk_set = (command_strings 
-                                  + [str(i) for i in numbers]
-                                  + printable
-                                  + garbage)
-
-            # number of pieces to combine to create a command (2-5)
-            num_chunks = (idx % 4) + 2
-            command_str = ' '.join(myrandom.choices(full_chunk_set, k=num_chunks))
-
+        for idx, command_str in enumerate(get_fuzzing_iterator(seed="myseed")):
+            if idx == 0:
+                logging.info(f"command str: {command_str}")
             with self.subTest(command_str=command_str):
-                response = self.run_command(command_str, check_for_errors=False)
+                response = self.run_and_verify_command(command_str, check_for_errors=False)
                 self.assertTrue(isinstance(response, str) or response is None)
                 self.assertTrue(response != "")
+            if idx >= iterations - 1:
+                break
 
 class TestDecimalFormatting(unittest.TestCase):
     def test_round_to_n(self):
@@ -504,4 +538,32 @@ def suite():
 def run_all():
     runner = unittest.TextTestRunner()
     runner.run(suite())
-    
+
+def run_command_fuzzer():
+    import logging
+    import asyncio
+    import time
+    from main import apis, manual_api_update
+    from formatting_helpers import prettify_decimals
+    commands_per_log_message = 10000
+
+    logging.info("Starting fuzz test. Ctrl+C to exit. Errors are logged to console.")
+
+    asyncio.get_event_loop().run_until_complete(manual_api_update())
+    time_last = time.time()
+
+    # no seed; each run should be unique
+    for idx, command_str in enumerate(get_fuzzing_iterator()):
+        run_and_log_command(apis, command_str)
+
+        if idx != 0 and idx % commands_per_log_message == 0:
+
+            time_now = time.time()
+            time_delta = time_now - time_last
+            time_per_command = time_delta / commands_per_log_message
+            commands_per_second = 1 / time_per_command
+            time_last = time_now
+
+            fmt_str = "{:>14} commands {:>14} cmds/sec"
+            logging.info(fmt_str.format(idx,
+                                        prettify_decimals(commands_per_second)))

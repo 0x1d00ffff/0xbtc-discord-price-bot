@@ -12,6 +12,10 @@ CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
 # if permute_whitespace is true, replace spaces with dashes etc and also match those
 # if require_cmd_char is true, search only for `!command` - otherwise allow `command`
 def string_contains_command(input_string, command, exhaustive_search=False, permute_whitespace=True, require_cmd_char=True):
+    
+    if require_cmd_char:
+        command = config.COMMAND_CHARACTER+command
+
     possible_commands = [command]
     if permute_whitespace:
         possible_commands.append(command.replace(' ', '-'))
@@ -20,14 +24,10 @@ def string_contains_command(input_string, command, exhaustive_search=False, perm
 
     if exhaustive_search:
         for possible_command in possible_commands:
-            if require_cmd_char:
-                possible_command = config.COMMAND_CHARACTER+possible_command
             if possible_command in input_string:
                 return True
     else:
         for possible_command in possible_commands:
-            if require_cmd_char:
-                possible_command = config.COMMAND_CHARACTER+possible_command
             if input_string.startswith(possible_command):
                 return True
 

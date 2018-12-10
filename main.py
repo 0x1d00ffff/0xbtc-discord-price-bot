@@ -42,7 +42,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.3.5"
+_VERSION = "0.3.6"
 
 
 old_status_string = None
@@ -317,7 +317,7 @@ def setup_logging(path):
     logging.info('Logging debug info to {}'.format(path))
 
 async def manual_api_update():
-    logging.info('updating apis...')
+    logging.info('Updating APIs')
     try:
         await apis.exchanges.update()
         apis.token.update()
@@ -464,6 +464,8 @@ def main():
                         help=("Run unittests"))
     parser.add_argument('--speed_test', action='store_true', default=False,
                         help=("Run command processing speed test"))
+    parser.add_argument('--fuzz_test', action='store_true', default=False,
+                        help=("Run command processing fuzz test"))
     parser.add_argument('--version', action='version', 
                         version='%(prog)s v{}'.format(_VERSION))
     args = parser.parse_args()
@@ -507,6 +509,14 @@ def main():
         client = MockClient()
         apis = APIWrapper(client, storage, exchange_manager, token, start_time)
         speed_test()
+    elif args.fuzz_test:
+        import all_self_tests
+        client = MockClient()
+        apis = APIWrapper(client, storage, exchange_manager, token, start_time)
+        try:
+            all_self_tests.run_command_fuzzer()
+        except (SystemExit, KeyboardInterrupt):
+            return
     else:
         logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
         logging.debug('discord.py version {}'.format(discord.__version__))
@@ -517,9 +527,7 @@ def main():
         while True:
             try:
                 asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
-            except SystemExit:
-                raise
-            except KeyboardInterrupt:
+            except (SystemExit, KeyboardInterrupt):
                 raise
             except:
                 logging.exception('Unexpected error from Discord... retrying')

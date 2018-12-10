@@ -295,6 +295,9 @@ async def cmd_income(command_str, discord_message, apis):
     except ValueError:
         return "Bad hashrate; try `!income 5`, `!income 300mh`, or `!income 2.8gh`"
 
+    if hashrate == 0:
+        return "Bad hashrate; try `!income 5`, `!income 300mh`, or `!income 2.8gh`"
+
     tokens_per_day = 0.8 * 86400 * apis.token.reward * hashrate / ((2**22) * apis.token.difficulty)
     seconds_per_block = 1.2 * ((2**22) * apis.token.difficulty) / hashrate
 
