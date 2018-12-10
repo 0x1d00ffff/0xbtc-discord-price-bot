@@ -231,42 +231,39 @@ def preprocess(message):
 
     return message
 
+async def process_message(message):
+    response = None
+    # we do not want the bot to reply to itself
+    if message.author == client.user:
+        return
+    # we do not want the bot to reply to other bots
+    if message.author.bot:
+        return
+
+    message_contents = preprocess(message.content)
+
+    # trading commands are ignored in blacklisted channels
+    if message.channel.id not in config.BLACKLISTED_CHANNEL_IDS:
+        response = await handle_trading_command(message_contents, message.author.id, message)
+        if response:
+            await send_discord_msg(message.channel, response)
+            return
+
+    response = await handle_global_command(message_contents, message.author.id, message)
+    if response:
+        await send_discord_msg(message.channel, response)
+        return
+
+    # If command starts with config.COMMAND_CHARACTER and we have not returned yet, it was unrecognized.
+    if message_contents.startswith(config.COMMAND_CHARACTER):
+        logging.info('UNKNOWN cmd {}'.format(repr(message_contents)))
+
 def configure_discord_client():
     client.loop.create_task(background_update())
 
     @client.event
     async def on_message(message):
-        response = None
-
-        # we do not want the bot to reply to itself
-        if message.author == client.user:
-            return
-        # we do not want the bot to reply to other bots
-        if message.author.bot:
-            return
-
-        command_str = preprocess(message.content)
-
-        if message.channel.id in config.BLACKLISTED_CHANNEL_IDS:
-            # check only global commands in a blacklisted channel
-            response = await commands.handle_global_command(command_str, message, apis)
-            if response:
-                await send_discord_msg_to_channel(message.channel, response)
-                return
-        else:
-            # check all commands in a normal channel
-            response = await commands.handle_global_command(command_str, message, apis)
-            if response:
-                await send_discord_msg_to_channel(message.channel, response)
-                return
-            response = await commands.handle_trading_command(command_str, message, apis)
-            if response:
-                await send_discord_msg_to_channel(message.channel, response)
-                return
-
-        # If command starts with config.COMMAND_CHARACTER and we have not returned yet, it was unrecognized.
-        if command_str.startswith(config.COMMAND_CHARACTER):
-            logging.info('UNKNOWN cmd {}'.format(repr(command_str)))
+        process_message(message)
 
     @client.event
     async def on_ready():
@@ -328,11 +325,14 @@ async def manual_api_update():
         logging.exception('failed to update prices / contract info')
 
 
-async def manual_command(cmd, apis):
+async def manual_command(cmd, apis, ignore_response=False):
     cmd = preprocess(cmd)
     try:
         global_response = await commands.handle_global_command(cmd, MockMessage(), apis)
         trading_response = await commands.handle_trading_command(cmd, MockMessage(), apis)
+
+        if ignore_response:
+            return
 
         if global_response != None and trading_response != None:
             logging.warning("Command '{}' has both a global and trading response; only the global response will be shown".format(cmd))
@@ -385,6 +385,57 @@ async def command_test():
 
         await manual_command(cmd, apis)
 
+def blocking_api_update():
+    asyncio.get_event_loop().run_until_complete(manual_api_update())
+
+def raw_message_test():
+    asyncio.get_event_loop().run_until_complete(manual_command("asdfasdf", apis, ignore_response=True))
+
+def invalid_command_test():
+    asyncio.get_event_loop().run_until_complete(manual_command("!asdfasdf", apis, ignore_response=True))
+
+def string_command_test():
+    asyncio.get_event_loop().run_until_complete(manual_command("!hug", apis, ignore_response=True))
+
+def price_command_test():
+    asyncio.get_event_loop().run_until_complete(manual_command("!priceall", apis, ignore_response=True))
+
+def worst_case_command_test():
+    asyncio.get_event_loop().run_until_complete(manual_command("!mine abc", apis, ignore_response=True))
+
+def run_function_and_time_it(function_name, iterations):
+    import timeit
+    timer = timeit.Timer("{}()".format(function_name), 
+                         "gc.enable(); from main import {}".format(function_name))
+    speed = min(timer.repeat(repeat=3, number=iterations))
+    time_per_run = speed / iterations
+    messages_per_sec = 1 / (speed/iterations)
+    fmt_str = "{:>23}:{:>12} seconds per call{:>12} runs per sec"
+    logging.info(fmt_str.format(function_name, 
+                                formatting_helpers.prettify_decimals(time_per_run),
+                                formatting_helpers.prettify_decimals(messages_per_sec)))
+    
+def speed_test():
+    global apis
+    iterations = 2000
+    fmt_str = "--- Starting speed test: {} calls per message type ---"
+    logging.info(fmt_str.format(iterations))
+
+    # simple non-command message processing speed
+    run_function_and_time_it('blocking_api_update', 1)
+    # simple non-command message processing speed
+    run_function_and_time_it('raw_message_test', iterations)
+    # simple non-command message processing speed
+    run_function_and_time_it('invalid_command_test', iterations)
+    # simple non-command message processing speed
+    run_function_and_time_it('string_command_test', iterations)
+    # simple non-command message processing speed
+    run_function_and_time_it('price_command_test', iterations)
+    # simple non-command message processing speed
+    run_function_and_time_it('worst_case_command_test', iterations//10)
+
+    return
+
 # todo: encapsulate these
 client = None
 apis = None
@@ -411,6 +462,8 @@ def main():
                               "run a CLI interface to allow command tests."))
     parser.add_argument('--self_test', action='store_true', default=False,
                         help=("Run unittests"))
+    parser.add_argument('--speed_test', action='store_true', default=False,
+                        help=("Run command processing speed test"))
     parser.add_argument('--version', action='version', 
                         version='%(prog)s v{}'.format(_VERSION))
     args = parser.parse_args()
@@ -450,6 +503,10 @@ def main():
         client = MockClient()
         apis = APIWrapper(client, storage, exchange_manager, token, start_time)
         asyncio.get_event_loop().run_until_complete(command_test())
+    elif args.speed_test:
+        client = MockClient()
+        apis = APIWrapper(client, storage, exchange_manager, token, start_time)
+        speed_test()
     else:
         logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
         logging.debug('discord.py version {}'.format(discord.__version__))
