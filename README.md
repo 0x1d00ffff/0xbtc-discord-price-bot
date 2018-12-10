@@ -64,6 +64,7 @@ bot to monitor/post price etc to the 0xbtc discord server
    to explicitly check for this.
 
 ##### Todo:
+ - switch from etherscan to bloxy.info for holders chart data source
  - make configuration text-based so it does not need python imports etc
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
    `pip install -U git+https://github.com/Rapptz/discord.py@rewrite#egg=discord.py[voice]`
