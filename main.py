@@ -472,7 +472,7 @@ def main():
 
     start_time = time.time()
 
-    if args.self_test or args.command_test:
+    if args.self_test or args.command_test or args.speed_test or args.fuzz_test:
         config.DATA_FOLDER = './test_data/databases/'
 
     if not os.path.exists(config.DATA_FOLDER):
