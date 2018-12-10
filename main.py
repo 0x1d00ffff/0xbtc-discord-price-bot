@@ -241,6 +241,10 @@ async def process_message(message):
         return
 
     message_contents = preprocess(message.content)
+    if not isinstance(message_contents, str):
+        logging.error("bugcheck: message_contents not a str? '{}'".format(repr(message_contents)))
+    if message_contents == ""
+        return
 
     # trading commands are ignored in blacklisted channels
     if message.channel.id not in config.BLACKLISTED_CHANNEL_IDS:
