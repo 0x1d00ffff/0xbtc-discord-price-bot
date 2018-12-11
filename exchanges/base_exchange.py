@@ -50,8 +50,10 @@ class BaseExchangeAPI():
         try:
             data = json.loads(response)
         except json.decoder.JSONDecodeError:
-            if "be right back" in response:
-                raise TimeoutError("api is down - got 404 page")
+            response = response[:2000]
+            if ("be right back" in response
+                or "Request unsuccessful. Incapsula incident ID" in response):
+                raise TimeoutError("api is down - got error page")
             else:
                 raise TimeoutError("api sent bad data ({})".format(repr(response)))
         else:
