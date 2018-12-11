@@ -295,7 +295,7 @@ def setup_logging(path):
     filehandler.addFilter(DiscordLogFilter())
     filehandler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s, %(name)-12s, %(levelname)-8s, %(message)s',
-                                  datefmt='%m-%d-%y %H:%M:%S')
+                                  datefmt='%d-%m-%y %H:%M:%S')
     filehandler.setFormatter(formatter)
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
@@ -303,7 +303,7 @@ def setup_logging(path):
     console.addFilter(DiscordLogFilter())
     console.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)-15s %(name)-7.7s %(levelname)-5.5s %(message)s',
-                                  datefmt='%d/%m %H:%M:%S')
+                                  datefmt='%m/%d %H:%M:%S')
     console.setFormatter(formatter)
 
     logging.basicConfig(handlers=[filehandler, console],
