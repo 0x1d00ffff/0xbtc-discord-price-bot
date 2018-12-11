@@ -66,6 +66,8 @@ def run_and_log_command(apis, command_str):
     import logging
     try:       
         response = run_command_blocking(apis, command_str)
+    except (KeyboardInterrupt, SystemExit):
+        raise
     except:
         logging.exception("Exception running command '{}'".format(repr(command_str)))
     else:
@@ -545,7 +547,7 @@ def run_command_fuzzer():
     import time
     from main import apis, manual_api_update
     from formatting_helpers import prettify_decimals
-    commands_per_log_message = 10000
+    commands_per_log_message = 25000
 
     logging.info("Starting fuzz test. Ctrl+C to exit. Errors are logged to console.")
 
