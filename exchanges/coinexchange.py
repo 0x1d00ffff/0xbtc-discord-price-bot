@@ -134,7 +134,10 @@ class CoinExchangeAPI(BaseExchangeAPI):
         # grab market data for ETH/BTC so we can interpret relative data
         eth_price_in_btc, _, _ = await self._fetch_market_data(self.market_id_eth_btc)
 
-        ratio_of_eth_vs_btc_volume = self.volume_eth / (self.volume_btc / eth_price_in_btc)
+        if self.volume_btc == 0:
+            ratio_of_eth_vs_btc_volume = 100000
+        else:
+            ratio_of_eth_vs_btc_volume = self.volume_eth / (self.volume_btc / eth_price_in_btc)
 
         average = WeightedAverage()
         average.add(change_eth, ratio_of_eth_vs_btc_volume)

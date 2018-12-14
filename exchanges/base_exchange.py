@@ -52,6 +52,7 @@ class BaseExchangeAPI():
         except json.decoder.JSONDecodeError:
             response = response[:2000]
             if ("be right back" in response
+                or "404 Not Found" in response and "nginx" in response
                 or "Request unsuccessful. Incapsula incident ID" in response):
                 raise TimeoutError("api is down - got error page")
             else:
