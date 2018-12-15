@@ -23,6 +23,8 @@ from formatting_helpers import (prettify_decimals,
                                 unix_timestamp_to_readable_date,
                                 unix_timestamp_to_readable_date_time)
 
+from memory_usage import rss_resource
+
 
 async def cmd_help(command_str, discord_message, apis):
     return ("trading commands: `price`  `price <exchange>`  `volume`  `ratio`  `rank`  `btc`  `eth`  `marketcap`\n"
@@ -576,16 +578,18 @@ async def get_ping_times(command_str, discord_message, apis):
     return ping_times
 
 async def cmd_status(command_str, discord_message, apis):
+    # TODO: this function should build a list of label, status tuples then
+    # format them all at the end
     response = "```diff\n"
     for exchange in apis.exchanges.all_exchanges:
         full_exchange_name = "{} [{}]:".format(exchange.exchange_name,
                                                     exchange.currency_symbol)
         if exchange.update_failure_count > 0:
             if exchange.last_updated_time == 0:
-                time_str = "Never" 
+                time_str = "not yet updated" 
             else:
-                time_str = unix_timestamp_to_readable_date_time(exchange.last_updated_time)
-            response += "- {:<24} last updated {}\n".format(full_exchange_name,
+                time_str = "last updated " + unix_timestamp_to_readable_date_time(exchange.last_updated_time)
+            response += "- {:<24} {}\n".format(full_exchange_name,
                                                              time_str)
         else:
             response += "+ {:<24} OK\n".format(full_exchange_name)
@@ -597,6 +601,8 @@ async def cmd_status(command_str, discord_message, apis):
             response += "- {:<24} down\n".format(url)
         else:
             response += "+ {:<24} {:.1f} ms\n".format(url, latency)
+
+    response += "+ {:<24} {:.2f} MB\n".format("Memory:", rss_resource())
 
     return response + "```"
 

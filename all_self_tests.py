@@ -547,7 +547,7 @@ def run_command_fuzzer():
     import time
     from main import apis, manual_api_update
     from formatting_helpers import prettify_decimals
-    commands_per_log_message = 25000
+    commands_per_log_message = 150000  # about 1 hour on a 4th gen i7
 
     logging.info("Starting fuzz test. Ctrl+C to exit. Errors are logged to console.")
 
