@@ -328,15 +328,15 @@ class TestPriceCommand(unittest.TestCase):
         # 2048: 58
         # 8192: 217
         # 32768: 759
-        if self._fuzz_iterations:
-            iterations = self._fuzz_iterations
-        else:
+        try: 
+            self._fuzz_iterations
+        except AttributeError:
             iterations = 512
+        else:
+            iterations = self._fuzz_iterations
 
         # fixed seed so randomness is repeatable
         for idx, command_str in enumerate(get_fuzzing_iterator(seed="myseed")):
-            if idx == 0:
-                logging.info(f"command str: {command_str}")
             with self.subTest(command_str=command_str):
                 response = self.run_and_verify_command(command_str, check_for_errors=False)
                 self.assertTrue(isinstance(response, str) or response is None)

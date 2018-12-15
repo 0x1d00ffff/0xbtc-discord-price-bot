@@ -60,14 +60,14 @@ def get_ping_time(ip, count=4):
         total += float(val)
     return total / count
 
-def ping_list(ip_list):
+def ping_list(ip_list, count=4):
     """Check latencies using threads"""
     try:
         ping_list.pool
     except AttributeError:
         ping_list.pool = multiprocessing.Pool(_MAX_THREADS)
 
-    raw_results = ping_list.pool.map_async(get_ping_time, ip_list).get(999)
+    raw_results = ping_list.pool.map_async(get_ping_time, ip_list, count).get(999)
     return list(zip(ip_list, raw_results))
 
 if __name__ == "__main__":

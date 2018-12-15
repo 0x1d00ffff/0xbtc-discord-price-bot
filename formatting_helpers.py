@@ -1,3 +1,21 @@
+import datetime
+import platform
+
+def unix_timestamp_to_readable_date(timestamp):
+    time = datetime.datetime.fromtimestamp(timestamp)
+
+    if platform.system() == "Linux":
+        return time.strftime("%a %B %-e %Y")
+    else:
+        return time.strftime("%a %B %#e %Y")
+
+def unix_timestamp_to_readable_date_time(timestamp):
+    time = datetime.datetime.fromtimestamp(timestamp)
+
+    if platform.system() == "Linux":
+        return time.strftime("%a %B %-e %Y")
+    else:
+        return time.strftime("%a %B %#e %Y")
 
 def string_to_float(value):
     """custom version of float() that supports commas as decimal separators

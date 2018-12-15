@@ -239,6 +239,6 @@ TRADING_COMMANDS = [
         ['mod command'],
         command_handlers.cmd_mod_command),
     CmdDef(
-        ['ping'],
-        command_handlers.cmd_ping),
+        ['ping', 'status'],
+        command_handlers.cmd_status),
 ]

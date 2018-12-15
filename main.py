@@ -6,10 +6,10 @@ TODO: move commands out of main.py, this file is getting long
 """
 
 import sys
-import os
 # TODO: after upgrading discord.py to rewrite, change to >=3.6
 assert sys.version_info != (3,6), "requires python 3.6"
 
+import os
 import time
 import websocket  # for websocket.enableTrace(False)
 import websockets  # for websockets.exceptions.ConnectionClosed
@@ -38,6 +38,7 @@ import commands
 from persistent_storage import Storage
 import configuration as config
 
+import all_self_tests
 from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
@@ -501,7 +502,6 @@ def main():
     storage = Storage(config.DATA_FOLDER)
 
     if args.self_test:
-        import all_self_tests
         client = MockClient()
         apis = APIWrapper(client, storage, exchange_manager, token, start_time)
         all_self_tests.run_all()
@@ -514,7 +514,6 @@ def main():
         apis = APIWrapper(client, storage, exchange_manager, token, start_time)
         speed_test()
     elif args.fuzz_test:
-        import all_self_tests
         client = MockClient()
         apis = APIWrapper(client, storage, exchange_manager, token, start_time)
         try:

@@ -19,7 +19,9 @@ from formatting_helpers import (prettify_decimals,
                                 seconds_to_n_time_ago,
                                 seconds_to_time,
                                 to_readable_thousands,
-                                string_to_float)
+                                string_to_float,
+                                unix_timestamp_to_readable_date,
+                                unix_timestamp_to_readable_date_time)
 
 
 async def cmd_help(command_str, discord_message, apis):
@@ -414,16 +416,8 @@ async def cmd_bestshare(command_str, discord_message, apis):
     return result
 
 async def cmd_all_time_high(command_str, discord_message, apis):
-    import platform
-    time_eth = datetime.datetime.fromtimestamp(apis.storage.all_time_high_eth_timestamp.get())
-    time_usd = datetime.datetime.fromtimestamp(apis.storage.all_time_high_usd_timestamp.get())
-
-    if platform.system() == "Linux":
-        time_eth = time_eth.strftime("%a %B %-e %Y")
-        time_usd = time_usd.strftime("%a %B %-e %Y")
-    else:
-        time_eth = time_eth.strftime("%a %B %#e %Y")
-        time_usd = time_usd.strftime("%a %B %#e %Y")
+    time_eth = unix_timestamp_to_readable_date(apis.storage.all_time_high_eth_timestamp.get())
+    time_usd = unix_timestamp_to_readable_date(apis.storage.all_time_high_usd_timestamp.get())
 
     if time_eth == time_usd:
         fmt_str = "All time high: **{}Ξ** **${}** ({})"
@@ -571,20 +565,40 @@ async def cmd_mod_command(command_str, discord_message, apis):
     else:
         return "modcommand (poweroff)"
 
-async def cmd_ping(command_str, discord_message, apis):
-    #logging.info('command_str is ')
-    #import pdb; pdb.set_trace()
-    delta = datetime.datetime.utcnow() - discord_message.timestamp
-    response = "Discord: {:.1f} ms\n".format(delta.total_seconds() * 1000.0)
+async def get_ping_times(command_str, discord_message, apis):
+    discord_time_delta = datetime.datetime.utcnow() - discord_message.timestamp
+    discord_latency_ms = discord_time_delta.total_seconds() * 1000.0
 
-    ping_times = ping_wrapper.ping_list(['api.infura.io', 'etherscan.io'])
-    for url, latency in ping_times:
-        if latency == None:
-            response += "{}: down\n".format(url)
+    ping_times = [('Discord API', discord_latency_ms)]
+    ping_times += ping_wrapper.ping_list(['api.infura.io', 'etherscan.io'],
+                                         count=2)
+
+    return ping_times
+
+async def cmd_status(command_str, discord_message, apis):
+    response = "```diff\n"
+    for exchange in apis.exchanges.all_exchanges:
+        full_exchange_name = "{} [{}]:".format(exchange.exchange_name,
+                                                    exchange.currency_symbol)
+        if exchange.update_failure_count > 0:
+            if exchange.last_updated_time == 0:
+                time_str = "Never" 
+            else:
+                time_str = unix_timestamp_to_readable_date_time(exchange.last_updated_time)
+            response += "- {:<24} last updated {}\n".format(full_exchange_name,
+                                                             time_str)
         else:
-            response += "{}: {:.1f} ms\n".format(url, latency)
+            response += "+ {:<24} OK\n".format(full_exchange_name)
 
-    return response
+    ping_times = await get_ping_times(command_str, discord_message, apis)
+    for url, latency in ping_times:
+        url = url + ':'
+        if latency == None:
+            response += "- {:<24} down\n".format(url)
+        else:
+            response += "+ {:<24} {:.1f} ms\n".format(url, latency)
+
+    return response + "```"
 
 async def cmd_pools(command_str, discord_message, apis):
     all_pools = (
