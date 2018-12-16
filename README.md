@@ -72,6 +72,7 @@ bot to monitor/post price etc to the 0xbtc discord server
    probably also means moving the holders chart functionality into the token
    library
  - 24h high/low/average - add to the update() method in base_exchange.py
+ - update ping times for !status in background_update
  - make configuration text-based so it does not need python imports etc
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
    `pip install -U git+https://github.com/Rapptz/discord.py@rewrite#egg=discord.py[voice]`

@@ -30,7 +30,7 @@ async def cmd_help(command_str, discord_message, apis):
     return ("trading commands: `price`  `price <exchange>`  `volume`  `ratio`  `rank`  `btc`  `eth`  `marketcap`\n"
             + "price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.Random(datetime.date.today().strftime("%j")).sample(config.EXPENSIVE_STUFF, 5)))
             #+ "bot commands: `uptime ping` "
-            + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned`\n"
+            + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned` `balance`\n"
             + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`\n"
             + "tools: `convert`  `income`  `mine`")
 
@@ -609,9 +609,10 @@ async def cmd_status(command_str, discord_message, apis):
             if exchange.last_updated_time == 0:
                 time_str = "not yet updated" 
             else:
-                time_str = "last updated " + unix_timestamp_to_readable_date_time(exchange.last_updated_time)
+                time_str = "last updated {} ago".format(seconds_to_time(time.time() - exchange.last_updated_time),
+                                                        granularity=1)
             response += "- {:<24} {}\n".format(full_exchange_name,
-                                                             time_str)
+                                               time_str)
         else:
             response += "+ {:<24} OK\n".format(full_exchange_name)
 

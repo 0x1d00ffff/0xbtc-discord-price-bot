@@ -185,9 +185,6 @@ TRADING_COMMANDS = [
         ['hi', 'hey bot'],
         "Sup :sunglasses:"),
     CmdDef(
-        ['uptime'],
-        command_handlers.cmd_uptime),
-    CmdDef(
         ['marketcap', 'mcap'],
         command_handlers.cmd_marketcap),
     CmdDef(
