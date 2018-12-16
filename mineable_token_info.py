@@ -38,10 +38,9 @@ import requests
 
 from urllib.error import URLError
 
+from constants import SECONDS_PER_ETH_BLOCK
 import configuration as config
 
-
-_SECONDS_PER_ETH_BLOCK = 14.0
 
 class MineableTokenInfo():
     def __init__(self, token_address):
@@ -65,7 +64,7 @@ class MineableTokenInfo():
         self.blocks_per_readjustment = self._contract.functions._BLOCKS_PER_READJUSTMENT().call()
         self.decimals = self._contract.functions.decimals().call()
         self.decimal_divisor = 10 ** self.decimals
-        self.ideal_block_time_seconds = self._ETH_BLOCKS_PER_REWARD * _SECONDS_PER_ETH_BLOCK
+        self.ideal_block_time_seconds = self._ETH_BLOCKS_PER_REWARD * SECONDS_PER_ETH_BLOCK
 
         self.total_supply = None
         self.last_difficulty_start_block = None
@@ -120,8 +119,8 @@ class MineableTokenInfo():
         }
         logs = []
         for event in self._w3.eth.getLogs({
-                'fromBlock': self._current_eth_block - (days * int(60*60*24 / _SECONDS_PER_ETH_BLOCK)),
-                'toBlock': self._current_eth_block-1,
+                'fromBlock': self._current_eth_block - (days * int(60*60*24 / SECONDS_PER_ETH_BLOCK)),
+                'toBlock': self._current_eth_block - 1,
                 'address': self.address}):
             topic0 = self._w3.toHex(event['topics'][0])
             try:
@@ -159,7 +158,7 @@ class MineableTokenInfo():
         
     def _estimated_hashrate_24h(self):
         logging.info('TODO: check the output of this function during a diff change')
-        eth_blocks_in_24h = int(60*60*24 / _SECONDS_PER_ETH_BLOCK)
+        eth_blocks_in_24h = int(60*60*24 / SECONDS_PER_ETH_BLOCK)
         eth_block_24h_ago = self._current_eth_block - eth_blocks_in_24h
         print('eth_blocks_in_24h', eth_blocks_in_24h)
         print('eth_block_24h_ago', eth_block_24h_ago)
@@ -169,7 +168,7 @@ class MineableTokenInfo():
         print('epochs_in_24h', epochs_in_24h)
         epochs_per_eth_block = epochs_in_24h / eth_blocks_in_24h
         print('epochs_per_eth_block', epochs_per_eth_block)
-        epochs_per_second = epochs_per_eth_block / _SECONDS_PER_ETH_BLOCK
+        epochs_per_second = epochs_per_eth_block / SECONDS_PER_ETH_BLOCK
         print('epochs_per_second', epochs_per_second)
         seconds_per_reward = 1 / epochs_per_second
         print('seconds_per_reward', seconds_per_reward)
@@ -212,7 +211,7 @@ class MineableTokenInfo():
         self._epoch_count = self._contract.functions.epochCount().call()
         self._current_eth_block = self._w3.eth.blockNumber
         eth_blocks_since_last_difficulty_period = self._current_eth_block - self.last_difficulty_start_block
-        self.seconds_since_readjustment = eth_blocks_since_last_difficulty_period * _SECONDS_PER_ETH_BLOCK
+        self.seconds_since_readjustment = eth_blocks_since_last_difficulty_period * SECONDS_PER_ETH_BLOCK
         rewards_since_readjustment = self._epoch_count % self.blocks_per_readjustment
         if rewards_since_readjustment == 0:
             self.seconds_per_reward = float('inf')
