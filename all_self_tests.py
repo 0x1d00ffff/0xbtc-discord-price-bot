@@ -469,8 +469,12 @@ class TestMineableTokenInfo(unittest.TestCase):
         self.assertTrue(0 <= m.era < 40)
         self.assertTrue(100000 < m.estimated_hashrate_since_readjustment < 1e30)
         self.assertTrue(100000 < m.estimated_hashrate_24h < 1e30)
+        hashrate_over_2_days = m._estimated_hashrate_n_days(2)
+        self.assertTrue(100000 < hashrate_over_2_days < 1e30)
+        # this check technically could fail, but it should be unlikely enough
+        self.assertTrue(m.estimated_hashrate_24h != hashrate_over_2_days)
         self.assertTrue(0 < m.max_supply_for_era < 10500001)
-        self.assertTrue(0 < m.reward < 51)
+        self.assertTrue(0 < m.reward <= 50.0)
         self.assertTrue(0 <= m.seconds_remaining_in_era < 1e30)
 
     def test_hashing_nonces(self):
@@ -478,9 +482,7 @@ class TestMineableTokenInfo(unittest.TestCase):
         nonces = [b'\x00', b'\x00\x0F', b'test']
         for n in nonces:
             with self.subTest(nonce=n):
-
-                nonce, digest = self.m.get_digest_for_nonce(n,
-                                                            "0x0000000000000000000000000000000000000000")
+                nonce, digest = self.m.get_digest_for_nonce(n, "0x0000000000000000000000000000000000000000")
                 self.assertIsNotNone(nonce)
                 self.assertEqual(len(nonce), 32)
                 self.assertIsNotNone(digest)
@@ -490,8 +492,7 @@ class TestMineableTokenInfo(unittest.TestCase):
         digests = []
         for n in nonces:
             with self.subTest(nonce=n):
-                nonce, digest = self.m.get_digest_for_nonce_str(n,
-                                                                "0x0000000000000000000000000000000000000000")
+                nonce, digest = self.m.get_digest_for_nonce_str(n, "0x0000000000000000000000000000000000000000")
                 self.assertIsNotNone(nonce)
                 self.assertEqual(len(nonce), 32)
                 self.assertIsNotNone(digest)

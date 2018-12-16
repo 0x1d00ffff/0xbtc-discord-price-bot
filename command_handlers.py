@@ -601,6 +601,7 @@ async def cmd_status(command_str, discord_message, apis):
     # TODO: this function should build a list of label, status tuples then
     # format them all at the end
     response = "```diff\n"
+    # TODO: sort exchange list alphabetically
     for exchange in apis.exchanges.all_exchanges:
         full_exchange_name = "{} [{}]:".format(exchange.exchange_name,
                                                     exchange.currency_symbol)

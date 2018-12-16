@@ -156,32 +156,32 @@ class MineableTokenInfo():
     def balance_of(self, address):
         return self._contract.functions.balanceOf(address).call() / self.decimal_divisor
         
-    def _estimated_hashrate_24h(self):
-        logging.info('TODO: check the output of this function during a diff change')
-        eth_blocks_in_24h = int(60*60*24 / SECONDS_PER_ETH_BLOCK)
-        eth_block_24h_ago = self._current_eth_block - eth_blocks_in_24h
-        print('eth_blocks_in_24h', eth_blocks_in_24h)
-        print('eth_block_24h_ago', eth_block_24h_ago)
-        epoch_24h_ago = self._w3.toInt(self._w3.eth.getStorageAt(self.address, 7, eth_block_24h_ago))
-        print('epoch_24h_ago', epoch_24h_ago)
-        epochs_in_24h = self._epoch_count - epoch_24h_ago
-        print('epochs_in_24h', epochs_in_24h)
-        epochs_per_eth_block = epochs_in_24h / eth_blocks_in_24h
-        print('epochs_per_eth_block', epochs_per_eth_block)
+    def _estimated_hashrate_n_days(self, days):
+        eth_blocks_in_window = int(days * 60*60*24 / SECONDS_PER_ETH_BLOCK)
+        eth_block_at_start = self._current_eth_block - eth_blocks_in_window
+        epoch_at_start = self._contract.functions.epochCount().call(block_identifier=-eth_blocks_in_window)
+        #epoch_at_start = self._w3.toInt(self._w3.eth.getStorageAt(self.address, 0x7, eth_block_at_start))
+        epochs_in_window = self._epoch_count - epoch_at_start
+        epochs_per_eth_block = epochs_in_window / eth_blocks_in_window
         epochs_per_second = epochs_per_eth_block / SECONDS_PER_ETH_BLOCK
-        print('epochs_per_second', epochs_per_second)
         seconds_per_reward = 1 / epochs_per_second
-        print('seconds_per_reward', seconds_per_reward)
 
-        # if diff started >24h ago, math is simple - one difficulty only
-        if self.last_difficulty_start_block <= eth_block_24h_ago:
+        # if current diff started before beginning of the window, the math is
+        # simple - one difficulty only
+        if self.last_difficulty_start_block <= eth_block_at_start:
             estimated_hashrate_24h = self.difficulty * 2**22 / seconds_per_reward
         else:
-            # difficulty changed today - so calculation must consider both difficulties
-            previous_mining_target = self._w3.toInt(self._w3.eth.getStorageAt(self.address, 0xB, self.last_difficulty_start_block-1))
-            print('previous_mining_target', previous_mining_target)
+            # difficulty changed within the window - so calculation must
+            # consider multiple difficulties
+            previous_mining_target = self._contract.functions.getMiningTarget().call(block_identifier=self.last_difficulty_start_block-1)
             previous_difficulty = int(self.max_target / previous_mining_target)
-            print('previous_difficulty', previous_difficulty)
+
+            # load the eth block where the difficulty changed to the *previous*
+            # difficulty. If it is inside the window, exit completely, because
+            # it means the window contains 3 or more difficulties.
+            eth_block_two_readjustments_ago = self._contract.functions.latestDifficultyPeriodStarted().call(block_identifier=self.last_difficulty_start_block-1)
+            if eth_block_two_readjustments_ago >= eth_block_at_start:
+                raise RuntimeError("Average window too large: this function only supports at most two difficulty periods.")
 
             from weighted_average import WeightedAverage
             wa = WeightedAverage()
@@ -192,11 +192,13 @@ class MineableTokenInfo():
             # add hashrate based on last difficulty weighted by how many eth
             # blocks occured during that difficulty
             wa.add(previous_difficulty * 2**22 / seconds_per_reward,
-                   self.last_difficulty_start_block - eth_block_24h_ago)
-
+                   self.last_difficulty_start_block - eth_block_at_start)
             estimated_hashrate_24h = wa.average()
 
         return estimated_hashrate_24h
+        
+    def _estimated_hashrate_24h(self):
+        return self._estimated_hashrate_n_days(1)
 
     def _update(self):
         self.total_supply = self._contract.functions.totalSupply().call() / self.decimal_divisor
