@@ -172,8 +172,8 @@ async def background_update():
             usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
 
             # show hashrate if available, otherwise show 'time since last update'
-            if apis.token.estimated_hashrate is not None and apis.token.estimated_hashrate > 0:
-                end_of_status = formatting_helpers.to_readable_thousands(apis.token.estimated_hashrate, unit_type='short_hashrate')
+            if apis.token.estimated_hashrate_since_readjustment is not None and apis.token.estimated_hashrate_since_readjustment > 0:
+                end_of_status = formatting_helpers.to_readable_thousands(apis.token.estimated_hashrate_since_readjustment, unit_type='short_hashrate')
             else:
                 end_of_status = formatting_helpers.seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time())
 

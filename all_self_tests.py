@@ -438,6 +438,7 @@ class TestMineableTokenInfo(unittest.TestCase):
     def test_reading_0xbtc_values(self):
         m = self.m
 
+        self.assertIsNotNone(m.symbol)
         self.assertIsNotNone(m.total_supply)
         self.assertIsNotNone(m.last_difficulty_start_block)
         self.assertIsNotNone(m.mining_target)
@@ -447,15 +448,17 @@ class TestMineableTokenInfo(unittest.TestCase):
         self.assertIsNotNone(m.seconds_since_readjustment)
         self.assertIsNotNone(m.seconds_per_reward)
         self.assertIsNotNone(m.era)
-        self.assertIsNotNone(m.estimated_hashrate)
+        self.assertIsNotNone(m.estimated_hashrate_since_readjustment)
+        self.assertIsNotNone(m.estimated_hashrate_24h)
         self.assertIsNotNone(m.max_supply_for_era)
         self.assertIsNotNone(m.reward)
         self.assertIsNotNone(m.seconds_remaining_in_era)
 
+        self.assertTrue(m.symbol == "0xBTC")
         self.assertTrue(19000000 < m.total_supply < 20999983.97)
         self.assertTrue(6560003 < m.last_difficulty_start_block < 1e10)
 
-        self.assertTrue(self.m.MIN_TARGET <= m.mining_target <= m.MAX_TARGET)
+        self.assertTrue(m.min_target <= m.mining_target <= m.max_target)
 
         self.assertTrue(0 < m.difficulty < 1e30)
         self.assertTrue(3302800 < m.tokens_minted < 21000000.1)
@@ -464,7 +467,8 @@ class TestMineableTokenInfo(unittest.TestCase):
         self.assertTrue(0 < m.seconds_per_reward < 60*60*24*31)
         self.assertTrue(0 < m.seconds_until_readjustment < 60*60*24*31*12)
         self.assertTrue(0 <= m.era < 40)
-        self.assertTrue(100000 < m.estimated_hashrate < 1e30)
+        self.assertTrue(100000 < m.estimated_hashrate_since_readjustment < 1e30)
+        self.assertTrue(100000 < m.estimated_hashrate_24h < 1e30)
         self.assertTrue(0 < m.max_supply_for_era < 10500001)
         self.assertTrue(0 < m.reward < 51)
         self.assertTrue(0 <= m.seconds_remaining_in_era < 1e30)
@@ -480,7 +484,7 @@ class TestMineableTokenInfo(unittest.TestCase):
                 self.assertIsNotNone(nonce)
                 self.assertEqual(len(nonce), 32)
                 self.assertIsNotNone(digest)
-                self.assertTrue(self.m.MIN_TARGET < Web3.toInt(digest))
+                self.assertTrue(self.m.min_target < Web3.toInt(digest))
 
         nonces = ["0x41", "65", "A"]
         digests = []
@@ -493,7 +497,7 @@ class TestMineableTokenInfo(unittest.TestCase):
                 self.assertIsNotNone(digest)
                 self.assertNotEqual(digest, b'\x00')
                 self.assertNotEqual(digest, b'')
-                self.assertTrue(self.m.MIN_TARGET < Web3.toInt(digest))
+                self.assertTrue(self.m.min_target < Web3.toInt(digest))
 
                 digests.append(digest)
 
@@ -504,13 +508,13 @@ class TestMineableTokenInfo(unittest.TestCase):
                                                               "0x0000000000000000000000000000000000000000")
         self.assertEqual(nonce, Web3.toBytes(hexstr='0xff12340000000000000000000000000000000000000000000000000000000000'))
         self.assertIsNotNone(digest_short)
-        self.assertTrue(self.m.MIN_TARGET < Web3.toInt(digest_short))
+        self.assertTrue(self.m.min_target < Web3.toInt(digest_short))
 
         nonce, digest_long = self.m.get_digest_for_nonce_str("0xff12340000000000000000000000000000000000000000000000000000000000ab",
                                                              "0x0000000000000000000000000000000000000000")
         self.assertEqual(nonce, Web3.toBytes(hexstr="0xff12340000000000000000000000000000000000000000000000000000000000"))
         self.assertIsNotNone(digest_long)
-        self.assertTrue(self.m.MIN_TARGET < Web3.toInt(digest_long))
+        self.assertTrue(self.m.min_target < Web3.toInt(digest_long))
 
         self.assertEqual(digest_short, digest_long)
 

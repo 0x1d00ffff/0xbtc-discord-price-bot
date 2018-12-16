@@ -207,11 +207,11 @@ async def cmd_blocktime(command_str, discord_message, apis):
     return result
 
 async def cmd_hashrate(command_str, discord_message, apis):
-    if apis.token.estimated_hashrate == None:
+    if apis.token.estimated_hashrate_since_readjustment == None:
         return ":shrug:"
 
     fmt_str = "Estimated hashrate: **{}** (average over the last {})"
-    result = fmt_str.format(to_readable_thousands(apis.token.estimated_hashrate, unit_type="hashrate", decimals=2),
+    result = fmt_str.format(to_readable_thousands(apis.token.estimated_hashrate_since_readjustment, unit_type="hashrate", decimals=2),
                             seconds_to_time(apis.token.seconds_since_readjustment, granularity=2))
     return result
 
@@ -222,7 +222,7 @@ async def cmd_tokens_minted(command_str, discord_message, apis):
     fmt_str = "Tokens in circulation: **{}** / {} {}"
     result = fmt_str.format(prettify_decimals(apis.token.tokens_minted), 
                             prettify_decimals(apis.token.total_supply),
-                            apis.token.SYMBOL)
+                            apis.token.symbol)
     return result
 
 async def cmd_era(command_str, discord_message, apis):
@@ -241,7 +241,7 @@ async def cmd_era(command_str, discord_message, apis):
     result = fmt_str.format(apis.token.era,
                             seconds_to_time(apis.token.seconds_remaining_in_era),
                             apis.token.reward / 2,
-                            apis.token.SYMBOL)
+                            apis.token.symbol)
     return result
 
 async def cmd_tokens_burned(command_str, discord_message, apis):
@@ -249,7 +249,7 @@ async def cmd_tokens_burned(command_str, discord_message, apis):
         return ":shrug:"
 
     fmt_str = "**{}** {} burned [<https://bit.ly/2AulG0C>]"
-    result = fmt_str.format(apis.token.addr_0_balance, apis.token.SYMBOL)
+    result = fmt_str.format(apis.token.addr_0_balance, apis.token.symbol)
     return result
 
 async def cmd_holders(command_str, discord_message, apis):
@@ -338,7 +338,7 @@ def check_and_set_top_share(apis, resulting_difficulty, author_name, author_id, 
     return result
 
 def parse_mining_results(apis, nonce, digest, save_high_score=False, author_name=None, author_id=None):
-    resulting_difficulty = apis.token.MAX_TARGET / Web3.toInt(digest)
+    resulting_difficulty = apis.token.max_target / Web3.toInt(digest)
     percent_of_the_way_to_full_target = apis.token.mining_target / Web3.toInt(digest)
     fmt_str = "Nonce `0x{}...` -> Digest `0x{}...`\nDiff: {} ({}% of the way to a full solution)"
     result = fmt_str.format(nonce[:5].hex(),
@@ -601,8 +601,10 @@ async def cmd_status(command_str, discord_message, apis):
             response += "- {:<24} down\n".format(url)
         else:
             response += "+ {:<24} {:.1f} ms\n".format(url, latency)
-
-    response += "+ {:<24} {:.2f} MB\n".format("Memory:", rss_resource())
+    try:
+        response += "+ {:<24} {:.2f} MB\n".format("Memory:", rss_resource())
+    except ModuleNotFoundError:
+        pass
 
     return response + "```"
 

@@ -1,13 +1,13 @@
 
 
 import sys
-import resource
 
 def rss_resource():
     """Return the resident set size of this process + its children in
     megabytes. NOTE: http://man7.org/linux/man-pages/man2/getrusage.2.html
     states that RUSAGE_CHILDREN reports only the size of the max child, not
     the sum of the process tree."""
+    import resource
     rusage_denom = 1024.
     if sys.platform == 'darwin':
         # ... it seems that in OSX the output is different units ...

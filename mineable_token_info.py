@@ -4,6 +4,8 @@
 # curl -G https://api.infura.io/v1/jsonrpc/mainnet/eth_getStorageAt --data-urlencode 'params=["0xb6ed7644c69416d67b522e20bc294a9a9b405b31", "0x5", "latest"]'
 # 'last difficulty period started' is at index 6 (0x6)
 # curl -G https://api.infura.io/v1/jsonrpc/mainnet/eth_getStorageAt --data-urlencode 'params=["0xb6ed7644c69416d67b522e20bc294a9a9b405b31", "0x6", "latest"]'
+# 'mining epoch' is at index 7 (0x7)
+# curl -G https://api.infura.io/v1/jsonrpc/mainnet/eth_getStorageAt --data-urlencode 'params=["0xb6ed7644c69416d67b522e20bc294a9a9b405b31", "0x7", "latest"]'
 # 'mining target' is at index 11 (0xB)
 # curl -G https://api.infura.io/v1/jsonrpc/mainnet/eth_getStorageAt --data-urlencode 'params=["0xb6ed7644c69416d67b522e20bc294a9a9b405b31", "0xB", "latest"]'
 # 'challenge number' is at index 12 (0xC)
@@ -39,34 +41,31 @@ from urllib.error import URLError
 import configuration as config
 
 
-_SECONDS_PER_ETH_BLOCK = 15.0
+_SECONDS_PER_ETH_BLOCK = 14.0
 
 class MineableTokenInfo():
     def __init__(self, token_address):
-        self._SERVER_URL = "https://api.infura.io/v1/jsonrpc/mainnet/eth_getStorageAt"
-
-        self.address = token_address
-
-        if self.address == "0xB6eD7644C69416d67B522e20bC294A9a9B405B31":
-            self.SYMBOL = "0xBTC"
-            self.MIN_TARGET = 2**16
-            self.MAX_TARGET = Web3.toInt(hexstr="0x40000000000000000000000000000000000000000000000000000000000")
-            self._BLOCKS_PER_READJUSTMENT = 1024
-            self._DECIMALS = 8
-            self._DIVISOR = 10 ** self._DECIMALS
-            self._ETH_BLOCKS_PER_REWARD = 60
-            self._IDEAL_BLOCK_TIME_SECONDS = self._ETH_BLOCKS_PER_REWARD * _SECONDS_PER_ETH_BLOCK;
-
-            abi = mineable_token_abis.abis[self.SYMBOL]
-        else:
-            fmt_str = "constants for this contract address {} are missing, need to edit mineable_token_info.py"
-            raise RuntimeError(fmt_str.format(token_address))
-
-        # TODO: change this out with a different one, this is used on the stats
-        # site
         self._w3 = Web3(Web3.HTTPProvider(config.ETHEREUM_NODE_URL))
 
+        self.address = self._w3.toChecksumAddress(token_address)
+
+        if self.address == "0xB6eD7644C69416d67B522e20bC294A9a9B405B31":
+            self._ETH_BLOCKS_PER_REWARD = 60
+            abi = mineable_token_abis.abis["0xBTC"]
+        else:
+            fmt_str = "constants for contract {} are missing, need to edit mineable_token_info.py"
+            raise RuntimeError(fmt_str.format(token_address))
+
+
         self._contract = self._w3.eth.contract(address=self.address, abi=abi)
+
+        self.symbol = self._contract.functions.symbol().call()
+        self.min_target = self._contract.functions._MINIMUM_TARGET().call()
+        self.max_target = self._contract.functions._MAXIMUM_TARGET().call()
+        self.blocks_per_readjustment = self._contract.functions._BLOCKS_PER_READJUSTMENT().call()
+        self.decimals = self._contract.functions.decimals().call()
+        self.decimal_divisor = 10 ** self.decimals
+        self.ideal_block_time_seconds = self._ETH_BLOCKS_PER_REWARD * _SECONDS_PER_ETH_BLOCK
 
         self.total_supply = None
         self.last_difficulty_start_block = None
@@ -79,62 +78,7 @@ class MineableTokenInfo():
     def _read_contract_variable_at_index(self, index, convert_to_int=True, divisor=1, timeout=10.0):
         # UNUSED
         # TODO: remove this if it is not necessary
-        try:
-            index = "{:#x}".format(index)
-        except ValueError:
-            pass
-
-        try:
-            # '["0xb6ed7644c69416d67b522e20bc294a9a9b405b31", "0x5", "latest"]'
-
-            infura_parameters = '["{}", "{}", "latest"]'.format(self.address, 
-                                                                index)
-
-            #logging.info('infura_parameters:{}'.format(infura_parameters))
-            # query_data = [
-            #     ('params', quote(infura_parameters)),
-            # ]
-            #encoded_query_data = urlencode(query_data, encoding=None)
-            #logging.info('encoded_query_data:{}'.format(quote(infura_parameters)))
-
-            r = Request(self._SERVER_URL + '?params=' + quote(infura_parameters),
-                        #data=encoded_query_data,
-                        method="GET")
-            #logging.info('r.method {}'.format(r.method))
-            #logging.info('r.data {}'.format(r.data))
-            #logging.info('r.full_url {}'.format(r.full_url))
-
-            response = urlopen(r, timeout=timeout).read().decode("utf-8")
-            try:
-                data = json.loads(response)
-            except json.decoder.JSONDecodeError:
-                if "be right back" in response:
-                    raise TimeoutError("infura is down - got 404 page")
-                else:
-                    raise TimeoutError("api sent bad data ({})".format(repr(response)))
-
-            try:
-                error = data['error']
-                code = int(error['code'])
-                message = error['message']
-                logging.error('Got error {} from infura: {}'.format(code, message))
-            except KeyError:
-                pass
-
-            try:
-                result = data['result']
-                if convert_to_int:
-                    result = Web3.toInt(hexstr=result) / divisor
-                return result
-            except KeyError:
-                pass
-
-            logging.warning('Failed to update contract variable, bad data from infura? {}'.format(data))
-            return None
-
-        except:
-            logging.exception("failed to load contract value from infura")
-            return None
+        return self._w3.eth.getStorageAt(self.address, index, 'latest')
 
     def _read_contract_map_location(self, key, map_position, convert_to_int=True, divisor=1, timeout=10.0):
         # UNUSED
@@ -156,49 +100,140 @@ class MineableTokenInfo():
         if map_position[:2] == '0x':
             map_position = map_position[2:]
 
-
         digest = "{:0>32}{:0>32}".format(key, map_position)
         logging.info('digest:{}'.format(digest))
         location = Web3.toWeb3.sha3(hexstr=digest)
         logging.info('digest2:{}'.format(digest))
         logging.info('location:{}'.format(location))
-        return self._read_contract_variable_at_index(location, convert_to_int=convert_to_int, divisor=divisor, timeout=timeout)
+        return self._read_contract_variable_at_index(location, convert_to_int=convert_to_int, divisor=divisor)
 
+    def get_recent_events(self, days):
+        """Get all events sent from the contract in the last N days.
+
+        TODO: there is a OwnershipTransferred event, but for 0xBTC ownership is
+        burned so this does not matter. This event should be handled to make
+        this library more generic."""
+        event_types = {
+            "0xcf6fbb9dcea7d07263ab4f5c3a92f53af33dffc421d9d121e1c74b307e68189d": "mint",
+            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef": "transfer",
+            "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925": "approve",
+        }
+        logs = []
+        for event in self._w3.eth.getLogs({
+                'fromBlock': self._current_eth_block - (days * int(60*60*24 / _SECONDS_PER_ETH_BLOCK)),
+                'toBlock': self._current_eth_block-1,
+                'address': self.address}):
+            topic0 = self._w3.toHex(event['topics'][0])
+            try:
+                event_type = event_types[topic0]
+            except KeyError:
+                print('unknown topic', topic0, 'tx_hash', self._w3.toHex(event['transactionHash']))
+                event_type = "unknown"
+
+            new_entry = {
+                'type': event_type,
+                'hash': self._w3.toHex(event['transactionHash']),
+                'from_address': self._w3.toChecksumAddress(event['topics'][1][-20:]),
+                'block_number': event['blockNumber'],
+            }
+
+            if event_type == "mint":
+                new_entry['amount'] = self._w3.toInt(hexstr=event['data'][2:64+2]) / self.decimal_divisor
+                new_entry['epoch_count'] = self._w3.toInt(hexstr=event['data'][64+2:128+2])
+                new_entry['new_challenge'] = self._w3.toHex(hexstr=event['data'][128+2:192+2])
+            elif event_type == "transfer":
+                new_entry['to_address'] = self._w3.toChecksumAddress(event['topics'][2][-20:])
+                new_entry['amount'] = self._w3.toInt(hexstr=event['data']) / self.decimal_divisor
+            elif event_type == "approve":
+                new_entry['spender_address'] = self._w3.toChecksumAddress(event['topics'][2][-20:])
+                new_entry['amount'] = self._w3.toInt(hexstr=event['data']) / self.decimal_divisor
+            else:
+                new_entry['data'] = event['data']
+
+            logs.append(new_entry)
+
+        return logs
+
+    def balance_of(self, address):
+        return self._contract.functions.balanceOf(address).call() / self.decimal_divisor
+        
+    def _estimated_hashrate_24h(self):
+        logging.info('TODO: check the output of this function during a diff change')
+        eth_blocks_in_24h = int(60*60*24 / _SECONDS_PER_ETH_BLOCK)
+        eth_block_24h_ago = self._current_eth_block - eth_blocks_in_24h
+        print('eth_blocks_in_24h', eth_blocks_in_24h)
+        print('eth_block_24h_ago', eth_block_24h_ago)
+        epoch_24h_ago = self._w3.toInt(self._w3.eth.getStorageAt(self.address, 7, eth_block_24h_ago))
+        print('epoch_24h_ago', epoch_24h_ago)
+        epochs_in_24h = self._epoch_count - epoch_24h_ago
+        print('epochs_in_24h', epochs_in_24h)
+        epochs_per_eth_block = epochs_in_24h / eth_blocks_in_24h
+        print('epochs_per_eth_block', epochs_per_eth_block)
+        epochs_per_second = epochs_per_eth_block / _SECONDS_PER_ETH_BLOCK
+        print('epochs_per_second', epochs_per_second)
+        seconds_per_reward = 1 / epochs_per_second
+        print('seconds_per_reward', seconds_per_reward)
+
+        # if diff started >24h ago, math is simple - one difficulty only
+        if self.last_difficulty_start_block <= eth_block_24h_ago:
+            estimated_hashrate_24h = self.difficulty * 2**22 / seconds_per_reward
+        else:
+            # difficulty changed today - so calculation must consider both difficulties
+            previous_mining_target = self._w3.toInt(self._w3.eth.getStorageAt(self.address, 0xB, self.last_difficulty_start_block-1))
+            print('previous_mining_target', previous_mining_target)
+            previous_difficulty = int(self.max_target / previous_mining_target)
+            print('previous_difficulty', previous_difficulty)
+
+            from weighted_average import WeightedAverage
+            wa = WeightedAverage()
+            # add hashrate based on current difficulty weighted by how many eth
+            # blocks occured during that difficulty
+            wa.add(self.difficulty * 2**22 / seconds_per_reward,
+                   self._current_eth_block - self.last_difficulty_start_block)
+            # add hashrate based on last difficulty weighted by how many eth
+            # blocks occured during that difficulty
+            wa.add(previous_difficulty * 2**22 / seconds_per_reward,
+                   self.last_difficulty_start_block - eth_block_24h_ago)
+
+            estimated_hashrate_24h = wa.average()
+
+        return estimated_hashrate_24h
 
     def _update(self):
-        self.total_supply = self._contract.functions.totalSupply().call() / self._DIVISOR
+        self.total_supply = self._contract.functions.totalSupply().call() / self.decimal_divisor
         self.last_difficulty_start_block = self._contract.functions.latestDifficultyPeriodStarted().call()
         self.mining_target = self._contract.functions.getMiningTarget().call()
 
-        #self.difficulty = self._contract.functions.getMiningDifficulty().call()
-        self.difficulty = int(self.MAX_TARGET / self.mining_target)
+        self.difficulty = int(self.max_target / self.mining_target)
 
         self.challenge_number = Web3.toHex(self._contract.functions.getChallengeNumber().call())
-        self.tokens_minted = self._contract.functions.tokensMinted().call() / self._DIVISOR
-        self.addr_0_balance = self._contract.functions.balanceOf('0x0000000000000000000000000000000000000000').call() / self._DIVISOR
+        self.tokens_minted = self._contract.functions.tokensMinted().call() / self.decimal_divisor
+        self.addr_0_balance = self.balance_of('0x0000000000000000000000000000000000000000')
         self._epoch_count = self._contract.functions.epochCount().call()
         self._current_eth_block = self._w3.eth.blockNumber
-        eth_blocks_since_last_difficulty_period = self._current_eth_block - self.last_difficulty_start_block;
+        eth_blocks_since_last_difficulty_period = self._current_eth_block - self.last_difficulty_start_block
         self.seconds_since_readjustment = eth_blocks_since_last_difficulty_period * _SECONDS_PER_ETH_BLOCK
-        rewards_since_readjustment = self._epoch_count % self._BLOCKS_PER_READJUSTMENT
+        rewards_since_readjustment = self._epoch_count % self.blocks_per_readjustment
         if rewards_since_readjustment == 0:
             self.seconds_per_reward = float('inf')
         else:
-            self.seconds_per_reward = self.seconds_since_readjustment / rewards_since_readjustment;
-        rewards_left = self._BLOCKS_PER_READJUSTMENT - rewards_since_readjustment
+            self.seconds_per_reward = self.seconds_since_readjustment / rewards_since_readjustment
+        rewards_left = self.blocks_per_readjustment - rewards_since_readjustment
         self.seconds_until_readjustment = rewards_left * self.seconds_per_reward
 
         # estimated hashrate
         # TODO: calculate this equation from max_target (https://en.bitcoin.it/wiki/Difficulty)
         # uses current reward rate in hashrate calculation
-        self.estimated_hashrate = self.difficulty * 2**22 / self.seconds_per_reward;
+        self.estimated_hashrate_since_readjustment = self.difficulty * 2**22 / self.seconds_per_reward
         self.era = self._contract.functions.rewardEra().call()
-        self.max_supply_for_era = self._contract.functions.maxSupplyForEra().call() / self._DIVISOR
+        self.max_supply_for_era = self._contract.functions.maxSupplyForEra().call() / self.decimal_divisor
         # TODO: probably need to round to current mining reward
         supply_remaining_in_era = self.max_supply_for_era - self.tokens_minted
         self.reward = 50 / 2**self.era
-        rewards_blocks_remaining_in_era = supply_remaining_in_era / self.reward;
-        self.seconds_remaining_in_era = rewards_blocks_remaining_in_era * self._IDEAL_BLOCK_TIME_SECONDS
+        rewards_blocks_remaining_in_era = supply_remaining_in_era / self.reward
+        self.seconds_remaining_in_era = rewards_blocks_remaining_in_era * self.ideal_block_time_seconds
+
+        self.estimated_hashrate_24h = self._estimated_hashrate_24h()
 
     def update(self):
         try:
@@ -240,7 +275,6 @@ class MineableTokenInfo():
 
         raise RuntimeError("Couldn't parse nonce {}".format(nonce[:36]))
 
-
     def get_digest_for_nonce(self, nonce, address, challenge_number=None):
         if challenge_number is None:
             challenge_number = self.challenge_number
@@ -267,7 +301,6 @@ class MineableTokenInfo():
                                    [challenge_number, address, Web3.toInt(nonce)])
         return nonce, digest
 
-
 if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
@@ -277,6 +310,11 @@ if __name__ == "__main__":
     m = MineableTokenInfo('0xB6eD7644C69416d67B522e20bC294A9a9B405B31')
 
     m.update()
+
+    import pprint
+    recent_events = m.get_recent_events(1)
+    logging.info('m.get_recent_events(1)[-5:]: {}'.format(pprint.pprint(recent_events[-5:])))
+    logging.info('len(m.get_recent_events(1)): {}'.format(len(recent_events)))
 
     logging.info('m.total_supply: {}'.format(m.total_supply))
     logging.info('m.last_difficulty_start_block: {}'.format(m.last_difficulty_start_block))
@@ -288,7 +326,8 @@ if __name__ == "__main__":
     logging.info('m.seconds_since_readjustment: {}'.format(m.seconds_since_readjustment))
     logging.info('m.seconds_per_reward: {}'.format(m.seconds_per_reward))
     logging.info('m.seconds_until_readjustment: {}'.format(m.seconds_until_readjustment))
-    logging.info('m.estimated_hashrate: {}'.format(m.estimated_hashrate))
+    logging.info('m.estimated_hashrate_since_readjustment: {}'.format(m.estimated_hashrate_since_readjustment))
+    logging.info('m.estimated_hashrate_24h: {}'.format(m.estimated_hashrate_24h))
     logging.info('m.era: {}'.format(m.era))
     logging.info('m.max_supply_for_era: {}'.format(m.max_supply_for_era))
     logging.info('m.reward: {}'.format(m.reward))
@@ -298,5 +337,5 @@ if __name__ == "__main__":
                                                "0x540d752A388B4fC1c9Deeb1Cd3716A2B7875D8A6",
                                                "0x3b0ec88154c8aecbc7876f50d8915ef7cd6112a604cad4f86f549d5b9eed369a")
     logging.info('m.get_digest_for_nonce_str(...):')
-    logging.info(' Nonce : 0x{}'.format(nonce.hex()))
-    logging.info(' Digest: {}'.format(digest.hex()))
+    logging.info('  nonce : 0x{}'.format(nonce.hex()))
+    logging.info('  digest: {}'.format(digest.hex()))
