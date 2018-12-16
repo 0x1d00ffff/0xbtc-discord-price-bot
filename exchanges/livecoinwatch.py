@@ -85,8 +85,6 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
                 # allow BTC pairings to count towards volume
                 pass
             else:
-                #import pprint
-                #pprint.pprint(exchange_data)
                 # if base pair is unknown, don't use for calcualted volume/price
                 continue
 
@@ -102,8 +100,6 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
                 if base_pair == "BTC":
                     wavg_price_btc.add(exchange_data['rate'], relative_volume)
                     volume_usd_btc += exchange_data['volume']
-
-
 
         self.price_usd = wavg_price_usd.average()
 

@@ -55,10 +55,7 @@ class MercatoxAPI(BaseExchangeAPI):
 
     async def _update(self, timeout=10.0):
         method = "/json24"
-
         data = await self._get_json_from_url(self._SERVER_URL+method)
-
-        volume_usd = 0
 
         for pair_name in data['pairs']:
             currency, base_pair = pair_name.split('_')
@@ -83,7 +80,6 @@ class MercatoxAPI(BaseExchangeAPI):
             except TypeError as e:
                 raise TimeoutError("Could not convert data to float") from e
 
-
         if self.currency_symbol == "ETH":
             self.price_eth = 1
             self.eth_price_usd = self.price_usd
@@ -93,12 +89,9 @@ class MercatoxAPI(BaseExchangeAPI):
             self.btc_price_usd = self.price_usd
 
 if __name__ == "__main__":
-
     api = MercatoxAPI('ETH')
     api.load_once_and_print_values()
-
     api = MercatoxAPI('OMG')
     api.load_once_and_print_values()
-
     api = MercatoxAPI('0xBTC')
     api.load_once_and_print_values()

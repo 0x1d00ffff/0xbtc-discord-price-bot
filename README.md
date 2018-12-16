@@ -64,10 +64,14 @@ bot to monitor/post price etc to the 0xbtc discord server
    to explicitly check for this.
 
 ##### Todo:
+ - in !status switch "last updated..." formatting to use seconds_to_n_time_ago
  - at some level, wrap handle_global_command and handle_global_command in try
    blocks which call logging.exception to report unexpected exceptions in
    command handlers
- - switch from etherscan to bloxy.info for holders chart data source
+ - switch from etherscan to bloxy.info for holders chart data source. this
+   probably also means moving the holders chart functionality into the token
+   library
+ - 24h high/low/average - add to the update() method in base_exchange.py
  - make configuration text-based so it does not need python imports etc
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
    `pip install -U git+https://github.com/Rapptz/discord.py@rewrite#egg=discord.py[voice]`
@@ -80,7 +84,6 @@ bot to monitor/post price etc to the 0xbtc discord server
  - volume_eth and volume_usd are not strictly defined - sometimes it means total
    volume across all pairs (converted to eth), sometimes it means volume in eth
    only and volume_btc means volume in btc only.
- - 24h high/low/average
  - ascii chart?
  - enable hotbit?
  - new exchanges

@@ -10,6 +10,7 @@ def unix_timestamp_to_readable_date(timestamp):
         return time.strftime("%a %B %#e %Y")
 
 def unix_timestamp_to_readable_date_time(timestamp):
+    # TODO: implement
     time = datetime.datetime.fromtimestamp(timestamp)
 
     if platform.system() == "Linux":

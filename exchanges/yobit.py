@@ -23,8 +23,6 @@ class YobitAPI(BaseExchangeAPI):
 
         data = await self._get_json_from_url(self._SERVER_URL+method)
 
-        volume_usd = 0
-
         self.price_btc = float(data['{}_btc'.format(self._currency_name_on_exchange)]['last'])
         self.volume_btc = float(data['{}_btc'.format(self._currency_name_on_exchange)]['vol'])
         self.price_eth = float(data['{}_eth'.format(self._currency_name_on_exchange)]['last'])

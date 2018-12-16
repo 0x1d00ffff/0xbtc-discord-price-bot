@@ -53,11 +53,6 @@ class IDEXAPI(BaseExchangeAPI):
         method = "/returnTicker"
         data = await self._get_json_from_url(self._SERVER_URL+method)
 
-        #import pprint
-        #pprint.pprint(data)
-
-        volume_usd = 0
-
         for pair_name in data:
             base_pair, currency = pair_name.split('_')
             # skip reverse-pairings
@@ -65,8 +60,6 @@ class IDEXAPI(BaseExchangeAPI):
                 continue
 
             pair_info = data[pair_name]
-
-            #pprint.pprint(pair_info)
 
             if base_pair == "BTC":
                 self.price_btc = float(pair_info['last'])
@@ -80,7 +73,6 @@ class IDEXAPI(BaseExchangeAPI):
                 # TODO: this should be tracked per-base pair
                 self.change_24h = float(pair_info['percentChange']) / 100.0
 
-
         if self.currency_symbol == "ETH":
             self.price_eth = 1
             self.eth_price_usd = self.price_usd
@@ -90,13 +82,7 @@ class IDEXAPI(BaseExchangeAPI):
             self.btc_price_usd = self.price_usd
 
 if __name__ == "__main__":
-
-    # eth_api = IDEXAPI('ETH')
-    # eth_api.update()
-    # eth_api.print_all_values()
-
     omg_api = IDEXAPI('OMG')
     omg_api.load_once_and_print_values()
-
     oxbtc_api = IDEXAPI('0xBTC')
     oxbtc_api.load_once_and_print_values()

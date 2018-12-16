@@ -37,25 +37,13 @@ class EnclavesAPI(BaseExchangeAPI):
         self.short_url = "https://bit.ly/2rnYA7b"
 
     async def _update(self, timeout=10.0):
-        #print('connecting to', self._WEBSOCKET_URL)
-
         ws = websocket.create_connection(self._WEBSOCKET_URL, timeout=timeout)
-        #print('connected')
-        # TMP forks read session id etc first so we do the same
-        #print('rcv')
+        # real implementations read session id etc first so we do the same
         result = ws.recv()
-        #print('result:')
-        #import pprint
-        #pprint.pprint(result)
-        #print('rcv')
         result = ws.recv()
-        #print('result:')
-        #pprint.pprint(result)
-        #request miner data
+        # request actual data
         ws.send('42["getTokens"]')
         result = ws.recv()
-        #print('result:')
-        #pprint.pprint(result)
 
         try:
             all_data = json.loads(result[2:])
@@ -64,10 +52,8 @@ class EnclavesAPI(BaseExchangeAPI):
                 raise TimeoutError("api is down - got 404 page")
             else:
             	raise TimeoutError("api sent bad data ({})".format(repr(response)))
-         
 
         data_was_updated = False
-        #pprint.pprint(all_data)
         tokens = all_data[1]['tokens']
         for token in tokens:
             if token['addr'] == self._CONTRACT_ADDRESS:
@@ -81,7 +67,6 @@ class EnclavesAPI(BaseExchangeAPI):
 
         if not data_was_updated:
             raise RuntimeError('Response from Enclaves did not include indicated currency ({}).'.format(self.currency_symbol))
-
 
 if __name__ == "__main__":
     e = EnclavesAPI('0xBTC')

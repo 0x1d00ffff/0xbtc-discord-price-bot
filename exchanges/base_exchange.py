@@ -62,9 +62,6 @@ class BaseExchangeAPI():
 
     async def update(self, timeout=10.0):
         try:
-            import logging
-            # logging.info("self._update: {}".format(self._update))
-            # logging.info("type(self._update): {}".format(type(self._update)))
             await self._update(timeout=timeout)
         except (websocket._exceptions.WebSocketTimeoutException,
                 websocket._exceptions.WebSocketBadStatusException,
