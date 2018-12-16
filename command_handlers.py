@@ -216,6 +216,25 @@ async def cmd_hashrate(command_str, discord_message, apis):
                             to_readable_thousands(apis.token.estimated_hashrate_24h, unit_type="hashrate", decimals=2))
     return result
 
+async def cmd_balance_of(command_str, discord_message, apis):
+    if apis.token.estimated_hashrate_since_readjustment == None:
+        return ":shrug:"
+
+    try:
+        address = command_str.split()[-1:][0]
+        address = Web3.toChecksumAddress(address)
+    except:
+        return "Bad address, try `!balanceof 0x0000000000000000000000000000000000000000`"
+
+    try:
+        fmt_str = "0xBitcoin balance: **{}** 0xBTC."
+        result = fmt_str.format(prettify_decimals(apis.token.balance_of(address)))
+    except:
+        logging.exception('exception in token.balance_of')
+        return ":shrug:"
+    else:
+        return result
+
 async def cmd_tokens_minted(command_str, discord_message, apis):
     if apis.token.tokens_minted == None:
         return ":shrug:"
