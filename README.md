@@ -64,6 +64,9 @@ bot to monitor/post price etc to the 0xbtc discord server
    to explicitly check for this.
 
 ##### Todo:
+ - at some level, wrap handle_global_command and handle_global_command in try
+   blocks which call logging.exception to report unexpected exceptions in
+   command handlers
  - switch from etherscan to bloxy.info for holders chart data source
  - make configuration text-based so it does not need python imports etc
  - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
