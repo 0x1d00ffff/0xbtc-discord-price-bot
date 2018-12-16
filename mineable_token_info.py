@@ -106,7 +106,7 @@ class MineableTokenInfo():
         logging.info('location:{}'.format(location))
         return self._read_contract_variable_at_index(location, convert_to_int=convert_to_int, divisor=divisor)
 
-    def get_recent_events(self, days):
+    def get_events_last_n_days(self, days):
         """Get all events sent from the contract in the last N days.
 
         TODO: there is a OwnershipTransferred event, but for 0xBTC ownership is
@@ -313,9 +313,9 @@ if __name__ == "__main__":
     m.update()
 
     import pprint
-    recent_events = m.get_recent_events(1)
-    logging.info('m.get_recent_events(1)[-5:]: {}'.format(pprint.pprint(recent_events[-5:])))
-    logging.info('len(m.get_recent_events(1)): {}'.format(len(recent_events)))
+    recent_events = m.get_events_last_n_days(1)
+    logging.info('m.get_events_last_n_days(1)[-2:]: {}'.format(pprint.pprint(recent_events[-2:])))
+    logging.info('len(m.get_events_last_n_days(1)): {}'.format(len(recent_events)))
 
     logging.info('m.total_supply: {}'.format(m.total_supply))
     logging.info('m.last_difficulty_start_block: {}'.format(m.last_difficulty_start_block))

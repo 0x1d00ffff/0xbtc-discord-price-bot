@@ -107,6 +107,7 @@ class TestPriceCommand(unittest.TestCase):
                                  'Bad command',
                                  'Bad nonce',
                                  'Bad hashrate',
+                                 'Bad address',
                                  'Error']:
                 with self.subTest(error_string=error_string):
                     self.assertFalse(error_string in response)
@@ -126,6 +127,7 @@ class TestPriceCommand(unittest.TestCase):
                      or 'setath' in command_str
                      or 'setathfilename' in command_str
                      or 'setbestshare' in command_str
+                     or 'balance' in command_str
                      # individual exchange apis may fail; so we don't care what
                      # the response is - only that is does not throw an exception
                      or 'price all' in command_str
@@ -251,6 +253,10 @@ class TestPriceCommand(unittest.TestCase):
             self.assertTrue("Income for 3.5 Mh/s:" in response)
             self.assertTrue(" tokens/" in response)
             self.assertTrue("per block solo" in response)
+        command_str='balance 0x0000000000000000000000000000000000000000'
+        with self.subTest(command_str=command_str):
+            response = self.run_and_verify_command(command_str)
+            self.assertTrue("0xBitcoin balance:" in response)
         command_str='setaddress dontcare'
         with self.subTest(command_str=command_str):
             # this one doesn't respond, it just adds a reaction. could check log
@@ -467,15 +473,21 @@ class TestMineableTokenInfo(unittest.TestCase):
         self.assertTrue(0 < m.seconds_per_reward < 60*60*24*31)
         self.assertTrue(0 < m.seconds_until_readjustment < 60*60*24*31*12)
         self.assertTrue(0 <= m.era < 40)
+        self.assertTrue(0 < m.max_supply_for_era < 10500001)
+        self.assertTrue(0 < m.reward <= 50.0)
+        self.assertTrue(0 <= m.seconds_remaining_in_era < 1e30)
+
         self.assertTrue(100000 < m.estimated_hashrate_since_readjustment < 1e30)
         self.assertTrue(100000 < m.estimated_hashrate_24h < 1e30)
         hashrate_over_2_days = m._estimated_hashrate_n_days(2)
         self.assertTrue(100000 < hashrate_over_2_days < 1e30)
         # this check technically could fail, but it should be unlikely enough
         self.assertTrue(m.estimated_hashrate_24h != hashrate_over_2_days)
-        self.assertTrue(0 < m.max_supply_for_era < 10500001)
-        self.assertTrue(0 < m.reward <= 50.0)
-        self.assertTrue(0 <= m.seconds_remaining_in_era < 1e30)
+
+        events_in_last_2_days = m.get_events_last_n_days(2)
+        self.assertIsNotNone(events_in_last_2_days)
+        self.assertTrue(len(events_in_last_2_days) > 0)
+        self.assertTrue(events_in_last_2_days[-1]['type'] in ['mint', 'transfer', 'approve'])
 
     def test_hashing_nonces(self):
         from web3 import Web3
