@@ -224,7 +224,7 @@ async def cmd_balance_of(command_str, discord_message, apis):
         address = command_str.split()[-1:][0]
         address = Web3.toChecksumAddress(address)
     except:
-        return "Bad address, try `!balanceof 0x0000000000000000000000000000000000000000`"
+        return "Bad address, try `!balance of 0x0000000000000000000000000000000000000000`"
 
     try:
         fmt_str = "0xBitcoin balance: **{}** 0xBTC."

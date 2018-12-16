@@ -200,7 +200,7 @@ TRADING_COMMANDS = [
         ['hashrate'],
         command_handlers.cmd_hashrate),
     CmdDef(
-        ['balance of'],
+        ['balance'],
         command_handlers.cmd_balance_of),
     CmdDef(
         ['minted', 'circulating', 'supply', 'tokens minted'],
