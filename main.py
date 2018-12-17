@@ -508,7 +508,10 @@ def main():
     elif args.command_test:
         client = MockClient()
         apis = APIWrapper(client, storage, exchange_manager, token, start_time)
-        asyncio.get_event_loop().run_until_complete(command_test())
+        try:
+            asyncio.get_event_loop().run_until_complete(command_test())
+        except (SystemExit, KeyboardInterrupt):
+            return
     elif args.speed_test:
         client = MockClient()
         apis = APIWrapper(client, storage, exchange_manager, token, start_time)
