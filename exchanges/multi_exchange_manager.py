@@ -17,29 +17,23 @@ class MultiExchangeManager():
     
     async def update(self):
         for api_obj in self.api_obj_list:
+            report_success = api_obj.update_failure_count >= 2
             try:
                 if asyncio.iscoroutinefunction(api_obj.update):
                     await api_obj.update()
                 else:
                     api_obj.update()
             except TimeoutError as e:
-                # ignore a single failure, but log 2nd, 3rd, and once every 2
-                # hours from then on
+                # ignore a single failure, but log 2 in a row
                 if api_obj.update_failure_count == 2:
-                    fmt_str = "Timeout {} (2 failures): '{}'"
+                    fmt_str = "Timeout {}: '{}'. Silencing until exchange is up again."
                     logging.warning(fmt_str.format(api_obj.exchange_name,
-                                                   str(e)))
-                if api_obj.update_failure_count == 3:
-                    fmt_str = "Timeout {} (3 failures): '{}'. Silencing for now."
-                    logging.warning(fmt_str.format(api_obj.exchange_name,
-                                                   str(e)))
-                if api_obj.update_failure_count % (7200 / UPDATE_RATE) == 0:
-                    fmt_str = "Timeout {} ({} failures): '{}'"
-                    logging.warning(fmt_str.format(api_obj.exchange_name,
-                                                   api_obj.update_failure_count,
                                                    str(e)))
             except:
-                logging.exception("Unhandled Exception updating {}".format(api_obj.exchange_name))
+                logging.exception(f"Unhandled Exception updating {api_obj.exchange_name}")
+            else:
+                if report_success:
+                    logging.info(f"Exchange {api_obj.exchange_name} is back up")
 
     @property
     def all_exchanges(self):
