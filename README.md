@@ -64,7 +64,6 @@ bot to monitor/post price etc to the 0xbtc discord server
    to explicitly check for this.
 
 ##### Todo:
- - in !status switch "last updated..." formatting to use seconds_to_n_time_ago
  - at some level, wrap handle_global_command and handle_global_command in try
    blocks which call logging.exception to report unexpected exceptions in
    command handlers

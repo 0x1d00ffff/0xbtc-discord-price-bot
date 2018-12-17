@@ -52,6 +52,10 @@ def _generate_holders_chart(token_name, holders, total_supply, output_filename):
     slices = []
     colors = []
 
+    # TODO: should call chart_helpers.generate_pie_chart(values, labels, output_filename)
+    # instead of doing the low-level matplotlib charting here. that would simplify
+    # the code here and make it easier to eventually move it to the token library
+
     for holder in holders:
         rank, address, amount = holder
 
