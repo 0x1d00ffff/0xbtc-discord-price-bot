@@ -239,6 +239,9 @@ TRADING_COMMANDS = [
         ['mod command'],
         command_handlers.cmd_mod_command),
     CmdDef(
+        ['uptime'],
+        command_handlers.cmd_uptime),
+    CmdDef(
         ['ping', 'status'],
         command_handlers.cmd_status),
 ]
