@@ -139,7 +139,7 @@ def get_page_of_token_holders(address, etherscan_page, timeout=10.0):
         rank, address, amount, _ = cells
         rank = int(rank.string)
         address = address.find('a').string
-        amount = float(amount.string)
+        amount = float(amount.string.replace(',', ''))
         holders.append((rank, address, amount))
 
     return holders
@@ -154,10 +154,9 @@ def _get_top_1000_token_holders(address, timeout=10.0):
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    import test_data
-    _generate_holders_chart('0xBitcoin', test_data.top_1000_holders, 3307650, './holders_chart.png')
-
-    return
+    #import test_data
+    #_generate_holders_chart('0xBitcoin', test_data.top_1000_holders, 3307650, './holders_chart.png')
+    #return
 
     holders = _get_top_1000_token_holders("0xB6eD7644C69416d67B522e20bC294A9a9B405B31")
     logging.info('first holder: {}'.format(holders[0]))
