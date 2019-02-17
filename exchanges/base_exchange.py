@@ -74,6 +74,9 @@ class BaseExchangeAPI():
                 URLError) as e:
             self.update_failure_count += 1
             raise TimeoutError(str(e)) from e
+        except Exception:
+            self.update_failure_count += 1
+            raise
         else:
             self.last_updated_time = time.time()
             self.update_failure_count = 0
