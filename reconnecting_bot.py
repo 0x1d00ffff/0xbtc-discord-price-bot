@@ -3,6 +3,7 @@ import asyncio
 import aiohttp
 import discord
 import websockets
+import concurrent
 
 import backoff
 
@@ -40,6 +41,13 @@ async def keep_running(client, token):
                 logging.error("Discord.py trying to stay connected...")
             else:
                 logging.exception("Unexpected error from discord, trying to stay connected...")
+
+        except concurrent.futures._base.TimeoutError:
+            # indicates something is acrually wrong, so discord will not auto
+            # reconnect. The best solution here is to start over and recreate
+            # the client object which happens in the caller.
+            await asyncio.sleep(retry.delay())
+            raise RuntimeError("got an error that is unrecoverable")
 
 
         except (discord.HTTPException, aiohttp.ClientError,

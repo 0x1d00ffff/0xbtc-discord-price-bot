@@ -43,7 +43,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.3.7"
+_VERSION = "0.3.8"
 
 
 old_status_string = None
@@ -526,11 +526,11 @@ def main():
     else:
         logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
         logging.debug('discord.py version {}'.format(discord.__version__))
-        client = discord.Client()
-        apis = APIWrapper(client, storage, exchange_manager, token, start_time)
-        configure_discord_client()
 
         while True:
+            client = discord.Client()
+            apis = APIWrapper(client, storage, exchange_manager, token, start_time)
+            configure_discord_client()
             try:
                 asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
             except (SystemExit, KeyboardInterrupt):
@@ -538,6 +538,11 @@ def main():
             except:
                 logging.exception('Unexpected error from Discord... retrying')
                 time.sleep(10)  # wait a little time to prevent cpu spins
+                try:
+                    asyncio.get_event_loop().run_until_complete(client.close())
+                    asyncio.get_event_loop().run_until_complete(client.logout())
+                except:
+                    pass
 
 if __name__ == "__main__":
     main()
