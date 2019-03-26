@@ -182,9 +182,6 @@ TRADING_COMMANDS = [
         ['hug'],
         "*SQUEEEEEEEEEEEEE* There, there. It's alright now. Botty is gonna make it all better."),
     CmdDef(
-        ['hi', 'hey bot'],
-        "Sup :sunglasses:"),
-    CmdDef(
         ['marketcap', 'mcap'],
         command_handlers.cmd_marketcap),
     CmdDef(
@@ -221,7 +218,7 @@ TRADING_COMMANDS = [
         ['set address'],
         command_handlers.cmd_set_user_address),
     CmdDef(
-        ['best share', 'top share', 'highest share', 'high score', 'top score'],
+        ['best share', 'top share', 'highest share', 'high score', 'top score', 'record'],
         command_handlers.cmd_bestshare),
     CmdDef(
         ['ath', 'all time high'],
@@ -244,4 +241,7 @@ TRADING_COMMANDS = [
     CmdDef(
         ['ping', 'status'],
         command_handlers.cmd_status),
+    CmdDef(
+        ['hi', 'hey bot'],
+        "Sup :sunglasses:"),
 ]
