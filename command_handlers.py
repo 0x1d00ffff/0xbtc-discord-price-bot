@@ -52,7 +52,14 @@ def show_price_from_source(apis, source='aggregate'):
     if (apis.exchanges.last_updated_time(exchange_name=source) == 0):
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(exchange_name=source))
     
-    token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=source) * apis.exchanges.eth_price_usd()
+    eth_token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=source)
+
+    if eth_token_price == 0:
+        token_price = apis.exchanges.price_usd(config.TOKEN_SYMBOL, exchange_name=source)
+        eth_token_price = token_price / apis.exchanges.eth_price_usd()
+    else:
+        token_price = eth_token_price * apis.exchanges.eth_price_usd()
+
     eth_price_on_this_exchange = float(apis.exchanges.eth_price_usd(exchange_name=source))
 
     # Enclaves usually fails this way
@@ -71,7 +78,7 @@ def show_price_from_source(apis, source='aggregate'):
     result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
                             seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time(exchange_name=source)),
                             '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
-                            apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=source), 
+                            eth_token_price,
                             percent_change_str,
                             '' if eth_price_on_this_exchange == 0 else '(ETH: **${:.0f}**) '.format(eth_price_on_this_exchange), 
                             apis.exchanges.short_url(exchange_name=source))
@@ -653,6 +660,7 @@ async def cmd_volume(command_str, discord_message, apis):
 
     total_eth_volume = 0
     total_btc_volume = 0
+    total_usd_volume = 0
     response = ""
 
     for api in sorted(apis.exchanges.alive_exchanges, key=lambda a: a.exchange_name):
@@ -662,27 +670,45 @@ async def cmd_volume(command_str, discord_message, apis):
 
         volume_eth = apis.exchanges.volume_eth(config.TOKEN_SYMBOL, exchange_name=api.exchange_name)
         volume_btc = apis.exchanges.volume_btc(config.TOKEN_SYMBOL, exchange_name=api.exchange_name)
-        if volume_eth == 0 and volume_btc == 0:
+        volume_usd = apis.exchanges.volume_usd(config.TOKEN_SYMBOL, exchange_name=api.exchange_name)
+
+        if volume_eth == 0 and volume_btc == 0 and volume_usd == 0:
             continue
 
         total_eth_volume += volume_eth
         total_btc_volume += volume_btc
-        if apis.exchanges.eth_price_usd() == 0:
-            response += "{}: **{}Ξ** ".format(api.exchange_name, prettify_decimals(volume_eth))
-        else:
-            response += "{}: $**{}**({}Ξ) ".format(api.exchange_name, prettify_decimals(volume_eth * apis.exchanges.eth_price_usd()), prettify_decimals(volume_eth))
-        if volume_btc != 0:
-            if apis.exchanges.btc_price_usd() == 0:
-                response += "+ **{}₿** ".format(prettify_decimals(volume_btc))
+        total_usd_volume += volume_usd
+
+        response += "{}: ".format(api.exchange_name)
+
+        if volume_eth != 0:
+            if apis.exchanges.eth_price_usd() == 0:
+                response += "**{}Ξ** ".format(prettify_decimals(volume_eth))
             else:
-                response += "+ $**{}**({}₿) ".format(prettify_decimals(volume_btc * apis.exchanges.btc_price_usd()), prettify_decimals(volume_btc))
+                response += "$**{}**({}Ξ) ".format(prettify_decimals(volume_eth * apis.exchanges.eth_price_usd()), prettify_decimals(volume_eth))
+
+        if volume_btc != 0:
+            if volume_eth != 0:
+                response += "+ "
+
+            if apis.exchanges.btc_price_usd() == 0:
+                response += "**{}₿** ".format(prettify_decimals(volume_btc))
+            else:
+                response += "$**{}**({}₿) ".format(prettify_decimals(volume_btc * apis.exchanges.btc_price_usd()), prettify_decimals(volume_btc))
+
+        if volume_usd != 0:
+            if volume_eth != 0 or volume_btc != 0:
+                response += "+ "
+            response += "$**{}** ".format(prettify_decimals(volume_usd))
+
+        response += "\n"
 
     response += "\n"
 
     if apis.exchanges.eth_price_usd() == 0 or apis.exchanges.btc_price_usd() == 0:
-        response += "Total: {}Ξ + {}₿".format(prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume))
+        response += "Total: {}Ξ + {}₿ + ${}".format(prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume), prettify_decimals(total_usd_volume))
     else:
-        response += "Total: $**{}**({}Ξ+{}₿)".format(prettify_decimals((total_eth_volume * apis.exchanges.eth_price_usd()) + (total_btc_volume * apis.exchanges.btc_price_usd())), prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume))
+        response += "Total: $**{}**({}Ξ+{}₿+${})".format(prettify_decimals(total_usd_volume + (total_eth_volume * apis.exchanges.eth_price_usd()) + (total_btc_volume * apis.exchanges.btc_price_usd())), prettify_decimals(total_eth_volume), prettify_decimals(total_btc_volume), prettify_decimals(total_usd_volume))
 
     if "better" in command_str:
         # !bettervolume
