@@ -497,6 +497,7 @@ def main():
         exchanges.EthexAPI(config.TOKEN_SYMBOL),
         exchanges.CoinExchangeAPI(config.TOKEN_SYMBOL),
         exchanges.UniswapAPI(config.TOKEN_SYMBOL),
+        exchanges.MerkleXAPI(config.TOKEN_SYMBOL),
     ])
     token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
     storage = Storage(config.DATA_FOLDER)

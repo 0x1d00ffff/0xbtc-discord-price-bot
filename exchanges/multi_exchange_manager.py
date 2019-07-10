@@ -14,7 +14,7 @@ _OLDEST_ALLOWED_DATA_SECONDS = 600
 class MultiExchangeManager():
     def __init__(self, api_obj_list):
         self.api_obj_list = api_obj_list
-    
+
     async def update(self):
         for api_obj in self.api_obj_list:
             report_success = api_obj.update_failure_count >= 2
@@ -93,10 +93,12 @@ class MultiExchangeManager():
                 continue
             if a.price_usd == None:
                 continue
-            if a.volume_eth == None:
-                continue
+            if a.volume_usd == None:
+                volume = 0
+            else:
+                volume = a.volume_usd
             if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
-                result.add(a.price_usd, a.volume_eth)
+                result.add(a.price_usd, volume)
         return result.average()
 
     def volume_usd(self, currency_symbol, exchange_name='aggregate'):
