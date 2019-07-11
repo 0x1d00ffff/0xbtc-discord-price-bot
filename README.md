@@ -1,5 +1,7 @@
 # 0xbtc-discord-price-bot
-bot to monitor/post price etc to the 0xbtc discord server
+bot to monitor/post price etc to the 0xbtc discord server [link to the discord](https://discord.gg/rQbhv7u)
+
+\[[how to add an exchange](#adding-an-exchange)\] \[[how to add a command](#adding-a-command)\]
 
 ##### Installation:
 
