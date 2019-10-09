@@ -495,6 +495,7 @@ def main():
         exchanges.MercatoxAPI(config.TOKEN_SYMBOL),
         #exchanges.HotbitAPI(config.TOKEN_SYMBOL),
         exchanges.EthexAPI(config.TOKEN_SYMBOL),
+        exchanges.ZxchangeAPI(config.TOKEN_SYMBOL),
         exchanges.CoinExchangeAPI(config.TOKEN_SYMBOL),
         exchanges.UniswapAPI(config.TOKEN_SYMBOL),
         exchanges.MerkleXAPI(config.TOKEN_SYMBOL),

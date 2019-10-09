@@ -10,3 +10,4 @@ from .ethex import EthexAPI
 from .coinexchange import CoinExchangeAPI
 from .uniswap import UniswapAPI
 from .merklex import MerkleXAPI
+from .zxchange import ZxchangeAPI
