@@ -30,25 +30,30 @@ class ZxchangeAPI(BaseExchangeAPI):
     def __init__(self, currency_symbol):
         super().__init__()
         self._SERVER_URL = "https://veridex.herokuapp.com/v2/"
-        self.currency_symbol = currency_symbol
         self.exchange_name = "0xChange"
         self.command_names = ['0xchange', 'zxchange', 'change']
         self.short_url = "http://bit.ly/35mgKIz"
 
+        if currency_symbol.lower() == "0xbtc":
+            self.currency_symbol = "0xBTC"
+            self._symbol_on_exchange = "0XBTC"
+        else:
+            raise RuntimeError("Unexpected currency_symbol {}".format(currency_symbol))
+
     async def _update(self, timeout=10.0):
-        method = "markets/stats/"+self.currency_symbol+"-WETH"
+        method = "markets/stats/"+self._symbol_on_exchange+"-WETH"
         data = await self._get_json_from_url(self._SERVER_URL+method)
         try:
             self.price_eth = float(data['last_price'])
             self.volume_eth = float(data['quote_volume_24'])
-            self.change_24h = float(data['last_price_change']) * 100.0
+            self.change_24h = float(data['last_price_change'])
         except TypeError as e:
             raise TimeoutError("Could not convert data to float") from e
 
         return
 
         # later on, DAI might be supported via this api
-        method = "markets/stats/"+self.currency_symbol+"-DAI"
+        method = "markets/stats/"+self._symbol_on_exchange+"-DAI"
         data = await self._get_json_from_url(self._SERVER_URL+method)
         try:
             self.price_usd = float(data['last_price'])
@@ -59,5 +64,5 @@ class ZxchangeAPI(BaseExchangeAPI):
 
 
 if __name__ == "__main__":
-    api = ZxchangeAPI('0XBTC')
+    api = ZxchangeAPI('0xBTC')
     api.load_once_and_print_values()
