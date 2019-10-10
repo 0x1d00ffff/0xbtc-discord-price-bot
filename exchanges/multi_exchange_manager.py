@@ -24,9 +24,11 @@ class MultiExchangeManager():
                 else:
                     api_obj.update()
             except TimeoutError as e:
+                fmt_str = "Timeout {}: {}. Silencing until exchange is up again."
+                logging.debug(fmt_str.format(api_obj.exchange_name,
+                                               str(e)))
                 # ignore a single failure, but log 2 in a row
                 if api_obj.update_failure_count == 2:
-                    fmt_str = "Timeout {}: '{}'. Silencing until exchange is up again."
                     logging.warning(fmt_str.format(api_obj.exchange_name,
                                                    str(e)))
             except:

@@ -279,7 +279,7 @@ def show_startup_info(client):
                                                               client.user.name,
                                                               client.user.id))
 
-def setup_logging(path):
+def setup_logging(path, verbose=False):
     class DiscordLogFilter(logging.Filter):
         """Filter to hide uninformative/annoying discord errors"""
         def filter(self, record):
@@ -302,7 +302,10 @@ def setup_logging(path):
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
     console.addFilter(DiscordLogFilter())
-    console.setLevel(logging.INFO)
+    if verbose:
+        console.setLevel(logging.DEBUG)
+    else:
+        console.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)-15s %(name)-7.7s %(levelname)-5.5s %(message)s',
                                   datefmt='%m/%d %H:%M:%S')
     console.setFormatter(formatter)
@@ -471,6 +474,8 @@ def main():
                         help=("Run command processing speed test"))
     parser.add_argument('--fuzz_test', action='store_true', default=False,
                         help=("Run command processing fuzz test"))
+    parser.add_argument('--verbose', action='store_true', 
+                        help=("Enable detailed debug messages"))
     parser.add_argument('--version', action='version', 
                         version='%(prog)s v{}'.format(_VERSION))
     args = parser.parse_args()
@@ -482,7 +487,7 @@ def main():
 
     if not os.path.exists(config.DATA_FOLDER):
         os.makedirs(config.DATA_FOLDER)
-    setup_logging(os.path.join(config.DATA_FOLDER, 'debug.log'))
+    setup_logging(os.path.join(config.DATA_FOLDER, 'debug.log'), verbose=args.verbose)
 
     exchange_manager = exchanges.MultiExchangeManager(
     [

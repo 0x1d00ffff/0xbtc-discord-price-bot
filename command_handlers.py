@@ -50,6 +50,7 @@ async def cmd_compare_price_vs(apis, item_name="lambo", item_price=200000):
 
 def show_price_from_source(apis, source='aggregate'):
     if (apis.exchanges.last_updated_time(exchange_name=source) == 0):
+        logging.debug("cannot show api '{}'; it has not been updated yet".format(source))
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(exchange_name=source))
     
     eth_token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=source)
@@ -64,6 +65,8 @@ def show_price_from_source(apis, source='aggregate'):
 
     # Enclaves usually fails this way
     if token_price == 0:
+        logging.debug("cannot show api '{}'; eth_token_price:{}; eth_price_usd:{}".format(
+            source, eth_token_price, apis.exchanges.eth_price_usd()))
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(exchange_name=source))
 
     percent_change_str = ""
