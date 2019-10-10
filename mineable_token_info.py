@@ -234,7 +234,12 @@ class MineableTokenInfo():
         rewards_blocks_remaining_in_era = supply_remaining_in_era / self.reward
         self.seconds_remaining_in_era = rewards_blocks_remaining_in_era * self.ideal_block_time_seconds
 
-        self.estimated_hashrate_24h = self._estimated_hashrate_24h()
+        # catch error thrown by new infura v3 api since it does not support this
+        # anymore, unfortunately
+        try:
+            self.estimated_hashrate_24h = self._estimated_hashrate_24h()
+        except (ValueError, requests.exceptions.HTTPError):
+            self.estimated_hashrate_24h = None
 
     def update(self):
         try:

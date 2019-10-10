@@ -214,13 +214,22 @@ async def cmd_blocktime(command_str, discord_message, apis):
     return result
 
 async def cmd_hashrate(command_str, discord_message, apis):
-    if apis.token.estimated_hashrate_since_readjustment == None:
-        return ":shrug:"
-
-    fmt_str = "Estimated hashrate: **{}** over the last {}, and **{}** over the last 24 hours."
-    result = fmt_str.format(to_readable_thousands(apis.token.estimated_hashrate_since_readjustment, unit_type="hashrate", decimals=2),
-                            seconds_to_time(apis.token.seconds_since_readjustment, granularity=2),
-                            to_readable_thousands(apis.token.estimated_hashrate_24h, unit_type="hashrate", decimals=2))
+    if apis.token.estimated_hashrate_since_readjustment is None:
+        result = ":shrug:"
+    # check if the 24h hashrate estimate was not calculated
+    #
+    # unfortunately infura v3 removed the functions necessary to calculate it, and
+    # we store 'None' in that case. If they ever being back support it should be
+    # populated again and just work
+    elif apis.token.estimated_hashrate_24h is None:
+        fmt_str = "Estimated hashrate: **{}** over the last {}."
+        result = fmt_str.format(to_readable_thousands(apis.token.estimated_hashrate_since_readjustment, unit_type="hashrate", decimals=2),
+                                seconds_to_time(apis.token.seconds_since_readjustment, granularity=2))
+    else:
+        fmt_str = "Estimated hashrate: **{}** over the last {}, and **{}** over the last 24 hours."
+        result = fmt_str.format(to_readable_thousands(apis.token.estimated_hashrate_since_readjustment, unit_type="hashrate", decimals=2),
+                                seconds_to_time(apis.token.seconds_since_readjustment, granularity=2),
+                                to_readable_thousands(apis.token.estimated_hashrate_24h, unit_type="hashrate", decimals=2))
     return result
 
 async def cmd_balance_of(command_str, discord_message, apis):
