@@ -15,6 +15,9 @@ class YobitAPI(BaseExchangeAPI):
         if currency_symbol == "SEDO":
             self.short_url = "https://bit.ly/2R0FHSf"
             self._currency_name_on_exchange = "sedo"
+        elif currency_symbol == "0xBTC":
+            self.short_url = "https://bit.ly/2Lls8Nn"
+            self._currency_name_on_exchange = "0xbtc"
         else:
             raise RuntimeError("Unknown currency {}; need to edit yobit.py".format(currency_symbol))
 
@@ -32,5 +35,7 @@ class YobitAPI(BaseExchangeAPI):
 
 if __name__ == "__main__":
 
-    sedo_api = YobitAPI('SEDO')
-    sedo_api.load_once_and_print_values()
+    api = YobitAPI('SEDO')
+    api.load_once_and_print_values()
+    api = YobitAPI('0xBTC')
+    api.load_once_and_print_values()
