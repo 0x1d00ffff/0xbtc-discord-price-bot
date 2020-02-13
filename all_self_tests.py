@@ -162,16 +162,16 @@ class TestPriceCommand(unittest.TestCase):
                             or "Fork Delta" in response 
                             or "IDEX" in response)
             self.assertTrue(len(response.split('\n')) > 1)
-        command_str='price forkdelta'
-        with self.subTest(command_str=command_str):
-            response = self.run_and_verify_command(command_str, check_for_errors=False)
-            self.assertTrue("Fork Delta" in response or "not sure yet" in response)
-            self.assertTrue(len(response.split('\n')) == 1)
-        command_str='price enclaves'
-        with self.subTest(command_str=command_str):
-            response = self.run_and_verify_command(command_str, check_for_errors=False)
-            self.assertTrue("Enclaves DEX" in response or "not sure yet" in response)
-            self.assertTrue(len(response.split('\n')) == 1)
+        # command_str='price forkdelta'
+        # with self.subTest(command_str=command_str):
+        #     response = self.run_and_verify_command(command_str, check_for_errors=False)
+        #     self.assertTrue("Fork Delta" in response or "not sure yet" in response)
+        #     self.assertTrue(len(response.split('\n')) == 1)
+        # command_str='price enclaves'
+        # with self.subTest(command_str=command_str):
+        #     response = self.run_and_verify_command(command_str, check_for_errors=False)
+        #     self.assertTrue("Enclaves DEX" in response or "not sure yet" in response)
+        #     self.assertTrue(len(response.split('\n')) == 1)
 
         command_strings = ['price eth', 'eth']
         for command_str in command_strings:

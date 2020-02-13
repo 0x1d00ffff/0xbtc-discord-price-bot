@@ -494,16 +494,21 @@ def main():
         exchanges.CoinMarketCapAPI(config.TOKEN_SYMBOL),
         exchanges.CoinMarketCapAPI('ETH'),
         exchanges.CoinMarketCapAPI('BTC'),
-        exchanges.EnclavesAPI(config.TOKEN_SYMBOL),
-        exchanges.ForkDeltaAPI(config.TOKEN_SYMBOL),
         exchanges.IDEXAPI(config.TOKEN_SYMBOL),
         exchanges.MercatoxAPI(config.TOKEN_SYMBOL),
-        #exchanges.HotbitAPI(config.TOKEN_SYMBOL),
-        exchanges.EthexAPI(config.TOKEN_SYMBOL),
         exchanges.ZxchangeAPI(config.TOKEN_SYMBOL),
-        exchanges.CoinExchangeAPI(config.TOKEN_SYMBOL),
         exchanges.UniswapAPI(config.TOKEN_SYMBOL),
-        exchanges.MerkleXAPI(config.TOKEN_SYMBOL),
+        # 2/12/20 removed coinexchange. homepage says closed.
+        # exchanges.CoinExchangeAPI(config.TOKEN_SYMBOL),
+        # 2/12/20 removed enclaves. blocks all usa traffic.
+        # exchanges.EnclavesAPI(config.TOKEN_SYMBOL),
+        # 2/12/20 removed ethex, they might be out of business. homepage says check later.
+        # exchanges.EthexAPI(config.TOKEN_SYMBOL),
+        # 2/12/20 removed forkdelta. need a new api since livecoinwatch stopped tracking it.
+        # exchanges.ForkDeltaAPI(config.TOKEN_SYMBOL),
+        # exchanges.HotbitAPI(config.TOKEN_SYMBOL),
+        # 2/12/20 removed merklex. seems to have rebranded to nitrade.
+        # exchanges.MerkleXAPI(config.TOKEN_SYMBOL),
     ])
     token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
     storage = Storage(config.DATA_FOLDER)
