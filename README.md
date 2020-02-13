@@ -66,6 +66,9 @@ bot to monitor/post price etc to the 0xbtc discord server [link to the discord](
    to explicitly check for this.
 
 ##### Todo:
+ - add exponential backoff to `_update()` of the the APIs so things like rate 
+   limiting are handled automatically. This would probably require modification
+   of some commands which treat data older than the update rate as invalid.
  - at some level, wrap handle_global_command and handle_global_command in try
    blocks which call logging.exception to report unexpected exceptions in
    command handlers
