@@ -16,8 +16,8 @@ data =
   # last price in the quote currency
     'rate': 0.0009000000001,
     'url': 'https://forkdelta.github.io/#!/trade/0xBTC-ETH',
-  # value in USD
-    'usd': 0.594567000066063,
+  # value of pase pair in USD
+    'usdb': 0.594567000066063,
   # price of the quote currency (ETH, BTC, etc) in USD
     'usdq': 660.6300000000001,
   # 24h volume in USD
@@ -38,7 +38,7 @@ from weighted_average import WeightedAverage
 class LiveCoinWatchAPI(BaseExchangeAPI):
     def __init__(self, currency_symbol, allowed_apis='all'):
         super().__init__()
-        self._SERVER_URL = "https://www.livecoinwatch.com/api"
+        self._SERVER_URL = "https://http-api.livecoinwatch.com"
         self.currency_symbol = currency_symbol
         self.allowed_apis = allowed_apis
         self.exchange_name = "Live Coin Watch"
@@ -46,9 +46,13 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
         self.short_url = "https://bit.ly/2w6Q0P0"
 
     async def _update(self, timeout=10.0):
-        method = "/coin/{}".format(self.currency_symbol)
+        method = "/markets?currency=USD&coin={}".format(self.currency_symbol)
 
         data = await self._get_json_from_url(self._SERVER_URL+method)
+
+        # import pprint
+        # print(self._SERVER_URL+method)
+        # pprint.pprint(data)
 
         volume_usd = 0
         volume_usd_eth = 0
@@ -70,18 +74,18 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
             # last_price_in_eth = data['data'][0]['rate']
             # last_eth_price = data['data'][0]['lastq']
             base_pair = exchange_data['quote']
-            relative_volume = float(exchange_data['volumep'])
+            relative_volume = float(exchange_data['volume'])
 
             # NOTE: this entire if statement is ONLY to collect price of eth and btc
             if base_pair == "ETH":
                 # average price of base pairs, they are NOT all the same
-                wavg_eth_price_usd.add(exchange_data['lastq'], relative_volume)
+                wavg_eth_price_usd.add(exchange_data['usdq'], relative_volume)
             elif (base_pair in ["AUD", "CAD", "CNY", "DAI", "EUR", "EURO", "GBP", "JPY", "KRW", "RUB", "USDT", "USD"]):
                 # allow all fiat pairings to count towards volume
                 pass
             elif (base_pair in ["BTC"]):
                 # average price of base pairs, they are NOT all the same
-                wavg_btc_price_usd.add(exchange_data['lastq'], relative_volume)
+                wavg_btc_price_usd.add(exchange_data['usdq'], relative_volume)
                 # allow BTC pairings to count towards volume
                 pass
             else:
@@ -90,7 +94,7 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
 
             # only let allowed_apis to count toward price
             if self.allowed_apis == 'all' or exchange_data['exchange'] in self.allowed_apis:
-                wavg_price_usd.add(exchange_data['usd'], relative_volume)
+                wavg_price_usd.add(exchange_data['usdb'], relative_volume)
                 volume_usd += exchange_data['volume']
                 
                 if base_pair == "ETH":
@@ -104,7 +108,11 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
         self.price_usd = wavg_price_usd.average()
 
         self.eth_price_usd = wavg_eth_price_usd.average()
+        if self.eth_price_usd == 0:
+            self.eth_price_usd = None
         self.btc_price_usd = wavg_btc_price_usd.average()
+        if self.btc_price_usd == 0:
+            self.btc_price_usd = None
 
         if self.currency_symbol == "ETH":
             self.price_eth = 1
@@ -133,11 +141,12 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
             self.price_btc = wavg_price_btc.average()
 
 if __name__ == "__main__":
-    api = LiveCoinWatchAPI('0xBTC')
-    api.load_once_and_print_values()
 
     api = LiveCoinWatchAPI('ETH')
     api.load_once_and_print_values()
 
     api = LiveCoinWatchAPI('BTC')
+    api.load_once_and_print_values()
+
+    api = LiveCoinWatchAPI('0xBTC')
     api.load_once_and_print_values()

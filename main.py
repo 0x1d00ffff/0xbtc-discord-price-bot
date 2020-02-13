@@ -492,12 +492,12 @@ def main():
     exchange_manager = exchanges.MultiExchangeManager(
     [
         exchanges.CoinMarketCapAPI(config.TOKEN_SYMBOL),
-        exchanges.CoinMarketCapAPI('ETH'),
-        exchanges.CoinMarketCapAPI('BTC'),
+        exchanges.LiveCoinWatchAPI('ETH'),
+        exchanges.LiveCoinWatchAPI('BTC'),
         exchanges.IDEXAPI(config.TOKEN_SYMBOL),
         exchanges.MercatoxAPI(config.TOKEN_SYMBOL),
-        exchanges.ZxchangeAPI(config.TOKEN_SYMBOL),
         exchanges.UniswapAPI(config.TOKEN_SYMBOL),
+        exchanges.ZxchangeAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed coinexchange. homepage says closed.
         # exchanges.CoinExchangeAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed enclaves. blocks all usa traffic.

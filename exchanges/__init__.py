@@ -8,6 +8,7 @@ from .coinmarketcap import CoinMarketCapAPI
 from .mercatox import MercatoxAPI
 #from .hotbit import HotbitAPI
 from .idex import IDEXAPI
+from .livecoinwatch import LiveCoinWatchAPI
 #2/12/20 removed ethex, they might be out of business. homepage says check later.
 #from .ethex import EthexAPI
 #2/12/20 removed coinexchange. homepage says closed.
