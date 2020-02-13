@@ -10,7 +10,7 @@ import time
 
 from .base_exchange import BaseExchangeAPI
 from .uniswap_abi import exchange_abi
-from configuration import ETHEREUM_NODE_URL
+from secret_info import ETHEREUM_NODE_URL
 from constants import SECONDS_PER_ETH_BLOCK
 
 

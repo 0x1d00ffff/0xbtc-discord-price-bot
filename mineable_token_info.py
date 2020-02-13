@@ -39,12 +39,12 @@ import requests
 from urllib.error import URLError
 
 from constants import SECONDS_PER_ETH_BLOCK
-import configuration as config
+import secret_info
 
 
 class MineableTokenInfo():
     def __init__(self, token_address):
-        self._w3 = Web3(Web3.HTTPProvider(config.ETHEREUM_NODE_URL))
+        self._w3 = Web3(Web3.HTTPProvider(secret_info.ETHEREUM_NODE_URL))
 
         self.address = self._w3.toChecksumAddress(token_address)
 

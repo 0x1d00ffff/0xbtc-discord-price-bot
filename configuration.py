@@ -11,9 +11,6 @@ COMMAND_CHARACTER = '!'  # what character should prepend all commands
 
 DATA_FOLDER = './databases/'  # folder to store persistent data (all-time high prices, etc)
 
-# URL for your Ethereum provider. Get one for free at infura.io
-ETHEREUM_NODE_URL = "https://mainnet.infura.io/MnFOXCPE2oOhWpOCyEBT"
-
 # Channel ID to send announcements (for now, all-time-high prices)
 ANNOUNCEMENT_CHANNEL_ID = "412483801265078273"  # 0xbitcoin - trading
 
