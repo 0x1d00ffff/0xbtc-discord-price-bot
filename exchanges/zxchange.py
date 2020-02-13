@@ -29,7 +29,7 @@ from .base_exchange import BaseExchangeAPI
 class ZxchangeAPI(BaseExchangeAPI):
     def __init__(self, currency_symbol):
         super().__init__()
-        self._SERVER_URL = "https://veridex.herokuapp.com/v2/"
+        self._SERVER_URL = "https://dex-backend.verisafe.io/v3/"
         self.exchange_name = "0xChange"
         self.command_names = ['0xchange', 'zxchange', 'change']
         self.short_url = "http://bit.ly/35mgKIz"
