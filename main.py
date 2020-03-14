@@ -497,7 +497,8 @@ def main():
         exchanges.IDEXAPI(config.TOKEN_SYMBOL),
         exchanges.MercatoxAPI(config.TOKEN_SYMBOL),
         exchanges.UniswapAPI(config.TOKEN_SYMBOL),
-        exchanges.ZxchangeAPI(config.TOKEN_SYMBOL),
+        # 3/13/20 removed 0xChange. Will re-enable in the future.
+        # exchanges.ZxchangeAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed coinexchange. homepage says closed.
         # exchanges.CoinExchangeAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed enclaves. blocks all usa traffic.
