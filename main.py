@@ -494,7 +494,8 @@ def main():
         exchanges.CoinMarketCapAPI(config.TOKEN_SYMBOL),
         exchanges.LiveCoinWatchAPI('ETH'),
         exchanges.LiveCoinWatchAPI('BTC'),
-        exchanges.IDEXAPI(config.TOKEN_SYMBOL),
+        # 5/4/20 removed IDEX. They seem to only partially (?) support 0xBTC. They are also a CEX masquerading as a DEX, which is unethical.
+        # exchanges.IDEXAPI(config.TOKEN_SYMBOL),
         exchanges.MercatoxAPI(config.TOKEN_SYMBOL),
         exchanges.UniswapAPI(config.TOKEN_SYMBOL),
         # 3/13/20 removed 0xChange. Will re-enable in the future.
