@@ -83,8 +83,8 @@ class UniswapAPI(BaseExchangeAPI):
                 eth_amount = wei_to_ether(self._w3.toInt(event['topics'][2]))
                 token_amount = self._w3.toInt(event['topics'][3]) / 10**self._decimals
             else:
-                logging.debug('unknown topic txhash', self._w3.toHex(event['transactionHash']))
-                logging.debug('unknown topic topic0', topic0)
+                logging.debug('unknown topic txhash {}'.format(self._w3.toHex(event['transactionHash'])))
+                logging.debug('unknown topic topic0 {}'.format(topic0))
         self._time_volume_last_updated = time.time()
 
     async def _update(self, timeout=10.0):
