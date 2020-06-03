@@ -14,3 +14,6 @@ TOKEN = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 # URL for your Ethereum provider. Get one for free at infura.io
 ETHEREUM_NODE_URL = "mainnet.infura.io/v3/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
+# CoinMarketCap API key. Onle necessary if you want to use the coinmarketcap.py exchange
+# Get one free at https://coinmarketcap.com/api
+COINMARKETCAP_API_KEY = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
