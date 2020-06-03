@@ -118,12 +118,6 @@ GLOBAL_COMMANDS = [
         ["stats", "statistics"],
         "0xBitcoin Stats: <https://0x1d00ffff.github.io/0xBTC-Stats/> (GitHub: <https://github.com/0x1d00ffff/0xBTC-Stats>)"),
     CmdDef(
-        ["miner", "miners", "software", "cosmic", "lttofu", "az", "azlehria", "nabiki", "gaiden", "soliditysha3miner", "amano", "ss3"],
-        ("Azlehria: <https://github.com/azlehria/0xbitcoin-gpuminer/releases>\n"
-         "COSMiC: <https://bitbucket.org/LieutenantTofu/cosmic-v3/downloads/>\n" 
-         "MVIS-Tokenminer: <https://github.com/mining-visualizer/MVis-tokenminer/releases>\n"
-         "SoliditySHA3Miner: <https://github.com/lwYeo/SoliditySHA3Miner/releases>")),
-    CmdDef(
         ["lava"],
         "Lava Wallet: <https://lavawallet.io/> (Development:<https://github.com/lavawallet> and <http://forum.0xbtc.io/c/development/lava-network>)"),
     CmdDef(
@@ -141,6 +135,12 @@ GLOBAL_COMMANDS = [
     CmdDef(
         ["soliditysha3miner", "amano", "ss3"],
         "SoliditySHA3Miner: <https://github.com/lwYeo/SoliditySHA3Miner/releases>"),
+    CmdDef(
+        ["miner", "miners", "software", "cosmic", "lttofu", "az", "azlehria", "nabiki", "gaiden", "soliditysha3miner", "amano", "ss3"],
+        ("Azlehria: <https://github.com/azlehria/0xbitcoin-gpuminer/releases>\n"
+         "COSMiC: <https://bitbucket.org/LieutenantTofu/cosmic-v3/downloads/>\n" 
+         "MVIS-Tokenminer: <https://github.com/mining-visualizer/MVis-tokenminer/releases>\n"
+         "SoliditySHA3Miner: <https://github.com/lwYeo/SoliditySHA3Miner/releases>")),
     CmdDef(
         ["pools"],
         command_handlers.cmd_pools),
