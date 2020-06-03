@@ -289,11 +289,11 @@ async def cmd_era(command_str, discord_message, apis):
     return result
 
 async def cmd_tokens_burned(command_str, discord_message, apis):
-    if apis.token.addr_0_balance == None:
+    if apis.token.lost_token_balance == None:
         return ":shrug:"
 
-    fmt_str = "**{}** {} burned [<https://bit.ly/2AulG0C>]"
-    result = fmt_str.format(apis.token.addr_0_balance, apis.token.symbol)
+    fmt_str = "**{}** {} burned [<https://bit.ly/2AulG0C>, <https://bit.ly/3csDklj>]"
+    result = fmt_str.format(apis.token.lost_token_balance, apis.token.symbol)
     return result
 
 async def cmd_holders(command_str, discord_message, apis):

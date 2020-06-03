@@ -210,6 +210,11 @@ class MineableTokenInfo():
         self.challenge_number = Web3.toHex(self._contract.functions.getChallengeNumber().call())
         self.tokens_minted = self._contract.functions.tokensMinted().call() / self.decimal_divisor
         self.addr_0_balance = self.balance_of('0x0000000000000000000000000000000000000000')
+        if self.address == "0xB6eD7644C69416d67B522e20bC294A9a9B405B31":
+            # 0xBTC contract burned ownership, so tokens there can be considered lost
+            self.lost_token_balance = self.addr_0_balance + self.balance_of('0xB6eD7644C69416d67B522e20bC294A9a9B405B31')
+        else:
+            self.lost_token_balance = self.addr_0_balance
         self._epoch_count = self._contract.functions.epochCount().call()
         self._current_eth_block = self._w3.eth.blockNumber
         eth_blocks_since_last_difficulty_period = self._current_eth_block - self.last_difficulty_start_block
