@@ -9,7 +9,7 @@ from web3 import Web3
 import time
 
 from .base_exchange import BaseExchangeAPI
-from .uniswap_abi import exchange_abi
+from .uniswap_v1_abi import exchange_abi
 from secret_info import ETHEREUM_NODE_URL
 from constants import SECONDS_PER_ETH_BLOCK
 
@@ -20,7 +20,7 @@ def wei_to_ether(amount_in_wei):
 def ether_to_wei(amount_in_ether):
     return int(amount_in_ether * 1000000000000000000.0)
 
-class UniswapAPI(BaseExchangeAPI):
+class Uniswapv1API(BaseExchangeAPI):
     def __init__(self, currency_symbol):
         super().__init__()
         if currency_symbol == "0xBTC":
@@ -33,11 +33,11 @@ class UniswapAPI(BaseExchangeAPI):
             raise RuntimeError("Unknown currency_symbol {}, need to add address to uniswap.py".format(currency_symbol))
 
         self.currency_symbol = currency_symbol
-        self.exchange_name = "Uniswap"
+        self.exchange_name = "Uniswap v1"
         self.command_names = ["uniswap"]
         #self.short_url = "https://bit.ly/2PnLAre"  # main uniswap interface
         #self.short_url = "http://0xbitcoin.trade"  # 0xbtc version of the ui
-        self.short_url = "https://bit.ly/35nae4n"  # main uniswap pre-selected to 0xbtc
+        self.short_url = "https://bit.ly/3d6DqjJ"  # main uniswap pre-selected to 0xbtc
 
         self._time_volume_last_updated = 0
 
@@ -104,5 +104,5 @@ class UniswapAPI(BaseExchangeAPI):
             await self._update_24h_volume()
 
 if __name__ == "__main__":
-    e = UniswapAPI('0xBTC')
+    e = Uniswapv1API('0xBTC')
     e.load_once_and_print_values()

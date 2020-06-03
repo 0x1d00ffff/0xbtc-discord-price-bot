@@ -11,6 +11,9 @@ import asyncio
 
 import json
 
+from requests import Session
+
+
 
 class BaseExchangeAPI():
     def __init__(self):
@@ -35,6 +38,29 @@ class BaseExchangeAPI():
     # TODO: make this function, use it in enclaves
     async def _get_json_from_websocket(self, url, commands):
         pass
+
+    async def _get_json_via_get_request(self, url, parameters, headers):
+        session = Session()
+        session.headers.update(headers)
+
+        try:
+            response = session.get(url, params=parameters)
+        except (ConnectionError, Timeout, TooManyRedirects) as e:
+            raise TimeoutError("api is down - got timeout")
+
+        try:
+            data = json.loads(response.text)
+        except json.decoder.JSONDecodeError:
+            response = response[:2000]
+            if ("be right back" in response
+                or "404 Not Found" in response and "nginx" in response
+                or "Request unsuccessful. Incapsula incident ID" in response):
+                raise TimeoutError("api is down - got error page")
+            else:
+                raise TimeoutError("api sent bad data ({})".format(repr(response)))
+        else:
+            return data
+
 
     async def _get_json_from_url(self, url):
         async def fetch(session, url):
