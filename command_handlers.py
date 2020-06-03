@@ -108,6 +108,11 @@ async def cmd_price(command_str, discord_message, apis):
                                 require_cmd_char=False):
         return await cmd_price_all(command_str, discord_message, apis)
     elif util.string_contains_any(command_str,
+                             ['0xbtc'],
+                             exhaustive_search=True,
+                             require_cmd_char=False):
+        return show_price_from_source(apis)
+    elif util.string_contains_any(command_str,
                              ['btc', 'bitcoin'],
                              exhaustive_search=True,
                              require_cmd_char=False):
