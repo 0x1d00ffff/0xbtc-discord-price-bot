@@ -24,8 +24,8 @@ tokens = (
 ("USDC", "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 6),
 ("0xBTC", "0xB6eD7644C69416d67B522e20bC294A9a9B405B31", 8),
 ("WETH", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 18),
+("DONUT", "0xC0F9bD5Fa5698B6505F643900FFA515Ea5dF54A9", 18),
 ("USDT", "0xdAC17F958D2ee523a2206206994597C13D831ec7", 6),
-
 )
 
 def getTokenAddressFromName(name):
@@ -117,7 +117,8 @@ class Uniswapv2API(BaseExchangeAPI):
         #self._router = self._w3.eth.contract(address=router_address, abi=router_abi)
 
     async def _get_volume_at_exchange_contract(self, exchange_contract, timeout=10.0):
-        volume_tokens = 0
+        volume_tokens = 0  # volume in units of <self.currency_symbol> tokens
+        volume_pair = 0  # volume in units of the paired token
 
         swap_topic = "0xd78ad95fa46c994b6551d0da85fc275fe613ce37657fb8d5e3d130840159d822"
         sync_topic = "0x1c411e9a96e071241c2f21f7726b17ae89e3cab4c78be50e062b03a9fffbbad1"
@@ -128,8 +129,6 @@ class Uniswapv2API(BaseExchangeAPI):
 
         token0_address = exchange_contract.functions.token0().call()
         token1_address = exchange_contract.functions.token1().call()
-        # print('token0_address:', token0_address)
-        # print('token1_address:', token1_address)
 
         current_eth_block = self._w3.eth.blockNumber
         
@@ -139,70 +138,65 @@ class Uniswapv2API(BaseExchangeAPI):
                 'address': exchange_contract.address}):
             topic0 = self._w3.toHex(event['topics'][0])
             if topic0 == swap_topic:
-                print('swap')
+                #print('swap in tx', self._w3.toHex(event['transactionHash']))
                 receipt = self._w3.eth.getTransactionReceipt(event['transactionHash'])
-                parsed_log = exchange_contract.events.Swap().processReceipt(receipt)[0]
-                #sender_address = parsed_log.args.sender
-                #to_address = parsed_log.args.to
-                amount0In = parsed_log.args.amount0In
-                amount1In = parsed_log.args.amount1In
-                amount0Out = parsed_log.args.amount0Out
-                amount1Out = parsed_log.args.amount1Out
-                #block_number = parsed_log.blockNumber
+                parsed_logs = exchange_contract.events.Swap().processReceipt(receipt)
+
+                correct_log = None
+                for log in parsed_logs:
+                    if log.address.lower() == exchange_contract.address.lower():
+                        correct_log = log
+                if correct_log is None:
+                    logging.warning('bad swap transaction {}'.format(self._w3.toHex(event['transactionHash'])))
+                    continue
+
+                #sender_address = correct_log.args.sender
+                #to_address = correct_log.args.to
+                amount0In = correct_log.args.amount0In
+                amount1In = correct_log.args.amount1In
+                amount0Out = correct_log.args.amount0Out
+                amount1Out = correct_log.args.amount1Out
+                #block_number = correct_log.blockNumber
 
                 if getTokenNameFromAddress(token0_address) == self.currency_symbol:
                     # token0 is the tracked currency symbol
                     volume_tokens += abs((amount0In - amount0Out) / 10**getTokenDecimalsFromAddress(token0_address))
+                    volume_pair += abs((amount1In - amount1Out) / 10**getTokenDecimalsFromAddress(token1_address))
                 elif getTokenNameFromAddress(token1_address) == self.currency_symbol:
                     # token1 is the tracked currency symbol
                     volume_tokens += abs((amount1In - amount1Out) / 10**getTokenDecimalsFromAddress(token1_address))
+                    volume_pair += abs((amount0In - amount0Out) / 10**getTokenDecimalsFromAddress(token0_address))
 
-                # if (amount0In - amount0Out) > 0 and (amount1In - amount1Out) < 0:
-                #     # user trades token0 for token1
-                #     pass
-                # elif (amount0In - amount0Out) < 0 and (amount1In - amount1Out) > 0:
-                #     # user trades token1 for token0
-                #     pass
-                # else:
-                #     logging.debug('trade with some weird numbers... txhash={}'.format(self._w3.toHex(event['transactionHash'])))
-                #     logging.debug('amount0In:'.format(amount0In))
-                #     logging.debug('amount1In:'.format(amount1In))
-                #     logging.debug('amount0Out:'.format(amount0Out))
-                #     logging.debug('amount1Out:'.format(amount1Out))
-                #     continue
-
-                print('    token', token0_address, 'send to exchange', (amount0In - amount0Out) / 10**getTokenDecimalsFromAddress(token0_address), getTokenNameFromAddress(token0_address))
-                print('    token', token1_address, 'send to exchange', (amount1In - amount1Out) / 10**getTokenDecimalsFromAddress(token1_address), getTokenNameFromAddress(token1_address))
+                # print('    token', getTokenNameFromAddress(token0_address), 'send to exchange', (amount0In - amount0Out) / 10**getTokenDecimalsFromAddress(token0_address), getTokenNameFromAddress(token0_address))
+                # print('    token', getTokenNameFromAddress(token1_address), 'send to exchange', (amount1In - amount1Out) / 10**getTokenDecimalsFromAddress(token1_address), getTokenNameFromAddress(token1_address))
 
                 continue
 
-            elif topic0 == sync_topic:
-                # skip liquidity deposits/withdrawals
-                continue
-            elif topic0 == burn_topic:
-                # skip liquidity deposits/withdrawals
-                continue
-            elif topic0 == transfer_topic:
-                # skip liquidity deposits/withdrawals
-                continue
-            elif topic0 == approval_topic:
-                # skip liquidity deposits/withdrawals
-                continue
             elif topic0 == mint_topic:
                 # skip liquidity deposits/withdrawals
+                continue
+            elif topic0 == sync_topic:
+                continue
+            elif topic0 == burn_topic:
+                continue
+            elif topic0 == transfer_topic:
+                continue
+            elif topic0 == approval_topic:
                 continue
             else:
                 logging.debug('unknown topic txhash {}'.format(self._w3.toHex(event['transactionHash'])))
                 logging.debug('unknown topic topic0 {}'.format(topic0))
 
-        return volume_tokens
+        return volume_tokens, volume_pair
 
     async def _update_24h_volume(self, timeout=10.0):
-        self.volume_tokens = 0
+        total_volume_tokens = 0
         for exchange_contract in self._exchanges:
-            self.volume_tokens += await self._get_volume_at_exchange_contract(exchange_contract)
+            volume_tokens, volume_pair = await self._get_volume_at_exchange_contract(exchange_contract)
+            total_volume_tokens += volume_tokens
 
-        self._time_volume_last_updated = time.time()
+            #print('volume: {} {} was traded for {} tokens of the paired currency'.format(volume_tokens, self.currency_symbol, volume_pair))
+        return total_volume_tokens
 
     async def _update(self, timeout=10.0):
         self.price_eth = self.get_price("WETH", self.currency_symbol)
@@ -219,7 +213,9 @@ class Uniswapv2API(BaseExchangeAPI):
 
         # update volume once every hour since it (potentially) loads eth api
         if time.time() - self._time_volume_last_updated > 60*60:
-            await self._update_24h_volume()
+            self.volume_tokens = await self._update_24h_volume()
+            self.volume_eth = self.volume_tokens * self.price_eth
+            self._time_volume_last_updated = time.time()
 
     # returns the number of token1 tokens you can buy for a given number of token0 tokens
     def get_swap_amount(self, amount, token0_name, token1_name):
