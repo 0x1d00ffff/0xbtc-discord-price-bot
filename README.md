@@ -1,7 +1,7 @@
 # 0xbtc-discord-price-bot
-bot to monitor/post price etc to the 0xbtc discord server [link to the discord](https://discord.gg/rQbhv7u)
+Bot to monitor/post price etc to the 0xbtc discord server ([link to the discord](https://discord.gg/rQbhv7u))
 
-\[[how to add an exchange](#adding-an-exchange)\] \[[how to add a command](#adding-a-command)\]
+\[[How to add an exchange](#adding-an-exchange)\] \[[How to add a command](#adding-a-command)\]
 
 ##### Installation:
 
@@ -95,8 +95,9 @@ bot to monitor/post price etc to the 0xbtc discord server [link to the discord](
  - new exchanges
    - tokenjar [link](https://tokenjar.io/0xbtc)
    - tokenstore [link](https://token.store/trade/0xBTC)
-   - payfair [link](https://payfair.io/?coin=0XBTC&tradeType=sell&currency=USD)
+   - Page down ~~payfair [link](https://payfair.io/?coin=0XBTC&tradeType=sell&currency=USD)~~
    - instex [link](https://app.instex.io/0xBTC-WETH)
    - cryptobridge (not yet)
    - ddex.io
    - Rootrex
+   - Altilly (CEX) [link](https://www.altilly.com/market/0xBTC_ETH)

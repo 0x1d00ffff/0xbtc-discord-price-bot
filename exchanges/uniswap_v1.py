@@ -10,6 +10,7 @@ import time
 
 from .base_exchange import BaseExchangeAPI
 from .uniswap_v1_abi import exchange_abi
+from .erc20_abi import erc20_abi
 from secret_info import ETHEREUM_NODE_URL
 from constants import SECONDS_PER_ETH_BLOCK
 
@@ -25,9 +26,15 @@ class Uniswapv1API(BaseExchangeAPI):
         super().__init__()
         if currency_symbol == "0xBTC":
             self.uniswap_exchange_address = "0x701564Aa6E26816147D4fa211a0779F1B774Bb9B"
+            self.currency_address = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31"
             self._decimals = 8
+        elif currency_symbol == "DAI":
+            self.uniswap_exchange_address = "0x2a1530C4C41db0B0b2bB646CB5Eb1A67b7158667"
+            self.currency_address = "0x6B175474E89094C44Da98b954EedeAC495271d0F"
+            self._decimals = 18
         elif currency_symbol == "XXX":
             self.uniswap_exchange_address = "0x0000000000000000000000000000000000000000"
+            self.currency_address = "0x0000000000000000000000000000000000000000"
             self._decimals = 0
         else:
             raise RuntimeError("Unknown currency_symbol {}, need to add address to uniswap.py".format(currency_symbol))
@@ -99,10 +106,34 @@ class Uniswapv1API(BaseExchangeAPI):
 
         self.price_eth = average_eth_amount / amount_tokens
 
+        # TODO: maybe don't do this? DAI isn't always 1:1 pegged to USD
+        if self.currency_symbol == "DAI":
+            self.eth_price_usd = 1 / self.price_eth
+
         # update volume once every hour since it (potentially) loads eth api
         if time.time() - self._time_volume_last_updated > 60*60:
             await self._update_24h_volume()
 
+    # get the eth and token balance of a particular address in a uniswap v1 pool
+    def get_pooled_balance_for_address(self, owner_address):
+        all_ownership_tokens = self._exchange.functions.totalSupply().call()
+        ownership_tokens_in_address = self._exchange.functions.balanceOf(owner_address).call()
+        ownership_percentage = ownership_tokens_in_address / all_ownership_tokens
+
+        eth_balance, token_balance = self.get_reserves()
+
+        return eth_balance * ownership_percentage, token_balance * ownership_percentage
+
+    # get the reserves, in eth and tokens, of a particular uniswap v1 pool
+    def get_reserves(self):
+        eth_balance = wei_to_ether(self._w3.eth.getBalance(self.uniswap_exchange_address))
+        token_contract = self._w3.eth.contract(address=self.currency_address, abi=erc20_abi)
+        token_balance = token_contract.functions.balanceOf(self.uniswap_exchange_address).call() / 10**self._decimals
+
+        return eth_balance, token_balance
+
 if __name__ == "__main__":
     e = Uniswapv1API('0xBTC')
+    e.load_once_and_print_values()
+    e = Uniswapv1API('DAI')
     e.load_once_and_print_values()

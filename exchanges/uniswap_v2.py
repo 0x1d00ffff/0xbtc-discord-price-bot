@@ -240,7 +240,20 @@ class Uniswapv2API(BaseExchangeAPI):
         #     reserves[1]).call()
         return amount_out / 10**token1_decimals
 
-    # returns the number of token1 tokens you can buy for a given number of token0 tokens
+    # get the balance of a particular address in a uniswap v2 pool
+    def get_pooled_balance_for_address(self, token0_name, token1_name, owner_address):
+        exchange_address, _, _ = getExchangeAddressForTokenPair(token0_name, token1_name)
+        exchange = self._w3.eth.contract(address=exchange_address, abi=exchange_abi)
+
+        all_ownership_tokens = exchange.functions.totalSupply().call()
+        ownership_tokens_in_address = exchange.functions.balanceOf(owner_address).call()
+        ownership_percentage = ownership_tokens_in_address / all_ownership_tokens
+
+        reserves = self.get_reserves(token0_name, token1_name)
+
+        return reserves[0] * ownership_percentage, reserves[1] * ownership_percentage
+
+    # get the reserves, in tokens, of a particular uniswap v2 pool
     def get_reserves(self, token0_name, token1_name):
         token0_decimals = getTokenDecimalsFromName(token0_name)
         token1_decimals = getTokenDecimalsFromName(token1_name)
@@ -280,6 +293,7 @@ if __name__ == "__main__":
     e.load_once_and_print_values()
     print()
     print('0xbtc-weth liquidity in eth', e.liquidity_eth)
+
     # e = Uniswapv2API('DAI')
     # e.load_once_and_print_values()
 
