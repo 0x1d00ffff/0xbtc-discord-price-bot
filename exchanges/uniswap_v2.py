@@ -93,6 +93,62 @@ def get_amount_out__uniswap_router(amountIn, reserveIn, reserveOut):
     denominator = (reserveIn * 1000) + amountInWithFee
     return numerator / denominator
 
+def get_swap_amount(web3, amount, token0_name, token1_name):
+    """Returns the number of token1 tokens you can buy for a given number of 
+    token0 tokens"""
+    exchange_address, first_token_name, second_token_name = getExchangeAddressForTokenPair(token0_name, token1_name)
+    exchange = web3.eth.contract(address=exchange_address, abi=exchange_abi)
+    reserves = exchange.functions.getReserves().call()
+    if token0_name == second_token_name:
+        reserves[0], reserves[1] = reserves[1], reserves[0]
+
+    token0_decimals = getTokenDecimalsFromName(token0_name)
+    token1_decimals = getTokenDecimalsFromName(token1_name)
+
+    # TODO: replace this with the real function (commented below) once web3.py
+    # supports solidity >= 0.6
+    amount_out = get_amount_out__uniswap_router(
+        amount * 10**token0_decimals,
+        reserves[0],
+        reserves[1])
+    # amount_out = self._router.functions.getAmountOut(
+    #     amount * 10**token0_decimals, 
+    #     reserves[0], 
+    #     reserves[1]).call()
+    return amount_out / 10**token1_decimals
+
+def get_pooled_balance_for_address(web3, token0_name, token1_name, owner_address):
+    """get the balance of a particular address in a uniswap v2 pool"""
+    exchange_address, _, _ = getExchangeAddressForTokenPair(token0_name, token1_name)
+    exchange = web3.eth.contract(address=exchange_address, abi=exchange_abi)
+
+    all_ownership_tokens = exchange.functions.totalSupply().call()
+    ownership_tokens_in_address = exchange.functions.balanceOf(owner_address).call()
+    ownership_percentage = ownership_tokens_in_address / all_ownership_tokens
+
+    reserves = get_reserves(web3, token0_name, token1_name)
+
+    return reserves[0] * ownership_percentage, reserves[1] * ownership_percentage
+
+def get_reserves(web3, token0_name, token1_name):
+    """get the reserves, in tokens, of a particular uniswap v2 pool"""
+    token0_decimals = getTokenDecimalsFromName(token0_name)
+    token1_decimals = getTokenDecimalsFromName(token1_name)
+    exchange_address, first_token_name, second_token_name = getExchangeAddressForTokenPair(token0_name, token1_name)
+    exchange = web3.eth.contract(address=exchange_address, abi=exchange_abi)
+    reserves = exchange.functions.getReserves().call()
+    reserves[0] = reserves[0] / 10**getTokenDecimalsFromName(first_token_name)
+    reserves[1] = reserves[1] / 10**getTokenDecimalsFromName(second_token_name)
+
+    if token0_name == second_token_name:
+        reserves[0], reserves[1] = reserves[1], reserves[0]
+
+    return reserves[0], reserves[1]
+
+def get_price(web3, token0_name, token1_name):
+    """Get the price at a particular uniswap v2 pool, in terms of token0 / token1"""
+    reserves = get_reserves(web3, token0_name, token1_name)
+    return reserves[0] / reserves[1]
 
 
 class Uniswapv2API(BaseExchangeAPI):
@@ -199,13 +255,13 @@ class Uniswapv2API(BaseExchangeAPI):
         return total_volume_tokens
 
     async def _update(self, timeout=10.0):
-        self.price_eth = self.get_price("WETH", self.currency_symbol)
-        self.liquidity_eth = self.get_reserves("WETH", self.currency_symbol)[0]
+        self.price_eth = get_price(self._w3, "WETH", self.currency_symbol)
+        self.liquidity_eth = get_reserves(self._w3, "WETH", self.currency_symbol)[0]
 
         eth_prices = [
-            self.get_price("DAI", "WETH"),
-            self.get_price("USDT", "WETH"),
-            self.get_price("USDC", "WETH"),
+            get_price(self._w3, "DAI", "WETH"),
+            get_price(self._w3, "USDT", "WETH"),
+            get_price(self._w3, "USDC", "WETH"),
         ]
         # TODO: weighted average would be better than a simple average
         self.eth_price_usd = sum(eth_prices) / len(eth_prices)
@@ -217,79 +273,29 @@ class Uniswapv2API(BaseExchangeAPI):
             self.volume_eth = self.volume_tokens * self.price_eth
             self._time_volume_last_updated = time.time()
 
-    # returns the number of token1 tokens you can buy for a given number of token0 tokens
-    def get_swap_amount(self, amount, token0_name, token1_name):
-        exchange_address, first_token_name, second_token_name = getExchangeAddressForTokenPair(token0_name, token1_name)
-        exchange = self._w3.eth.contract(address=exchange_address, abi=exchange_abi)
-        reserves = exchange.functions.getReserves().call()
-        if token0_name == second_token_name:
-            reserves[0], reserves[1] = reserves[1], reserves[0]
-
-        token0_decimals = getTokenDecimalsFromName(token0_name)
-        token1_decimals = getTokenDecimalsFromName(token1_name)
-
-        # TODO: swap this for the real function (commented below) once web3.py
-        # supports solidity >= 0.6
-        amount_out = get_amount_out__uniswap_router(
-            amount * 10**token0_decimals,
-            reserves[0],
-            reserves[1])
-        # amount_out = self._router.functions.getAmountOut(
-        #     amount * 10**token0_decimals, 
-        #     reserves[0], 
-        #     reserves[1]).call()
-        return amount_out / 10**token1_decimals
-
-    # get the balance of a particular address in a uniswap v2 pool
-    def get_pooled_balance_for_address(self, token0_name, token1_name, owner_address):
-        exchange_address, _, _ = getExchangeAddressForTokenPair(token0_name, token1_name)
-        exchange = self._w3.eth.contract(address=exchange_address, abi=exchange_abi)
-
-        all_ownership_tokens = exchange.functions.totalSupply().call()
-        ownership_tokens_in_address = exchange.functions.balanceOf(owner_address).call()
-        ownership_percentage = ownership_tokens_in_address / all_ownership_tokens
-
-        reserves = self.get_reserves(token0_name, token1_name)
-
-        return reserves[0] * ownership_percentage, reserves[1] * ownership_percentage
-
-    # get the reserves, in tokens, of a particular uniswap v2 pool
-    def get_reserves(self, token0_name, token1_name):
-        token0_decimals = getTokenDecimalsFromName(token0_name)
-        token1_decimals = getTokenDecimalsFromName(token1_name)
-        exchange_address, first_token_name, second_token_name = getExchangeAddressForTokenPair(token0_name, token1_name)
-        exchange = self._w3.eth.contract(address=exchange_address, abi=exchange_abi)
-        reserves = exchange.functions.getReserves().call()
-        reserves[0] = reserves[0] / 10**getTokenDecimalsFromName(first_token_name)
-        reserves[1] = reserves[1] / 10**getTokenDecimalsFromName(second_token_name)
-
-        if token0_name == second_token_name:
-            reserves[0], reserves[1] = reserves[1], reserves[0]
-
-        return reserves[0], reserves[1]
-
-    def get_price(self, token0_name, token1_name):
-        reserves = self.get_reserves(token0_name, token1_name)
-        return reserves[0] / reserves[1]
 
 
 if __name__ == "__main__":
+    # run some generic uniswap v2 functions
+    web3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
+    print('$1 in USDC will swap for {} 0xBTC tokens'.format(get_swap_amount(web3, 1, "USDC", "0xBTC")))
+    print('$1 in DAI will swap for {} 0xBTC tokens'.format(get_swap_amount(web3, 1, "DAI", "0xBTC")))
+    print('1 0xBTC token will swap for {} DAI'.format(get_swap_amount(web3, 1, "0xBTC", "DAI")))
+    print('100 0xBTC tokens will swap for {} DAI'.format(get_swap_amount(web3, 100, "0xBTC", "DAI")))
+    print('1 ETH will swap for {} DAI'.format(get_swap_amount(web3, 1, "WETH", "DAI")))
+    print('230 DAI will swap for {} ETH'.format(get_swap_amount(web3, 230, "DAI", "WETH")))
+    print('0xbtc and ETH balances:', get_reserves(web3, "0xBTC", "WETH"))
+    # print('0xbtc and ETH price:', e.get_price("0xBTC", "WETH"), "0xBTC per ETH")
+    # print('0xbtc and ETH price:', e.get_price("WETH", "0xBTC"), "ETH per 0xBTC")
+    print()
+    print('eth usdc reserves ', get_reserves(web3, "WETH", "USDC"))
+    print('1 in ETH will swap for {} USDC '.format(get_swap_amount(web3, 1, "WETH", "USDC")))
+    print('1 in ETH will swap for {} USDT '.format(get_swap_amount(web3, 1, "WETH", "USDT")))
+    print('1 in ETH will swap for {} DAI '.format(get_swap_amount(web3, 1, "WETH", "DAI")))
+    print()
+
+    # get some data from 0xBTC pool via Uniswapv2API
     e = Uniswapv2API('0xBTC')
-    print('$1 in USDC will swap for {} 0xBTC tokens'.format(e.get_swap_amount(1, "USDC", "0xBTC")))
-    print('$1 in DAI will swap for {} 0xBTC tokens'.format(e.get_swap_amount(1, "DAI", "0xBTC")))
-    print('1 0xBTC token will swap for {} DAI'.format(e.get_swap_amount(1, "0xBTC", "DAI")))
-    print('100 0xBTC tokens will swap for {} DAI'.format(e.get_swap_amount(100, "0xBTC", "DAI")))
-    print('1 ETH will swap for {} DAI'.format(e.get_swap_amount(1, "WETH", "DAI")))
-    print('230 DAI will swap for {} ETH'.format(e.get_swap_amount(230, "DAI", "WETH")))
-    print('0xbtc and ETH balances:', e.get_reserves("0xBTC", "WETH"))
-    print('0xbtc and ETH price:', e.get_price("0xBTC", "WETH"), "0xBTC per ETH")
-    print('0xbtc and ETH price:', e.get_price("WETH", "0xBTC"), "ETH per 0xBTC")
-    print()
-    print('eth usdc reserves ', e.get_reserves("WETH", "USDC"))
-    print('1 in ETH will swap for {} USDC '.format(e.get_swap_amount(1, "WETH", "USDC")))
-    print('1 in ETH will swap for {} USDT '.format(e.get_swap_amount(1, "WETH", "USDT")))
-    print('1 in ETH will swap for {} DAI '.format(e.get_swap_amount(1, "WETH", "DAI")))
-    print()
     e.load_once_and_print_values()
     print()
     print('0xbtc-weth liquidity in eth', e.liquidity_eth)

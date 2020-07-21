@@ -1,3 +1,8 @@
+# Interface for fetching prices for online exchanges
+#
+# Initialize MultiExchangeManager with a list of exchange objects to aggregate prices.
+#
+
 from .multi_exchange_manager import MultiExchangeManager
 
 from .coinmarketcap import CoinMarketCapAPI
