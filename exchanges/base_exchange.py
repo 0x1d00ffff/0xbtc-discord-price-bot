@@ -47,6 +47,9 @@ class BaseExchangeAPI():
             response = session.get(url, params=parameters)
         except (ConnectionError, Timeout, TooManyRedirects) as e:
             raise TimeoutError("api is down - got timeout")
+        finally:
+            # close session to avoid ResourceWarning: unclosed <ssl.SSLSocket...
+            session.close()
 
         try:
             data = json.loads(response.text)

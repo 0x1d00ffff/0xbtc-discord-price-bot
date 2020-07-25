@@ -6,18 +6,7 @@ Bot to monitor/post price etc to the 0xbtc discord server ([link to the discord]
 ##### Installation:
 
 1. Clone this repository
-2. Install python 3.6 (NOT 3.5 or 3.7)
-   - For debian 9 users: Debian 9 repositories only go up to python 3.5, so to
-     install the latest 3.6.x python version:
-     - `sudo apt install build-essential checkinstall libreadline-gplv2-dev 
-        libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev 
-        libc6-dev libbz2-dev libffi-dev`
-     - `wget https://www.python.org/ftp/python/3.6.7/Python-3.6.7.tgz`
-     - `tar xf Python-3.6.7.tgz`
-     - `cd Python-3.6.7/`
-     - `./configure --enable-optimizations --with-ensurepip=install`
-     - `make -j2` (or `make -j8` if you have a cpu with lots of threads)
-     - `sudo make altinstall`
+2. Install python 3.8. Other versions may work also, but I have not tested them.
 3. run `pip3 install -r requirements.txt`
    - For for Windows Users: This command failed for me with error:
    `error: command 'C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\BIN\\link.exe' failed with exit status 1158`

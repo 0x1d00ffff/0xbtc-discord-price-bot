@@ -5,6 +5,10 @@
 TODO: move commands out of main.py, this file is getting long
 """
 
+# supress deprecation warnings within websockets and web3
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
 import sys
 # TODO: after upgrading discord.py to rewrite, change to >=3.6
 assert sys.version_info != (3,6), "requires python 3.6"
@@ -16,6 +20,7 @@ import websockets  # for websockets.exceptions.ConnectionClosed
 import asyncio
 import logging
 import discord
+from discord.ext import tasks  # background_update is a task now
 from secret_info import TOKEN
 from reconnecting_bot import keep_running
 
@@ -43,16 +48,16 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.3.11"
+_VERSION = "0.4.0"
 
 
 old_status_string = None
 async def update_status(client, status_string):
     global old_status_string
     if status_string != old_status_string:
-        await client.change_presence(game=discord.Game(name=status_string),
-                                     status=discord.Status('online'),
-                                     afk=False)
+        await client.change_presence(activity=discord.Activity(
+            type=discord.ActivityType.playing,
+            name=status_string))
 
 async def send_message_to_user_by_id(apis, user_id, message):
     user = discord.utils.get(apis.client.get_all_members(), id=user_id)
@@ -133,67 +138,70 @@ async def check_update_all_time_high(apis):
     except:
         logging.exception('Failed to save ATH data')
 
+@tasks.loop(seconds=config.UPDATE_RATE)
 async def background_update():
-    await client.wait_until_ready()
-    while not client.is_closed:
-        try:
-            await apis.exchanges.update()
-        except RuntimeError as e:
-            logging.warning('Failed to update exchange APIs: {}'.format(str(e)))
-        except:
-            logging.exception('Failed to update exchange APIs')
+    try:
+        await apis.exchanges.update()
+    except RuntimeError as e:
+        logging.warning('Failed to update exchange APIs: {}'.format(str(e)))
+    except:
+        logging.exception('Failed to update exchange APIs')
 
-        try:
-            apis.token.update()
-        except RuntimeError as e:
-            logging.warning('Failed to update contract info: {}'.format(str(e)))
-        except:
-            logging.exception('Failed to update contract info')
+    try:
+        apis.token.update()
+    except RuntimeError as e:
+        logging.warning('Failed to update contract info: {}'.format(str(e)))
+    except:
+        logging.exception('Failed to update contract info')
 
-        if (time.time() - apis.storage.last_holders_update_timestamp.get()) / 3600.0 > config.TOKEN_HOLDER_UPDATE_RATE_HOURS:
-            try:
-                etherscan.update_saved_holders_chart(config.TOKEN_NAME,
-                                                     config.TOKEN_ETH_ADDRESS,
-                                                     apis.token.tokens_minted)
-                apis.storage.last_holders_update_timestamp.set(time.time())
-            except TimeoutError:
-                logging.warning('Failed to update token holders chart')
-            except:
-                logging.exception('Failed to update token holders chart')
-            else:
-                logging.info('Updated token holders chart')
+    # removed holders chart updates until etherscan.py works again
+    #
+    # if (time.time() - apis.storage.last_holders_update_timestamp.get()) / 3600.0 > config.TOKEN_HOLDER_UPDATE_RATE_HOURS:
+    #     try:
+    #         etherscan.update_saved_holders_chart(config.TOKEN_NAME,
+    #                                              config.TOKEN_ETH_ADDRESS,
+    #                                              apis.token.tokens_minted)
+    #         apis.storage.last_holders_update_timestamp.set(time.time())
+    #     except TimeoutError:
+    #         logging.warning('Failed to update token holders chart')
+    #     except:
+    #         logging.exception('Failed to update token holders chart')
+    #     else:
+    #         logging.info('Updated token holders chart')
 
+    try:
         await check_update_all_time_high(apis)
+    except:
+        logging.exception('Failed to check all time high')
 
-        try:
-            price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
-            price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
-            # usd price is hidden if it is 0 (an error)
-            usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
+    try:
+        price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
+        price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
+        # usd price is hidden if it is 0 (an error)
+        usd_str = "" if price_usd == 0 else "${:.2f}  |  ".format(price_usd)
 
-            # show hashrate if available, otherwise show 'time since last update'
-            if apis.token.estimated_hashrate_since_readjustment is not None and apis.token.estimated_hashrate_since_readjustment > 0:
-                end_of_status = formatting_helpers.to_readable_thousands(apis.token.estimated_hashrate_since_readjustment, unit_type='short_hashrate')
-            else:
-                end_of_status = formatting_helpers.seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time())
+        # show hashrate if available, otherwise show 'time since last update'
+        if apis.token.estimated_hashrate_since_readjustment is not None and apis.token.estimated_hashrate_since_readjustment > 0:
+            end_of_status = formatting_helpers.to_readable_thousands(apis.token.estimated_hashrate_since_readjustment, unit_type='short_hashrate')
+        else:
+            end_of_status = formatting_helpers.seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time())
 
-            # wait until at least one successful update to show status
-            if apis.exchanges.last_updated_time() != 0:
-                fmt_str = "{}{} Ξ ({})"
-                await update_status(client, fmt_str.format(usd_str,
-                                                           formatting_helpers.prettify_decimals(price_eth),
-                                                           end_of_status))
-        except (websockets.exceptions.ConnectionClosed,
-                RuntimeError) as e:
-            logging.warning('Falied to change status: {}'.format(str(e)))
-        except:
-            logging.exception('Failed to change status')
+        # wait until at least one successful update to show status
+        if apis.exchanges.last_updated_time() != 0:
+            fmt_str = "{}{} Ξ ({})"
+            await update_status(client, fmt_str.format(usd_str,
+                                                       formatting_helpers.prettify_decimals(price_eth),
+                                                       end_of_status))
+    except (websockets.exceptions.ConnectionClosed,
+            RuntimeError) as e:
+        logging.warning('Falied to change status: {}'.format(str(e)))
+    except:
+        logging.exception('Failed to change status')
 
-        await asyncio.sleep(config.UPDATE_RATE)
-
-    # this throws an exception which causes the program to restart
-    # in normal operation we should never reach this
-    raise RuntimeError('background_update loop stopped - something is wrong')
+@background_update.before_loop
+async def before_background_update():
+    # prevent background_update loops from starting until bot is ready
+    await apis.client.wait_until_ready()
 
 async def send_discord_msg_to_channel(channel, message):
     # don't send messages that are only 'OK-noresponse' (this indicates
@@ -210,7 +218,7 @@ async def send_discord_msg_to_channel(channel, message):
         return
 
     try:
-        await client.send_message(channel, message)
+        await channel.send(message)
     except discord.errors.Forbidden:
         logging.debug('no permission in channel: {} [{}]'.format(channel.name, channel.id))
 
@@ -263,19 +271,9 @@ async def process_message(message):
     if message_contents.startswith(config.COMMAND_CHARACTER):
         logging.info('UNKNOWN cmd {}'.format(repr(message_contents)))
 
-def configure_discord_client():
-    client.loop.create_task(background_update())
-
-    @client.event
-    async def on_message(message):
-        await process_message(message)
-
-    @client.event
-    async def on_ready():
-        show_startup_info(client)
 
 def show_startup_info(client):
-    logging.info('Logged in to {} servers as {} id:{}'.format(len(client.servers),
+    logging.info('Logged in to {} servers as {} id:{}'.format(len(client.guilds),
                                                               client.user.name,
                                                               client.user.id))
 
@@ -445,8 +443,8 @@ def speed_test():
     return
 
 # todo: encapsulate these
-client = None
 apis = None
+client = None
 
 class APIWrapper():
     def __init__(self, client, storage, exchanges, token, start_time):
@@ -461,6 +459,7 @@ def main():
     import argparse
     import os
 
+    # TODO: make client NOT global.
     global client, apis
     
     parser = argparse.ArgumentParser(description='{} v{}'.format(_PROGRAM_NAME, _VERSION),
@@ -541,25 +540,46 @@ def main():
         except (SystemExit, KeyboardInterrupt):
             return
     else:
-        logging.info('Starting {} version {}'.format(_PROGRAM_NAME, _VERSION))
-        logging.debug('discord.py version {}'.format(discord.__version__))
+        logging.info('{} v{}, discord.py v{}'.format(_PROGRAM_NAME, _VERSION, discord.__version__))
 
         while True:
             client = discord.Client()
+
+            @client.event
+            async def on_message(message):
+                await process_message(message)
+
+            @client.event
+            async def on_ready():
+                show_startup_info(client)
+
             apis = APIWrapper(client, storage, exchange_manager, token, start_time)
-            configure_discord_client()
+
             try:
-                asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
+                background_update.cancel()  # stops the task only if it is running
+                background_update.start()
+                client.run(TOKEN)
             except (SystemExit, KeyboardInterrupt):
                 raise
             except:
                 logging.exception('Unexpected error from Discord... retrying')
                 time.sleep(10)  # wait a little time to prevent cpu spins
-                try:
-                    asyncio.get_event_loop().run_until_complete(client.close())
-                    asyncio.get_event_loop().run_until_complete(client.logout())
-                except:
-                    pass
+
+            # old reconnecting-bot code used with discord 0.16. if discord 1.0+ still
+            # has reconnecting issues, it will need to be used again
+            #
+            # try:
+            #     asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
+            # except (SystemExit, KeyboardInterrupt):
+            #     raise
+            # except:
+            #     logging.exception('Unexpected error from Discord... retrying')
+            #     time.sleep(10)  # wait a little time to prevent cpu spins
+            #     try:
+            #         asyncio.get_event_loop().run_until_complete(client.close())
+            #         asyncio.get_event_loop().run_until_complete(client.logout())
+            #     except:
+            #         pass
 
 if __name__ == "__main__":
     main()

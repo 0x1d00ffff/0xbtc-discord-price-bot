@@ -5,7 +5,7 @@
 
 import re
 import multiprocessing
-
+import atexit
 import subprocess
 import platform
 
@@ -66,6 +66,8 @@ def ping_list(ip_list, count=4):
         ping_list.pool
     except AttributeError:
         ping_list.pool = multiprocessing.Pool(_MAX_THREADS)
+        # close pool at exit to avoid exception "'NoneType' object has no attribute 'dumps'""
+        atexit.register(ping_list.pool.close)
 
     raw_results = ping_list.pool.map_async(get_ping_time, ip_list, count).get(999)
     return list(zip(ip_list, raw_results))

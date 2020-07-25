@@ -2,7 +2,7 @@
 import logging
 import math
 import os
-
+import re
 import datetime
 import time
 
@@ -116,19 +116,25 @@ def _generate_holders_chart(token_name, holders, total_supply, output_filename):
                    facecolor='#a9a9a9', transparent=False)
     pyplot.close()
 
-# get a single page of token holders from etherscan (50 per page)
-def get_page_of_token_holders(address, etherscan_page, timeout=10.0):
-    holders = []
-    url_template = "https://etherscan.io/token/generic-tokenholders2?a={}&s=21000&p={}"
+def request_page_source(url, timeout=10.0):
     req = Request(
-        url_template.format(address, etherscan_page),
+        url,
         data=None, 
         headers={
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36'
         }
     )
     response = urlopen(req, timeout=timeout)
-    page_contents = response.read()
+    return response.read()
+
+# get a single page of token holders from etherscan (50 per page)
+def get_page_of_token_holders(address, etherscan_page, session_id, timeout=10.0):
+    holders = []
+
+    url_template = "https://etherscan.io/token/generic-tokenholders2?a={}&sid={}&m=normal&s=2.099998369E%2b15&p={}"
+    page_contents = request_page_source(url_template.format(address, session_id, etherscan_page))
+    print('url', url_template.format(address, session_id, etherscan_page))
+    print('page contents', page_contents[:1000])
     soup = BeautifulSoup(page_contents, 'html.parser')
     main_table = soup.find(id='maintable')
     rows = main_table.find_all('tr')
@@ -144,11 +150,25 @@ def get_page_of_token_holders(address, etherscan_page, timeout=10.0):
 
     return holders
 
+def get_session_id(address):
+    main_url = "https://etherscan.io/token/{}"
+    main_page_contents = request_page_source(main_url.format(address))
+    found_session_ids = re.findall(r'sid = \'([0-9a-f]+)\'', main_page_contents.decode("utf-8"))
+    
+    try:
+        session_id = found_session_ids[0]
+    except IndexError:
+        raise RuntimeError('Failed to match session id... check main_page_contents')
+
+    print('session_id:', session_id)
+    return session_id
+
 def _get_top_1000_token_holders(address, timeout=10.0):
     holders = []
+    session_id = get_session_id(address)
     for page_num in range(20):
         page_num = page_num+1  # page is one-indexed
-        holders += get_page_of_token_holders(address, page_num, timeout=timeout)
+        holders += get_page_of_token_holders(address, page_num, session_id, timeout=timeout)
     return holders
 
 def main():

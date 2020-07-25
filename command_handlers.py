@@ -297,6 +297,9 @@ async def cmd_tokens_burned(command_str, discord_message, apis):
     return result
 
 async def cmd_holders(command_str, discord_message, apis):
+    # TODO: fix holders chart and remove this stub
+    return ":shrug: etherscan's API is not working"
+
     if apis.token.addr_0_balance == None:
         return ":shrug:"
 
@@ -584,7 +587,7 @@ async def cmd_set_user_address(command_str, discord_message, apis):
 
     apis.storage.user_addresses.set(discord_message.author.id, address)
 
-    await apis.client.add_reaction(discord_message,"\U0001F44D")  # :thumbsup:
+    await discord_message.add_reaction("\U0001F44D")  # :thumbsup:
     return "OK-noresponse"
 
 async def cmd_mod_command(command_str, discord_message, apis):
@@ -612,7 +615,7 @@ async def cmd_mod_command(command_str, discord_message, apis):
         return "modcommand (poweroff)"
 
 async def get_ping_times(command_str, discord_message, apis):
-    discord_time_delta = datetime.datetime.utcnow() - discord_message.timestamp
+    discord_time_delta = datetime.datetime.utcnow() - discord_message.created_at
     discord_latency_ms = discord_time_delta.total_seconds() * 1000.0
 
     ping_times = [('Discord API', discord_latency_ms)]
