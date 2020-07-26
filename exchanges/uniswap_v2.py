@@ -6,7 +6,7 @@ import logging
 from web3 import Web3
 import time
 
-from .base_exchange import BaseExchangeAPI
+from .base_exchange import Daily24hChangeTrackedAPI
 from .uniswap_v2_abi import exchange_abi
 from .uniswap_v2_router_abi import router_abi
 from secret_info import ETHEREUM_NODE_URL
@@ -151,7 +151,7 @@ def get_price(web3, token0_name, token1_name):
     return reserves[0] / reserves[1]
 
 
-class Uniswapv2API(BaseExchangeAPI):
+class Uniswapv2API(Daily24hChangeTrackedAPI):
     def __init__(self, currency_symbol):
         super().__init__()
         try:

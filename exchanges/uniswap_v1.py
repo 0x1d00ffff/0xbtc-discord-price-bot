@@ -8,7 +8,7 @@ import logging
 from web3 import Web3
 import time
 
-from .base_exchange import BaseExchangeAPI
+from .base_exchange import Daily24hChangeTrackedAPI
 from .uniswap_v1_abi import exchange_abi
 from .erc20_abi import erc20_abi
 from secret_info import ETHEREUM_NODE_URL
@@ -21,7 +21,7 @@ def wei_to_ether(amount_in_wei):
 def ether_to_wei(amount_in_ether):
     return int(amount_in_ether * 1000000000000000000.0)
 
-class Uniswapv1API(BaseExchangeAPI):
+class Uniswapv1API(Daily24hChangeTrackedAPI):
     def __init__(self, currency_symbol):
         super().__init__()
         if currency_symbol == "0xBTC":

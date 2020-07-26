@@ -36,7 +36,7 @@ data =
 import logging
 from web3 import Web3
 import time
-from .base_exchange import BaseExchangeAPI
+from .base_exchange import Daily24hChangeTrackedAPI
 from .etherdelta_v2_abi import exchange_abi
 from secret_info import ETHEREUM_NODE_URL
 from constants import SECONDS_PER_ETH_BLOCK
@@ -48,7 +48,7 @@ ETH_AS_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
 ETHEREUM_DECIMALS = 18
 
 
-class ForkDeltaAPI(BaseExchangeAPI):
+class ForkDeltaAPI(Daily24hChangeTrackedAPI):
     def __init__(self, currency_symbol, persistent_storage):
         super().__init__()
         self.exchange_name = "ForkDelta"

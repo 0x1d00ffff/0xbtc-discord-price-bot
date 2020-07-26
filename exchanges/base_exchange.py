@@ -5,6 +5,7 @@ import time
 import socket
 import websocket
 from urllib.error import URLError
+import datetime
 
 import aiohttp
 import asyncio
@@ -12,7 +13,7 @@ import asyncio
 import json
 
 from requests import Session
-
+import logging
 
 
 class BaseExchangeAPI():
@@ -127,3 +128,45 @@ class BaseExchangeAPI():
         loop = asyncio.get_event_loop()
         loop.run_until_complete(load_once())
         self.print_all_values()
+
+
+# Instance of BaseExchangeAPI which generates the change_24h property automatically
+class Daily24hChangeTrackedAPI(BaseExchangeAPI):
+    def __init__(self):
+        super().__init__()
+        # a list of price for each hour of the last 24 hours. last entry in the list is
+        # the last hour's price, 2nd to last entry is price 2 hours ago, and so on. the
+        # first entries in the list are removed to limit list size to 24, which keeps
+        # the price from 24 hours ago in previous_hours_prices[0]
+        self.previous_hours_prices = []
+        # keep track of the current hour so it is easy to keep track of when it changes
+        self.current_hour = None
+        pass
+
+    async def update(self, timeout=10.0):
+        await super().update()
+        await self.calculate_24h_change()
+
+    async def calculate_24h_change(self):
+        # pick a price to use. usd price change takes priority, followed by eth, then btc
+        if self.price_usd is not None and self.price_usd != 0:
+            price = self.price_usd
+        elif self.price_eth is not None and self.price_eth != 0:
+            price = self.price_eth
+        elif self.price_btc is not None and self.price_btc != 0:
+            price = self.price_btc
+        else:
+            logging.error('Fail to calculate change; had price update with no price? exchange_name: {}'.format(self.exchange_name))
+            return
+
+        current_hour = datetime.datetime.now().hour
+        if self.current_hour != current_hour:
+            self.previous_hours_prices.append(price)
+            # trim the list so it keeps at most 24 entries
+            self.previous_hours_prices = self.previous_hours_prices[-24:]
+            self.current_hour = current_hour
+
+        price_change_absolute = price - self.previous_hours_prices[0]
+        price_change_percentage = price_change_absolute / self.previous_hours_prices[0]
+        self.change_24h = price_change_percentage
+

@@ -10,9 +10,6 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 import sys
-# TODO: after upgrading discord.py to rewrite, change to >=3.6
-assert sys.version_info != (3,6), "requires python 3.6"
-
 import os
 import time
 import websocket  # for websocket.enableTrace(False)
@@ -47,7 +44,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.4.1"
+_VERSION = "0.4.2"
 
 
 old_status_string = None
