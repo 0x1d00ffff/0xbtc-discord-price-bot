@@ -9,7 +9,7 @@ from .coinmarketcap import CoinMarketCapAPI
 # 2/12/20 removed enclaves. blocks all usa traffic.
 #from .enclavesdex import EnclavesAPI
 # 2/12/20 removed forkdelta. need a new api since livecoinwatch stopped tracking it.
-#from .forkdelta import ForkDeltaAPI
+from .forkdelta import ForkDeltaAPI
 from .mercatox import MercatoxAPI
 #from .hotbit import HotbitAPI
 from .idex import IDEXAPI

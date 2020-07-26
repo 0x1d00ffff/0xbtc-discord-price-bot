@@ -56,6 +56,7 @@ class ForkDeltaAPI(BaseExchangeAPI):
         self.short_url = "https://bit.ly/2rqTGWB"
         self.currency_symbol = currency_symbol
         self._persistent_storage = persistent_storage
+        self._time_volume_last_updated = 0
 
         # TODO: switch to using a global token address lookup module
         if self.currency_symbol == "0xBTC":
@@ -64,10 +65,14 @@ class ForkDeltaAPI(BaseExchangeAPI):
         else:
             raise RuntimeError("Unknown currency_symbol {}, need to add address to forkdelta.py. Note that if you are running two forkdelta modules at once, you will need to upgrade ForkDeltaAPI to use different persistent_storage modules.".format(self.currency_symbol))
 
+        self.volume_tokens = 0
+        self.volume_eth = 0
+        self.price_eth = 0
+
         self._w3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
         self._exchange = self._w3.eth.contract(address=ETHERDELTA_V2_ADDRESS, abi=exchange_abi)
 
-    async def get_history_n_days(self, num_days=1, timeout=10.0):
+    async def get_history_n_hours(self, num_hours=25, timeout=10.0):
         volume_tokens = 0
         volume_eth = 0
         last_price = None
@@ -78,13 +83,13 @@ class ForkDeltaAPI(BaseExchangeAPI):
         current_eth_block = self._w3.eth.blockNumber
 
         for event in self._w3.eth.getLogs({
-                'fromBlock': current_eth_block - (int(60*60*24*num_days / SECONDS_PER_ETH_BLOCK)),
+                'fromBlock': current_eth_block - (int(60*60*num_hours / SECONDS_PER_ETH_BLOCK)),
                 'toBlock': current_eth_block - 1,
                 'address': self._exchange.address}):
             topic0 = self._w3.toHex(event['topics'][0])
 
             if topic0 == trade_topic:
-                #print('trade in tx', self._w3.toHex(event['transactionHash']))
+                print('trade in tx', self._w3.toHex(event['transactionHash']))
                 receipt = self._w3.eth.getTransactionReceipt(event['transactionHash'])
                 parsed_logs = self._exchange.events.Trade().processReceipt(receipt)
                 correct_log = None
@@ -134,10 +139,17 @@ class ForkDeltaAPI(BaseExchangeAPI):
         return volume_tokens, volume_eth, last_price
 
     async def _update(self, timeout=10.0):
-        volume_tokens, volume_eth, last_price = await self.get_history_n_days(num_days=1, timeout=timeout)
 
-        self.volume_tokens = volume_tokens
-        self.volume_eth = volume_eth
+        # update day's volume only once every hour since it loads eth api
+        if time.time() - self._time_volume_last_updated > 60*60:
+            volume_tokens, volume_eth, last_price = await self.get_history_n_hours(num_hours=24, timeout=timeout)
+            self.volume_tokens = volume_tokens
+            self.volume_eth = volume_eth
+            self._time_volume_last_updated = time.time()
+        else:
+            # on other updates, simply check the last 10 mins for price changes
+            _, _, last_price = await self.get_history_n_hours(num_hours=10.0/60.0, timeout=timeout)
+            pass
 
         # Forkdelta is difficult to handle; there is no price available from the contract.
         # Instead you must remember the price of the last trade. Of course there are 
