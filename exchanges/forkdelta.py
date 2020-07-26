@@ -89,7 +89,7 @@ class ForkDeltaAPI(BaseExchangeAPI):
             topic0 = self._w3.toHex(event['topics'][0])
 
             if topic0 == trade_topic:
-                print('trade in tx', self._w3.toHex(event['transactionHash']))
+                #print('trade in tx', self._w3.toHex(event['transactionHash']))
                 receipt = self._w3.eth.getTransactionReceipt(event['transactionHash'])
                 parsed_logs = self._exchange.events.Trade().processReceipt(receipt)
                 correct_log = None
