@@ -158,6 +158,9 @@ TRADING_COMMANDS = [
         ['vol', 'völ', 'vil', 'bettervolume'],
         command_handlers.cmd_volume),
     CmdDef(
+        ['graph', 'chart'],
+        command_handlers.cmd_graph),
+    CmdDef(
         ['zj'],
         "If you have to ask big man, you can't afford it."),
     CmdDef(

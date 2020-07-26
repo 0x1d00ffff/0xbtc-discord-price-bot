@@ -41,7 +41,7 @@ class Uniswapv1API(Daily24hChangeTrackedAPI):
 
         self.currency_symbol = currency_symbol
         self.exchange_name = "Uniswap v1"
-        self.command_names = ["uniswap"]
+        self.command_names = ["uniswapv1", "uniswap1"]
         #self.short_url = "https://bit.ly/2PnLAre"  # main uniswap interface
         #self.short_url = "http://0xbitcoin.trade"  # 0xbtc version of the ui
         self.short_url = "https://bit.ly/3d6DqjJ"  # main uniswap pre-selected to 0xbtc

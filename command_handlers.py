@@ -9,6 +9,7 @@ import asyncio
 
 import configuration as config
 import util
+from text_graph import make_graph
 
 import ping_wrapper  # !ping command
 from web3 import Web3  # !mine command
@@ -47,6 +48,58 @@ async def cmd_compare_price_vs(apis, item_name="lambo", item_price=200000):
                                            prettify_decimals(item_price / token_price_usd),
                                            config.TOKEN_SYMBOL,
                                            to_readable_thousands(item_price))
+
+async def cmd_graph(command_str, discord_message, apis):
+    # Uniswap v2  **0.00067Ξ**   $0.20   34.5Ξ volume
+    # ```
+    # 0.00070 |
+    #         |                 ***
+    #         |                *   ****
+    #  +31.4% |        *** ** *
+    #         |  ******   *  *
+    #         |**
+    # 0.00040 |-----------|-----------|
+    #       -24h        -12h         now
+    # ```
+
+    # TODO: allowing !graph btc or !graph eth would be cool
+
+    # allow !graph <exchange name>
+    for exchange in apis.exchanges.all_exchanges:
+        if util.string_contains_any(command_str,
+                                    exchange.command_names,
+                                    exhaustive_search=True,
+                                    require_cmd_char=False):
+            # skip CMC since it only tracks ETH and BTC price
+            # skip LCW since its more of an aggregator
+            if (exchange.exchange_name == "Coin Market Cap"
+                or exchange.exchange_name == "Live Coin Watch"):
+                continue
+
+            eth_token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=exchange.command_names)
+
+            if eth_token_price == 0:
+                token_price = apis.exchanges.price_usd(config.TOKEN_SYMBOL, exchange_name=exchange.command_names)
+                eth_token_price = token_price / apis.exchanges.eth_price_usd()
+            else:
+                token_price = eth_token_price * apis.exchanges.eth_price_usd()
+
+            prices = apis.exchanges.previous_hours_prices(config.TOKEN_SYMBOL, exchange_name=exchange.exchange_name)
+            if prices is None:
+                return "No price history for {} :sob:".format(exchange.exchange_name)
+            graph_text = make_graph(prices, labels=['-24h', '-12h', 'now'])
+
+            message = "{}  **{}Ξ**   ${}   {}Ξ volume\n```{}```".format(
+                exchange.exchange_name,
+                prettify_decimals(eth_token_price),
+                prettify_decimals(token_price),
+                prettify_decimals(apis.exchanges.volume_eth(config.TOKEN_SYMBOL, exchange_name=exchange.exchange_name)),
+                graph_text
+            )
+
+            return message
+            
+    return "Graph what? try `!graph uniswap`"
 
 def show_price_from_source(apis, source='aggregate'):
     if (apis.exchanges.last_updated_time(exchange_name=source) == 0):

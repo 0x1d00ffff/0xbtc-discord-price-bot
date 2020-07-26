@@ -63,7 +63,7 @@ class MultiExchangeManager():
         return list(set(all_names))
 
     def short_url(self, exchange_name='aggregate'):
-        default_url = "http://bitly.com/2LvDE6u"
+        default_url = "https://bit.ly/35nae4n"  # uniswap v2
         if exchange_name == "aggregate":
             return default_url
 
@@ -198,6 +198,17 @@ class MultiExchangeManager():
                 if result == 0 or a.last_updated_time > result:
                     result = a.last_updated_time
         return result
+
+    def previous_hours_prices(self, currency_symbol, exchange_name='aggregate'):
+        result = 0
+        for a in self.alive_exchanges:
+            if a.currency_symbol != currency_symbol:
+                continue
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
+                # if aggregate, return the first exchange we find with previous prices
+                return a.previous_hours_prices
+        return None
+
 
 if __name__ == "__main__":
     from .coinmarketcap import CoinMarketCapAPI
