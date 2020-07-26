@@ -76,10 +76,9 @@ async def cmd_graph(command_str, discord_message, apis):
                 or exchange.exchange_name == "Live Coin Watch"):
                 continue
 
-            eth_token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=exchange.command_names)
-
+            eth_token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=exchange.exchange_name)
             if eth_token_price == 0:
-                token_price = apis.exchanges.price_usd(config.TOKEN_SYMBOL, exchange_name=exchange.command_names)
+                token_price = apis.exchanges.price_usd(config.TOKEN_SYMBOL, exchange_name=exchange.exchange_name)
                 eth_token_price = token_price / apis.exchanges.eth_price_usd()
             else:
                 token_price = eth_token_price * apis.exchanges.eth_price_usd()
@@ -87,17 +86,19 @@ async def cmd_graph(command_str, discord_message, apis):
             prices = apis.exchanges.previous_hours_prices(config.TOKEN_SYMBOL, exchange_name=exchange.exchange_name)
             if prices is None:
                 return "No price history for {} :sob:".format(exchange.exchange_name)
-            graph_text = make_graph(prices, labels=['-24h', '-12h', 'now'])
+            elif len(prices) < 4:
+                return "Still collecting data for {}, try again in {} hours or so.".format(exchange.exchange_name, 5-len(prices))
+            else:
+                graph_text = make_graph(prices, labels=['-24h', '-12h', 'now'])
 
-            message = "{}  **{}Ξ**   ${}   {}Ξ volume\n```{}```".format(
-                exchange.exchange_name,
-                prettify_decimals(eth_token_price),
-                prettify_decimals(token_price),
-                prettify_decimals(apis.exchanges.volume_eth(config.TOKEN_SYMBOL, exchange_name=exchange.exchange_name)),
-                graph_text
-            )
-
-            return message
+                message = "{}  **{}Ξ**   ${}   {}Ξ volume\n```{}```".format(
+                    exchange.exchange_name,
+                    prettify_decimals(eth_token_price),
+                    prettify_decimals(token_price),
+                    prettify_decimals(apis.exchanges.volume_eth(config.TOKEN_SYMBOL, exchange_name=exchange.exchange_name)),
+                    graph_text
+                )
+                return message
             
     return "Graph what? try `!graph uniswap`"
 
