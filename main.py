@@ -488,6 +488,8 @@ def main():
         os.makedirs(config.DATA_FOLDER)
     setup_logging(os.path.join(config.DATA_FOLDER, 'debug.log'), verbose=args.verbose)
 
+    token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
+    storage = Storage(config.DATA_FOLDER)
     exchange_manager = exchanges.MultiExchangeManager(
     [
         exchanges.CoinMarketCapAPI(config.TOKEN_SYMBOL),
@@ -509,13 +511,11 @@ def main():
         # 2/12/20 removed ethex, they might be out of business. homepage says check later.
         # exchanges.EthexAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed forkdelta. need a new api since livecoinwatch stopped tracking it.
-        # exchanges.ForkDeltaAPI(config.TOKEN_SYMBOL),
+        exchanges.ForkDeltaAPI(config.TOKEN_SYMBOL, storage),
         # exchanges.HotbitAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed merklex. seems to have rebranded to nitrade.
         # exchanges.MerkleXAPI(config.TOKEN_SYMBOL),
     ])
-    token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
-    storage = Storage(config.DATA_FOLDER)
 
     if args.self_test:
         client = MockClient()

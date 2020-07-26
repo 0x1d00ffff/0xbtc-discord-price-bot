@@ -41,15 +41,21 @@ class Storage:
         if not os.path.exists(self._database_folder):
             os.makedirs(self._database_folder)
 
+        # mapping of user -> eth address for the !mine command
         self.user_addresses = KeyValueStore(os.path.join(self._database_folder,
                                                          'user_addresses.db'))
 
+        # timestamp of last update of holders chart
         self.last_holders_update_timestamp = SingleValueStore(self._database_folder,"last_holders_update_timestamp", 0)
 
+        # !topscore info for !mine
         self.top_miner_name = SingleValueStore(self._database_folder,"top_miner_name", "Nobody")
         self.top_miner_id = SingleValueStore(self._database_folder,"top_miner_id", 0)
         self.top_miner_difficulty = SingleValueStore(self._database_folder,"top_miner_difficulty", 0)
         self.top_miner_digest = SingleValueStore(self._database_folder,"top_miner_digest", b'\x00')
+
+        # forkdelta's price is not available via api, so it is remembered here
+        self.last_forkdelta_price = SingleValueStore(self._database_folder,"last_forkdelta_price", 0)
 
         # 0xBitcoin ATH Notes as of Oct 27 2018:
         # $4.66 on June 6 2018  https://www.coingecko.com/en/price_charts/0xbitcoin/usd
