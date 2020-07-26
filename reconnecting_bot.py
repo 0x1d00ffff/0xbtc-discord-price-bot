@@ -31,7 +31,8 @@ async def keep_running(client, token):
         try:
             await client.connect()
 
-        except aiohttp.errors.ClientOSError:
+        # NOTE: aiohttp.errors does not exist anymore
+        #except aiohttp.errors.ClientOSError:
             logging.error("Network down; discord.py trying to stay connected...")
             await asyncio.sleep(retry.delay())
 

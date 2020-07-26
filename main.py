@@ -22,7 +22,6 @@ import logging
 import discord
 from discord.ext import tasks  # background_update is a task now
 from secret_info import TOKEN
-from reconnecting_bot import keep_running
 
 # from coinmarketcap import CoinMarketCapAPI
 # from enclavesdex import EnclavesAPI
@@ -48,7 +47,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.4.0"
+_VERSION = "0.4.1"
 
 
 old_status_string = None

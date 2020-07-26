@@ -100,8 +100,6 @@ class BaseExchangeAPI():
                 ConnectionRefusedError,
                 socket.gaierror,
                 socket.timeout,
-                aiohttp.errors.ClientResponseError,
-                aiohttp.errors.ServerDisconnectedError,
                 URLError) as e:
             self.update_failure_count += 1
             raise TimeoutError(str(e)) from e
