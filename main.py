@@ -44,7 +44,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.4.2"
+_VERSION = "0.4.3"
 
 
 old_status_string = None
