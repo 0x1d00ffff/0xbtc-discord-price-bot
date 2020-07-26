@@ -51,7 +51,7 @@ ETHEREUM_DECIMALS = 18
 class ForkDeltaAPI(BaseExchangeAPI):
     def __init__(self, currency_symbol, persistent_storage):
         super().__init__()
-        self.exchange_name = "Fork Delta"
+        self.exchange_name = "ForkDelta"
         self.command_names = ["fd", "fork delta"]
         self.short_url = "https://bit.ly/2rqTGWB"
         self.currency_symbol = currency_symbol
