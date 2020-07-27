@@ -252,6 +252,12 @@ async def cmd_marketcap(command_str, discord_message, apis):
                             prettify_decimals(apis.token.tokens_minted))
     return result
 
+async def cmd_challenge(command_str, discord_message, apis):
+    if apis.token.challenge_number == None:
+        return ":shrug:"
+
+    return "Current challenge: `{}`".format(apis.token.challenge_number)
+
 async def cmd_difficulty(command_str, discord_message, apis):
     if apis.token.difficulty == None:
         return ":shrug:"

@@ -58,7 +58,7 @@ EXPENSIVE_STUFF = [
     (101500, 
      ['tesla', 'telsa']),
     (1700,
-     ['used ford taurus', 'used taurus', 'old ford taurus', 'old taurus', 'used ford torus']),
+     ['used ford taurus', 'used taurus', 'old ford taurus', 'old taurus', 'used ford torus', 'used tarus']),
     (17600,
      ['like new ford taurus', 'like new taurus']),
     (28400,
@@ -184,6 +184,9 @@ TRADING_COMMANDS = [
     CmdDef(
         ['marketcap', 'mcap'],
         command_handlers.cmd_marketcap),
+    CmdDef(
+        ['challenge'],
+        command_handlers.cmd_challenge),
     CmdDef(
         ['difficulty', 'diff', 'retarget', 'readjustment'],
         command_handlers.cmd_difficulty),
