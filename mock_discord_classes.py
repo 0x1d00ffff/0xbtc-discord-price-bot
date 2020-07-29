@@ -26,4 +26,8 @@ class MockMessage():
     def __init__(self):
         self.channel = None
         self.author = MockAuthor()
-        self.timestamp = datetime.datetime.utcnow()
+        #self.timestamp = datetime.datetime.utcnow()
+        self.created_at = datetime.datetime.utcnow()
+    async def add_reaction(self, emoji=None):
+        args = {'emoji':emoji}
+        #logging.debug('Call to add_reaction: {}'.format(args))

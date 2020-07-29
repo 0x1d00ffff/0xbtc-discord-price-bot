@@ -44,27 +44,25 @@ PRIVILEGED_USER_IDS = [
 #  - Source data for convert ie `!convert 800 0xbtc to tesla`
 EXPENSIVE_STUFF = [
     (400000,
-     ['lambo']),
+     ['Lamborghini Aventador', 'lambo']),
     (200000,
      ['used lambo']),
     (500000,
      ['private island', 'privare island', 'pirvate island', 'island']),
     (398.8*1000*1000,
-     ['whitehouse', 'white house']),
+     ['White House', 'whitehouse']),
     (1.225*1000*1000*1000,
-     ['buckingham palace']),
+     ['Buckingham Palace']),
     (3.9*1000*1000*1000,
-     ['air force one']),
-    (101500, 
-     ['tesla', 'telsa']),
+     ['Air Force One']),
     (1700,
-     ['used ford taurus', 'used taurus', 'old ford taurus', 'old taurus', 'used ford torus', 'used tarus']),
+     ['Used Ford Taurus', 'used taurus', 'old ford taurus', 'old taurus', 'used ford torus', 'used tarus']),
     (17600,
-     ['like new ford taurus', 'like new taurus']),
+     ['Like-new Ford Taurus', 'like new ford taurus', 'like new taurus']),
     (28400,
-     ['new ford taurus', 'ford taurus', 'new taurus', 'taurus']),
+     ['New Ford Taurus', 'ford taurus', 'new taurus', 'taurus']),
     (12,
-     ['avocado toast',
+     ['Avocado Toast',
       'avocado on toast', 
       'avacado toast', 
       'avacado on toast', 
@@ -88,9 +86,27 @@ EXPENSIVE_STUFF = [
     (1e12,
      ['trillionaire']),
     (650,
-     ['magnum domperignon', 'domperignon', 'champagne', 'donperignon']),
+     ['Magnum Domperignon', 'domperignon', 'champagne', 'donperignon']),
     (200,
-     ['microsoft windows license', 'microsoft', 'windows']),
+     ['Microsoft Windows license', 'microsoft', 'windows']),
+    (74990, 
+     ['Tesla Model S', 'tesla', 'telsa', 'testla', 'model s']),
+    (79990, 
+     ['Tesla Model X', 'model x']),
+    (37990, 
+     ['Tesla Model 3', 'model 3']),
+    (49990, 
+     ['Tesla Model Y', 'model y']),
+    (250000, 
+     ['Tesla Roadster', 'roadster']),
+    (39900, 
+     ['Tesla Cybertruck', 'cybertruck']),
+    # falcon 9 (reused booster) lowered to 50M around may 2018
+    # https://spacenews.com/spacex-targeting-24-hour-turnaround-in-2019-full-reusability-still-in-the-works/
+    (50000000,  # 50 million
+     ['SpaceX Falcon 9', 'falcon9']),
+    (150e9,  # 150 billion 
+     ['International Space Station', 'iss']),
 ]
 
 
@@ -149,7 +165,7 @@ GLOBAL_COMMANDS = [
 # commands that do not work in blacklisted channels
 TRADING_COMMANDS = [
     CmdDef(
-        ['price', 'rice', 'pric', 'pricce', 'proce', 'rpice'],
+        ['0xbtc', '0xbitcoin', 'price', 'rice', 'pric', 'pricce', 'proce', 'rpice'],
         command_handlers.cmd_price),
     CmdDef(
         ['exchanges', 'wheretobuy'],
@@ -248,3 +264,4 @@ TRADING_COMMANDS = [
         ['hi', 'hey bot'],
         "Sup :sunglasses:"),
 ]
+

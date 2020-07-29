@@ -206,7 +206,11 @@ class MultiExchangeManager():
                 continue
             if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 # if aggregate, return the first exchange we find with previous prices
-                return a.previous_hours_prices
+                try:
+                    return a.previous_hours_prices
+                except AttributeError:
+                    # skip exchanges without previous price history
+                    pass
         return None
 
 

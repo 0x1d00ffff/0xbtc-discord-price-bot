@@ -166,10 +166,13 @@ async def cmd_price(command_str, discord_message, apis):
                              exhaustive_search=True,
                              require_cmd_char=False):
         return show_price_from_source(apis)
+        # in this call to string_contains_any, we ignore commands containing '0x'. That
+        # way this does not match !0xbitcoin
     elif util.string_contains_any(command_str,
                              ['btc', 'bitcoin'],
                              exhaustive_search=True,
-                             require_cmd_char=False):
+                             require_cmd_char=False,
+                             ignore_matches_containing='0x'):
         return await cmd_bitcoinprice(command_str, discord_message, apis)
     elif util.string_contains_any(command_str,
                              ['eth', 'ethereum'],

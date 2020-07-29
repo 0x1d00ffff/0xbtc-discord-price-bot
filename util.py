@@ -1,5 +1,6 @@
 
 import collections
+import logging
 
 import configuration as config
 
@@ -11,10 +12,14 @@ CmdDef = collections.namedtuple('CmdDef', ['keywords', 'response'])
 # if exhaustive_search is true, look in the middle of string for commands - otherwise only check beginning
 # if permute_whitespace is true, replace spaces with dashes etc and also match those
 # if require_cmd_char is true, search only for `!command` - otherwise allow `command`
-def string_contains_command(input_string, command, exhaustive_search=False, permute_whitespace=True, require_cmd_char=True):
-    
+# if ignore_matches_containing is a string, we will ignore any matches containing that string
+def string_contains_command(input_string, command, exhaustive_search=False, permute_whitespace=True, require_cmd_char=True, ignore_matches_containing=None):
+
     if require_cmd_char:
         command = config.COMMAND_CHARACTER+command
+
+    if ignore_matches_containing is not None and ignore_matches_containing in input_string:
+        return False
 
     possible_commands = [command]
     if permute_whitespace:
@@ -34,9 +39,9 @@ def string_contains_command(input_string, command, exhaustive_search=False, perm
     return False
 
 # similar to string_contains_command but accepts a list of multiple command synonyms
-def string_contains_any(input_string, command_list, exhaustive_search=False, permute_whitespace=True, require_cmd_char=True):
+def string_contains_any(input_string, command_list, exhaustive_search=False, permute_whitespace=True, require_cmd_char=True, ignore_matches_containing=None):
     for command in command_list:
-        if string_contains_command(input_string, command, exhaustive_search, permute_whitespace, require_cmd_char):
+        if string_contains_command(input_string, command, exhaustive_search, permute_whitespace, require_cmd_char, ignore_matches_containing):
             return True
-
     return False
+

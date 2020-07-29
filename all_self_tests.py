@@ -135,7 +135,9 @@ class TestPriceCommand(unittest.TestCase):
                      or 'price fd' in command_str
                      or 'price idex' in command_str
                      or 'price merc' in command_str
-                     or 'price ethex' in command_str):
+                     or 'price ethex' in command_str
+                     # holders command is disabled until etherscan.py is fixed
+                     or 'holders' in command_str):
                     response = self.run_and_verify_command(command_str, check_for_errors=False)
                 else:
                     response = self.run_and_verify_command(command_str)
@@ -322,7 +324,7 @@ class TestPriceCommand(unittest.TestCase):
         command_str='lambo'
         with self.subTest(command_str=command_str):
             response = self.run_and_verify_command(command_str)
-            self.assertTrue("1 lambo =" in response)
+            self.assertTrue("1 Lamborghini Aventador =" in response)
             self.assertTrue("$" in response)
 
     def test_fuzzing_commands(self):

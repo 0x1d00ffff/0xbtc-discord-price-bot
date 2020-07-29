@@ -44,7 +44,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.4.3"
+_VERSION = "0.4.4"
 
 
 old_status_string = None
@@ -506,7 +506,7 @@ def main():
         # exchanges.EnclavesAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed ethex, they might be out of business. homepage says check later.
         # exchanges.EthexAPI(config.TOKEN_SYMBOL),
-        # 2/12/20 removed forkdelta. need a new api since livecoinwatch stopped tracking it.
+        # 2/12/20 removed forkdelta, need new api. 7/26/20: reenabled forkdelta
         exchanges.ForkDeltaAPI(config.TOKEN_SYMBOL, storage),
         # exchanges.HotbitAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed merklex. seems to have rebranded to nitrade.
