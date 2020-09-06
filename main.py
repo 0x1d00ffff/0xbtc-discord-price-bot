@@ -508,6 +508,8 @@ def main():
         # exchanges.EthexAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed forkdelta, need new api. 7/26/20: reenabled forkdelta
         exchanges.ForkDeltaAPI(config.TOKEN_SYMBOL, storage),
+        # 9/06/20 added balancer
+        exchanges.BalancerAPI(config.TOKEN_SYMBOL),
         # exchanges.HotbitAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed merklex. seems to have rebranded to nitrade.
         # exchanges.MerkleXAPI(config.TOKEN_SYMBOL),

@@ -10,6 +10,8 @@ from .coinmarketcap import CoinMarketCapAPI
 #from .enclavesdex import EnclavesAPI
 # 2/12/20 removed forkdelta. need a new api since livecoinwatch stopped tracking it.
 from .forkdelta import ForkDeltaAPI
+# 9/06/20 added balancer
+from .balancer import BalancerAPI
 from .mercatox import MercatoxAPI
 #from .hotbit import HotbitAPI
 from .idex import IDEXAPI
