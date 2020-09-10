@@ -65,21 +65,19 @@ Bot to monitor/post price etc to the 0xbtc discord server ([link to the discord]
  - switch from etherscan to bloxy.info for holders chart data source. this
    probably also means moving the holders chart functionality into the token
    library
- - 24h high/low/average - add to the update() method in base_exchange.py
  - update ping times for !status in background_update
- - make configuration text-based so it does not need python imports etc
- - update from async to rewrite branch of discord.py [link](https://github.com/TheTrain2000/async2rewrite)
-   `pip install -U git+https://github.com/Rapptz/discord.py@rewrite#egg=discord.py[voice]`
+ - make configuration text-based so it does not need python imports
  - generalize command categories (currently only trading and global)
  - new commands
    - !binance (to show current listing price in usd)
    - !orderbooks mercatox
+   - !liquidity
+   - !apy (can show apy in dex pools for last 24h using liquidity * fee calc)
  - Need a new 'Pairing' class to handle pairings in a more generic way. This
    will allow easier integration of BTC pairings (ie mercatox)
  - volume_eth and volume_usd are not strictly defined - sometimes it means total
    volume across all pairs (converted to eth), sometimes it means volume in eth
    only and volume_btc means volume in btc only.
- - ascii chart?
  - enable hotbit?
  - new exchanges
    - tokenjar [link](https://tokenjar.io/0xbtc)
