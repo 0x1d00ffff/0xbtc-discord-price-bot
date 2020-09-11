@@ -90,3 +90,5 @@ Bot to monitor/post price etc to the 0xbtc discord server ([link to the discord]
    - ddex.io
    - Rootrex
    - Altilly (CEX) [link](https://www.altilly.com/market/0xBTC_ETH)
+   - fatbtc (CEX) [link](https://fatbtc.com/trading?currency=0XBTC%2FUSDT&freetab=2)
+   - vether pools - future

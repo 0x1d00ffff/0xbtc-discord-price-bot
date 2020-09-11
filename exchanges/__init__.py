@@ -20,7 +20,8 @@ from .livecoinwatch import LiveCoinWatchAPI
 #from .ethex import EthexAPI
 #2/12/20 removed coinexchange. homepage says closed.
 #from .coinexchange import CoinExchangeAPI
-from .uniswap_v1 import Uniswapv1API
+# 9/10/20 remove uniswap v1. All liquidity (except $200) has moved to v2
+#from .uniswap_v1 import Uniswapv1API
 from .uniswap_v2 import Uniswapv2API
 #2/12/20 removed merklex. seems to have rebranded to nitrade.
 #from .merklex import MerkleXAPI
