@@ -44,7 +44,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.4.4"
+_VERSION = "0.4.5"
 
 
 old_status_string = None
@@ -514,6 +514,8 @@ def main():
         # exchanges.HotbitAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed merklex. seems to have rebranded to nitrade.
         # exchanges.MerkleXAPI(config.TOKEN_SYMBOL),
+        # 9/22/20 added swapmatic
+        exchanges.SwapmaticAPI(config.TOKEN_SYMBOL),
     ])
 
     if args.self_test:

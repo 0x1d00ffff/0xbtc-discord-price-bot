@@ -26,3 +26,5 @@ from .uniswap_v2 import Uniswapv2API
 #2/12/20 removed merklex. seems to have rebranded to nitrade.
 #from .merklex import MerkleXAPI
 from .zxchange import ZxchangeAPI
+# 9/22/20 added swapmatic
+from .swapmatic import SwapmaticAPI
