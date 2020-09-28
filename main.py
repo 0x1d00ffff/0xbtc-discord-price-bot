@@ -44,7 +44,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.4.5"
+_VERSION = "0.4.6"
 
 
 old_status_string = None
@@ -251,17 +251,17 @@ async def process_message(message):
     if message_contents == "":
         return
 
+    response = await commands.handle_global_command(message_contents, message, apis)
+    if response:
+        await send_discord_msg_to_channel(message.channel, response)
+        return
+
     # trading commands are ignored in blacklisted channels
     if message.channel.id not in config.BLACKLISTED_CHANNEL_IDS:
         response = await commands.handle_trading_command(message_contents, message, apis)
         if response:
             await send_discord_msg_to_channel(message.channel, response)
             return
-
-    response = await commands.handle_global_command(message_contents, message, apis)
-    if response:
-        await send_discord_msg_to_channel(message.channel, response)
-        return
 
     # If command starts with config.COMMAND_CHARACTER and we have not returned yet, it was unrecognized.
     if message_contents.startswith(config.COMMAND_CHARACTER):

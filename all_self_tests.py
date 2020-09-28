@@ -302,6 +302,13 @@ class TestPriceCommand(unittest.TestCase):
             self.assertTrue("Digest" in response)
             self.assertTrue("Diff" in response)
             self.assertTrue("solution" in response)
+        command_str='miners'
+        with self.subTest(command_str=command_str):
+            response = self.run_and_verify_command(command_str)
+            self.assertTrue("Azlehria" in response)
+            self.assertTrue("COSMiC" in response)
+            self.assertTrue("MVIS" in response)
+            self.assertTrue(len(response.split('\n')) > 1)
         command_str='bestshare'
         with self.subTest(command_str=command_str):
             response = self.run_and_verify_command(command_str)

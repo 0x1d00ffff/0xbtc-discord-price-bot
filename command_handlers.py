@@ -89,14 +89,20 @@ async def cmd_graph(command_str, discord_message, apis):
             elif len(prices) < 4:
                 return "Still collecting data for {}, try again in {} hours or so.".format(exchange.exchange_name, 5-len(prices))
             else:
-                graph_text = make_graph(prices, labels=['-24h', '-12h', 'now'])
+                if len(prices) < 24:
+                    graph_incomplete_msg = f"* only showing {len(prices)}h of data; graph complete in {24-len(prices)}h"
+                else:
+                    graph_incomplete_msg = ""
 
-                message = "{}  **{}Ξ**   ${}   {}Ξ volume\n```{}```".format(
+                graph_text = make_graph(prices, labels=['-24h', '-12h', 'now'])
+                
+                message = "{}  **{}Ξ**   ${}   {}Ξ volume\n```{}```{}".format(
                     exchange.exchange_name,
                     prettify_decimals(eth_token_price),
                     prettify_decimals(token_price),
                     prettify_decimals(apis.exchanges.volume_eth(config.TOKEN_SYMBOL, exchange_name=exchange.exchange_name)),
-                    graph_text
+                    graph_text,
+                    graph_incomplete_msg,
                 )
                 return message
             
@@ -724,7 +730,8 @@ async def cmd_pools(command_str, discord_message, apis):
     all_pools = (
         ("Token Mining Pool", "http://TokenMiningPool.com", "0xeabe"),
         ("mike.rs pool", "http://mike.rs", "0x5021"),
-        ("tosti.ro", "http://0xbtc.tosti.ro", "0x540d"),
+        #("tosti.ro", "http://0xbtc.tosti.ro", "0x540d"),
+        ("mvis.ca", "https://mvis.ca/", "0x7d3e"),
         # TODO: uncomment when extremehash finds a block
         #("ExtremeHash.io", "http://0xbtc.extremehash.io/", "0xbbdf"),
         )
