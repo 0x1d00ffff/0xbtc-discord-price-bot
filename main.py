@@ -318,7 +318,7 @@ async def manual_api_update():
 
 
 async def manual_command(cmd, apis, ignore_response=False):
-    cmd = preprocess(cmd)
+    cmd = preprocess_message(cmd)
     try:
         global_response = await commands.handle_global_command(cmd, MockMessage(), apis)
         trading_response = await commands.handle_trading_command(cmd, MockMessage(), apis)
