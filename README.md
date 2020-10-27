@@ -55,6 +55,11 @@ Bot to monitor/post price etc to the 0xbtc discord server ([link to the discord]
    to explicitly check for this.
 
 ##### Todo:
+ - at boot the !status commands shows all exchanges as OK. it should show "not yet
+   updated" until the first update is done
+ - modify background_update so that it updates all exchanges independently, that way
+   a single slow api call does not delay others
+ - add a timeout on background_update so >30 second updates are logged and cancelled
  - add resfinex (link)[https://docs.resfinex.com/guide/rest.html]
  - add exponential backoff to `_update()` of the the APIs so things like rate 
    limiting are handled automatically. This would probably require modification
