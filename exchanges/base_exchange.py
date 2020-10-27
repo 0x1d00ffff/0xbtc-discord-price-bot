@@ -15,6 +15,8 @@ import json
 from requests import Session
 import logging
 
+class NoLiquidityException(Exception):
+    pass
 
 class BaseExchangeAPI():
     def __init__(self):
@@ -101,6 +103,7 @@ class BaseExchangeAPI():
                 ConnectionRefusedError,
                 socket.gaierror,
                 socket.timeout,
+                NoLiquidityException,
                 URLError) as e:
             self.update_failure_count += 1
             raise TimeoutError(str(e)) from e

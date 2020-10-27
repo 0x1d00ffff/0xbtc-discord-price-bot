@@ -6,7 +6,7 @@ import logging
 from web3 import Web3
 import time
 
-from .base_exchange import Daily24hChangeTrackedAPI
+from .base_exchange import Daily24hChangeTrackedAPI, NoLiquidityException
 from .uniswap_v2_abi import exchange_abi
 from .uniswap_v2_router_abi import router_abi
 from secret_info import ETHEREUM_NODE_URL
@@ -104,6 +104,9 @@ def get_swap_amount(web3, amount, token0_name, token1_name):
     if token0_name == second_token_name:
         reserves[0], reserves[1] = reserves[1], reserves[0]
 
+    if reserves[0] == 0 or reserves[1] == 0:
+        return 0
+
     token0_decimals = getTokenDecimalsFromName(token0_name)
     token1_decimals = getTokenDecimalsFromName(token1_name)
 
@@ -125,8 +128,12 @@ def get_pooled_balance_for_address(web3, token0_name, token1_name, owner_address
     exchange = web3.eth.contract(address=exchange_address, abi=exchange_abi)
 
     all_ownership_tokens = exchange.functions.totalSupply().call()
-    ownership_tokens_in_address = exchange.functions.balanceOf(owner_address).call()
-    ownership_percentage = ownership_tokens_in_address / all_ownership_tokens
+    if all_ownership_tokens == 0:
+        ownership_tokens_in_address = exchange.functions.balanceOf(owner_address).call()
+        ownership_percentage = ownership_tokens_in_address / all_ownership_tokens
+    else:
+        ownership_tokens_in_address = 0
+        ownership_percentage = 0
 
     reserves = get_reserves(web3, token0_name, token1_name)
 
@@ -134,8 +141,6 @@ def get_pooled_balance_for_address(web3, token0_name, token1_name, owner_address
 
 def get_reserves(web3, token0_name, token1_name):
     """get the reserves, in tokens, of a particular uniswap v2 pool"""
-    token0_decimals = getTokenDecimalsFromName(token0_name)
-    token1_decimals = getTokenDecimalsFromName(token1_name)
     exchange_address, first_token_name, second_token_name = getExchangeAddressForTokenPair(token0_name, token1_name)
     exchange = web3.eth.contract(address=exchange_address, abi=exchange_abi)
     reserves = exchange.functions.getReserves().call()
@@ -150,7 +155,10 @@ def get_reserves(web3, token0_name, token1_name):
 def get_price(web3, token0_name, token1_name):
     """Get the price at a particular uniswap v2 pool, in terms of token0 / token1"""
     reserves = get_reserves(web3, token0_name, token1_name)
-    return reserves[0] / reserves[1]
+    if reserves[1] == 0:
+        return 0
+    else:
+        return reserves[0] / reserves[1]
 
 
 class Uniswapv2API(Daily24hChangeTrackedAPI):
@@ -189,7 +197,7 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         token1_address = exchange_contract.functions.token1().call()
 
         current_eth_block = self._w3.eth.blockNumber
-        
+
         for event in self._w3.eth.getLogs({
                 'fromBlock': current_eth_block - (int(60*60*24 / SECONDS_PER_ETH_BLOCK)),
                 'toBlock': current_eth_block - 1,
@@ -257,8 +265,11 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         return total_volume_tokens
 
     async def _update(self, timeout=10.0):
-        self.price_eth = get_price(self._w3, "WETH", self.currency_symbol)
         self.liquidity_eth = get_reserves(self._w3, "WETH", self.currency_symbol)[0]
+        if self.liquidity_eth == 0:
+            raise NoLiquidityException("Pool has no liquidity")
+
+        self.price_eth = get_price(self._w3, "WETH", self.currency_symbol)
 
         eth_prices = [
             get_price(self._w3, "DAI", "WETH"),
@@ -270,11 +281,10 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         self.btc_price_usd = None
 
         # update volume once every hour since it (potentially) loads eth api
-        if time.time() - self._time_volume_last_updated > 60*60:
+        if time.time() - self._time_volume_last_updated > 60 * 60:
             self.volume_tokens = await self._update_24h_volume()
             self.volume_eth = self.volume_tokens * self.price_eth
             self._time_volume_last_updated = time.time()
-
 
 
 if __name__ == "__main__":

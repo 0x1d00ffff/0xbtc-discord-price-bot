@@ -13,12 +13,20 @@ from web3 import Web3
 import time
 from collections import defaultdict
 
-from .base_exchange import Daily24hChangeTrackedAPI
+from .base_exchange import Daily24hChangeTrackedAPI, NoLiquidityException
 
 from .balancer_abi import bpool_abi
 from .erc20_abi import erc20_abi
 from secret_info import ETHEREUM_NODE_URL
 from constants import SECONDS_PER_ETH_BLOCK
+
+
+def is_pool_empty(web3, bpool_address):
+    """Returns true if the pool contains liquidity."""
+    for address, balance in get_reserves(web3, bpool_address):
+        if balance == 0:
+            return True
+    return False
 
 def get_pooled_balance_for_address(web3, bpool_address, holder_address):
     """Get the liquidity balance of a particular address in a balancer pool.
@@ -31,9 +39,13 @@ def get_pooled_balance_for_address(web3, bpool_address, holder_address):
     # liquidity_token_balance_of_user = (
     #     bpool.functions.balanceOf(holder_address).call()
     #     / 10**bpool.functions.decimals().call())
-    liquidity_token_balance_of_user = bpool.functions.balanceOf(holder_address).call()
     liquidity_token_total_supply = bpool.functions.totalSupply().call()
-    ownership_percentage_of_user = liquidity_token_balance_of_user / liquidity_token_total_supply
+    if liquidity_token_total_supply == 0:
+        liquidity_token_balance_of_user = 0
+        ownership_percentage_of_user = 0
+    else:
+        liquidity_token_balance_of_user = bpool.functions.balanceOf(holder_address).call()
+        ownership_percentage_of_user = liquidity_token_balance_of_user / liquidity_token_total_supply
     # print('liquidity_token_balance_of_user: {}'.format(liquidity_token_balance_of_user))
     # print('ownership_percentage_of_user: {}'.format(ownership_percentage_of_user))
     reserves = get_reserves(web3, bpool_address)
@@ -69,6 +81,9 @@ def get_reserves(web3, bpool_address):
 def get_price(web3, bpool_address, tokenin_address, tokenout_address):
     """Get price at a balancer pool located at address bpool_address.
     Price is given as the number of tokenin required to buy a single tokenout."""
+    if is_pool_empty(web3, bpool_address):
+        return 0
+
     bpool = web3.eth.contract(address=bpool_address, abi=bpool_abi)
     tokenin = web3.eth.contract(address=tokenin_address, abi=erc20_abi)
     tokenin_decimals = tokenin.functions.decimals().call()
@@ -174,6 +189,9 @@ class BalancerAPI(Daily24hChangeTrackedAPI):
                 self.volume_tokens = pool_volume[token_address]
 
     async def _update(self, timeout=10.0):
+        if is_pool_empty(self._w3, self._exchange_addresses):
+            raise NoLiquidityException("Pool has no liquidity")
+
         self.price_eth = get_price(
             self._w3,
             self._exchange_addresses,
