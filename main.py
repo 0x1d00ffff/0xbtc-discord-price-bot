@@ -117,6 +117,11 @@ async def check_update_all_time_high(apis):
     try:
         price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
         price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
+        if (price_eth > 100 * apis.storage.all_time_high_eth_price.get() 
+            or price_usd > 100 * apis.storage.all_time_high_usd_price.get()):
+            # check for prices so high they are likely bugs
+            logging.warning(f"Prevented ATH announcement due to price too high ({price_eth} eth {price_usd} usd)")
+            return
         if (price_usd > apis.storage.all_time_high_usd_price.get()
             and formatting_helpers.prettify_decimals(price_usd)
                 != formatting_helpers.prettify_decimals(apis.storage.all_time_high_usd_price.get())):
