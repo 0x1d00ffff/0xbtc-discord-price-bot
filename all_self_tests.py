@@ -5,6 +5,7 @@ import datetime
 
 from mock_discord_classes import MockClient, MockMessage
 
+from util import preprocess_message
 import configuration as config
 
 
@@ -20,6 +21,7 @@ def generate_command_list():
                 'price merc',
                 'price ethex',
                 'price eth',
+                'avocado toast',
                 'mine test 0x0 0x0 0x0'])
 
 def get_fuzzing_iterator(seed=None):
@@ -51,12 +53,16 @@ def get_fuzzing_iterator(seed=None):
         yield ' '.join(myrandom.choices(full_chunk_set, k=num_chunks))
         idx += 1
 
-def run_command_blocking(apis, command_str, add_command_char=True):
+def run_command_blocking(apis, command_str, add_command_char=True, should_preprocess_message=True):
     import asyncio
     from commands import handle_global_command, handle_trading_command
 
     if add_command_char:
         command_str = config.COMMAND_CHARACTER + command_str
+
+    if should_preprocess_message:
+        command_str = preprocess_message(command_str)
+
     response = asyncio.get_event_loop().run_until_complete(handle_global_command(command_str, MockMessage(), apis))
     if response is None:
         response = asyncio.get_event_loop().run_until_complete(handle_trading_command(command_str, MockMessage(), apis))
@@ -284,20 +290,20 @@ class TestPriceCommand(unittest.TestCase):
             response = self.run_and_verify_command(command_str)
             self.assertTrue("New best share set!" in response)
             response = self.run_and_verify_command('bestshare')
-            self.assertTrue("Best share digest: `0x03...` (Difficulty: 45.00) by Username1" in response)
+            self.assertTrue("Best share digest: `0x03...` (Difficulty: 45.00) by username1" in response)
         command_str='setbestshare Username0 0 0x00 0'
         with self.subTest(command_str=command_str):
             response = self.run_and_verify_command(command_str)
             self.assertTrue("New best share set!" in response)
             response = self.run_and_verify_command('bestshare')
-            self.assertTrue("Best share digest: `0x00...` (Difficulty: 0) by Username0" in response)
+            self.assertTrue("Best share digest: `0x00...` (Difficulty: 0) by username0" in response)
         command_str='mine 123'
         with self.subTest(command_str=command_str):
             response = self.run_and_verify_command(command_str)
             self.assertTrue("New best share!" in response)
             self.assertTrue("Previous was" in response)
             self.assertTrue("Difficulty: 0" in response)
-            self.assertTrue("by Username0" in response)
+            self.assertTrue("by username0" in response)
             self.assertTrue("Nonce" in response)
             self.assertTrue("Digest" in response)
             self.assertTrue("Diff" in response)

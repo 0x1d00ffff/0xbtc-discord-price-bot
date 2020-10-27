@@ -36,6 +36,8 @@ import etherscan
 import formatting_helpers
 import commands
 
+from util import preprocess_message
+
 from persistent_storage import Storage
 import configuration as config
 
@@ -114,14 +116,14 @@ async def send_all_time_high_announcement(apis, message):
     logging.info('Sending announcement: {}'.format(message))
 
 async def check_update_all_time_high(apis):
-    try:
-        price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
-        price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
-        if (price_eth > 100 * apis.storage.all_time_high_eth_price.get() 
+    price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
+    price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
+    if (price_eth > 100 * apis.storage.all_time_high_eth_price.get()
             or price_usd > 100 * apis.storage.all_time_high_usd_price.get()):
-            # check for prices so high they are likely bugs
-            logging.warning(f"Prevented ATH announcement due to price too high ({price_eth} eth {price_usd} usd)")
-            return
+        # check for prices so high they are likely bugs
+        logging.warning(f"Prevented ATH announcement due to price too high ({price_eth} eth {price_usd} usd)")
+        return
+    try:
         if (price_usd > apis.storage.all_time_high_usd_price.get()
             and formatting_helpers.prettify_decimals(price_usd)
                 != formatting_helpers.prettify_decimals(apis.storage.all_time_high_usd_price.get())):
@@ -223,23 +225,6 @@ async def send_discord_msg_to_channel(channel, message):
     except discord.errors.Forbidden:
         logging.debug('no permission in channel: {} [{}]'.format(channel.name, channel.id))
 
-def preprocess(message):
-    message = message.lower().strip()
-
-    # allow '! command' since some platforms autocorrect to add a space
-    if message.startswith(config.COMMAND_CHARACTER + ' '):
-        message = config.COMMAND_CHARACTER + message[2:]
-
-    # allow '!!command', its a common typo
-    if message.startswith(config.COMMAND_CHARACTER+config.COMMAND_CHARACTER):
-        message = config.COMMAND_CHARACTER + message[2:]
-
-    # allow unicode ! (replace with ascii version)
-    if config.COMMAND_CHARACTER == '!':
-        if message.startswith('！'):
-            message = '!' + message[1:]
-
-    return message
 
 async def process_message(message):
     response = None
@@ -250,7 +235,7 @@ async def process_message(message):
     if message.author.bot:
         return
 
-    message_contents = preprocess(message.content)
+    message_contents = preprocess_message(message.content)
     if not isinstance(message_contents, str):
         logging.error("bugcheck: message_contents not a str? '{}'".format(repr(message_contents)))
     if message_contents == "":
@@ -483,6 +468,7 @@ def main():
     start_time = time.time()
 
     if args.self_test or args.command_test or args.speed_test or args.fuzz_test:
+        logging.basicConfig(level=logging.INFO)
         config.DATA_FOLDER = './test_data/databases/'
 
     if not os.path.exists(config.DATA_FOLDER):

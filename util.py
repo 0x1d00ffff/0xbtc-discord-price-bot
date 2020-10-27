@@ -45,3 +45,21 @@ def string_contains_any(input_string, command_list, exhaustive_search=False, per
             return True
     return False
 
+# pre-process a discord message to allow common typos and normalize input commands
+def preprocess_message(message):
+    message = message.lower().strip()
+
+    # allow '! command' since some platforms autocorrect to add a space
+    if message.startswith(config.COMMAND_CHARACTER + ' '):
+        message = config.COMMAND_CHARACTER + message[2:]
+
+    # allow '!!command', its a common typo
+    if message.startswith(config.COMMAND_CHARACTER+config.COMMAND_CHARACTER):
+        message = config.COMMAND_CHARACTER + message[2:]
+
+    # allow unicode ! (replace with ascii version)
+    if config.COMMAND_CHARACTER == '!':
+        if message.startswith('！'):
+            message = '!' + message[1:]
+
+    return message
