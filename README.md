@@ -83,6 +83,7 @@ Bot to monitor/post price etc to the 0xbtc discord server ([link to the discord]
  - volume_eth and volume_usd are not strictly defined - sometimes it means total
    volume across all pairs (converted to eth), sometimes it means volume in eth
    only and volume_btc means volume in btc only.
+ - go through code and use token_class.py everywhere it should be used
  - enable hotbit?
  - new exchanges
    - tokenjar [link](https://tokenjar.io/0xbtc)

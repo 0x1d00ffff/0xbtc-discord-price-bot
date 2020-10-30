@@ -19,6 +19,26 @@ from .balancer_abi import bpool_abi
 from .erc20_abi import erc20_abi
 from secret_info import ETHEREUM_NODE_URL
 from constants import SECONDS_PER_ETH_BLOCK
+from token_class import Token
+from weighted_average import WeightedAverage
+
+
+exchanges = (
+    (("0xBTC", "WETH"),
+        "0xDBCd8b30eC1C4b136e740C147112f39D41a10166"),
+    (("DUST", "DAI", "0xBTC", "BAL", "MATIC"),
+        "0x6af162b6c48Fc99722c7A656ABA9520f43338c72"),
+    (("DUST", "KIWI", "UNI", "LINK", "0xBTC", "BAL", "WETH", "GRT"),
+        "0x63A63f2cAd45fee80b242436BA71e0f462A4178E"),
+)
+
+
+def get_exchange_addresses_for_token(token_symbol):
+    result_list = []
+    for token_symbols, exchange_address in exchanges:
+        if token_symbol in token_symbols:
+            result_list.append(exchange_address)
+    return result_list
 
 
 def is_pool_empty(web3, bpool_address):
@@ -27,6 +47,7 @@ def is_pool_empty(web3, bpool_address):
         if balance == 0:
             return True
     return False
+
 
 def get_pooled_balance_for_address(web3, bpool_address, holder_address):
     """Get the liquidity balance of a particular address in a balancer pool.
@@ -54,6 +75,7 @@ def get_pooled_balance_for_address(web3, bpool_address, holder_address):
         results.append((token[0], token[1] * ownership_percentage_of_user))
     return results
 
+
 def get_reserves(web3, bpool_address):
     """Get the reserves of swappable assets, in units of tokens, of a particular 
     balancer pool.
@@ -77,6 +99,7 @@ def get_reserves(web3, bpool_address):
         result.append((address, balance / 10**decimals))
 
     return result
+
 
 def get_price(web3, bpool_address, tokenin_address, tokenout_address):
     """Get price at a balancer pool located at address bpool_address.
@@ -106,6 +129,7 @@ def get_price(web3, bpool_address, tokenin_address, tokenout_address):
 
     return spot_price_converted
 
+
 def get_volume(web3, bpool_address, num_hours=24):
     """Get total volume in a balancer pool for all tokens in the pool.
     Returns a dictionaty like: 
@@ -118,7 +142,7 @@ def get_volume(web3, bpool_address, num_hours=24):
     token_volumes = defaultdict(int)
 
     current_eth_block = web3.eth.blockNumber
-    
+
     for event in web3.eth.getLogs({
             'fromBlock': current_eth_block - (int(60*60*num_hours / SECONDS_PER_ETH_BLOCK)),
             'toBlock': current_eth_block - 1,
@@ -162,51 +186,86 @@ def get_volume(web3, bpool_address, num_hours=24):
 class BalancerAPI(Daily24hChangeTrackedAPI):
     def __init__(self, currency_symbol):
         super().__init__()
-        if currency_symbol.lower() == "0xbtc":
-            self._exchange_addresses = "0xDBCd8b30eC1C4b136e740C147112f39D41a10166"
-            # 0xBTC
-            self._currency_address = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31"
-            self._decimals = 8
-            # WETH
-            self._pair_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-        else:
+        self._exchange_addresses = get_exchange_addresses_for_token(currency_symbol)
+        if len(self._exchange_addresses) == 0:
             raise RuntimeError("Unknown currency_symbol {}, need to add address to balancer.py".format(currency_symbol))
+
+        self._currency_address = Token().from_symbol(currency_symbol).address
+        self._decimals = Token().from_symbol(currency_symbol).decimals
 
         self.currency_symbol = currency_symbol
         self.exchange_name = "Balancer"
         self.command_names = ["balancer"]
-        self.short_url = "https://bit.ly/2FezpxG"  # main uniswap pre-selected to 0xbtc
+        self.short_url = "https://bit.ly/3mp1qCS"  # balancer configured to eth->0xbtc
 
         self._time_volume_last_updated = 0
         self._w3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
 
     async def _update_volume(self):
-        pool_volume = get_volume(self._w3, self._exchange_addresses, num_hours=24)
-        for token_address in pool_volume.keys():
-            if token_address.lower() == self._pair_address.lower():
-                self.volume_eth = pool_volume[token_address]
-            elif token_address.lower() == self._currency_address.lower():
-                self.volume_tokens = pool_volume[token_address]
+        volume_eth = 0
+        volume_dai = 0
+        volume_tokens = 0
+        for exchange_address in self._exchange_addresses:
+            pool_volume = get_volume(self._w3, exchange_address, num_hours=24)
+            for token_address in pool_volume.keys():
+                if token_address.lower() == Token("WETH").address.lower():
+                    volume_eth += pool_volume[token_address]
+                if token_address.lower() == Token("DAI").address.lower():
+                    volume_dai += pool_volume[token_address]
+                elif token_address.lower() == self._currency_address.lower():
+                    volume_tokens += pool_volume[token_address]
+        self.volume_eth = volume_eth
+        self.volume_usd = volume_dai
+        self.volume_tokens = volume_tokens
 
     async def _update(self, timeout=10.0):
-        if is_pool_empty(self._w3, self._exchange_addresses):
+        if all(is_pool_empty(self._w3, e) for e in self._exchange_addresses):
             raise NoLiquidityException("Pool has no liquidity")
 
-        self.price_eth = get_price(
-            self._w3,
-            self._exchange_addresses,
-            self._pair_address,
-            self._currency_address)
+        self.liquidity_eth = 0
+        self.liquidity_dai = 0
+        self.liquidity_tokens = 0
 
-        pool_liquidity = get_reserves(self._w3, self._exchange_addresses)
-        for token_address, token_amount in pool_liquidity:
-            if token_address.lower() == self._pair_address.lower():
-                self.liquidity_eth = token_amount
-            elif token_address.lower() == self._currency_address.lower():
-                self.liquidity_tokens = token_amount
+        price_eth_avg = WeightedAverage()
+        price_dai_avg = WeightedAverage()
+
+        for exchange_address in self._exchange_addresses:
+            liquidity_eth = 0
+            liquidity_dai = 0
+            liquidity_tokens = 0
+
+            pool_liquidity = get_reserves(self._w3, exchange_address)
+            for token_address, token_amount in pool_liquidity:
+                if token_address.lower() == Token("WETH").address.lower():
+                    liquidity_eth = token_amount
+                if token_address.lower() == Token("DAI").address.lower():
+                    liquidity_dai = token_amount
+                elif token_address.lower() == self._currency_address.lower():
+                    liquidity_tokens = token_amount
+
+            price_eth = get_price(
+                self._w3,
+                exchange_address,
+                Token("WETH").address,
+                self._currency_address)
+            price_eth_avg.add(price_eth, liquidity_eth)
+
+            price_dai = get_price(
+                self._w3,
+                exchange_address,
+                Token("DAI").address,
+                self._currency_address)
+            price_dai_avg.add(price_dai, liquidity_dai)
+
+            self.liquidity_dai += liquidity_dai
+            self.liquidity_eth += liquidity_eth
+            self.liquidity_tokens += liquidity_tokens
+
+        self.price_eth = price_eth_avg.average()
+        self.price_usd = price_dai_avg.average()
 
         # update volume once every hour since it (potentially) loads eth api
-        if time.time() - self._time_volume_last_updated > 60*60:
+        if time.time() - self._time_volume_last_updated > 60 * 60:
             await self._update_volume()
             self._time_volume_last_updated = time.time()
 
@@ -262,6 +321,7 @@ def main():
 
     # e = Uniswapv2API('DAI')
     # e.load_once_and_print_values()
+
 
 if __name__ == "__main__":
     main()

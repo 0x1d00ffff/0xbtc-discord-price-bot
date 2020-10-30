@@ -5,9 +5,9 @@
 TODO: move commands out of main.py, this file is getting long
 """
 
-# supress deprecation warnings within websockets and web3
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
+# uncomment to supress deprecation warnings within websockets and web3
+#import warnings
+#warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 import sys
 import os
@@ -20,14 +20,6 @@ import discord
 from discord.ext import tasks  # background_update is a task now
 from secret_info import TOKEN
 
-# from coinmarketcap import CoinMarketCapAPI
-# from enclavesdex import EnclavesAPI
-# from forkdelta import ForkDeltaAPI
-# from mercatox import MercatoxAPI
-# from idex import IDEXAPI
-# from ethex import EthexAPI
-# from coinexchange import CoinExchangeAPI
-# from multi_exchange_manager import MultiExchangeManager
 import exchanges
 
 from mineable_token_info import MineableTokenInfo

@@ -365,6 +365,26 @@ class TestPriceCommand(unittest.TestCase):
             if idx >= iterations - 1:
                 break
 
+class TestHelperLibs(unittest.TestCase):
+    def test_tokens(self):
+        from token_class import Token
+
+        self.assertEqual(Token.from_symbol("0xBTC").address,
+                         "0xB6eD7644C69416d67B522e20bC294A9a9B405B31")
+        self.assertEqual(Token.from_symbol("0xbtc").address,
+                         "0xB6eD7644C69416d67B522e20bC294A9a9B405B31")
+        self.assertEqual(Token.from_symbol("UNI").decimals, 18)
+        self.assertEqual(Token.from_symbol("USDT").decimals, 6)
+        self.assertEqual(
+            Token.from_address("0xba100000625a3754423978a60c9317c58a424e3D").symbol,
+            "BAL")
+        self.assertEqual(
+            Token.from_address("0xB6eD7644C69416d67B522e20bC294A9a9B405B31").symbol,
+            "0xBTC")
+        self.assertEqual(
+            Token.from_address("0xb6ed7644c69416d67b522e20bc294a9a9b405b31").symbol,
+            "0xBTC")
+
 class TestDecimalFormatting(unittest.TestCase):
     def test_round_to_n(self):
         from formatting_helpers import round_to_n_decimals
@@ -559,6 +579,9 @@ class TestMineableTokenInfo(unittest.TestCase):
 
 def suite():
     suite = unittest.TestSuite()
+
+    suite.addTest(TestHelperLibs("test_tokens"))
+
     suite.addTest(TestDecimalFormatting("test_prettify_decimals"))
     suite.addTest(TestDecimalFormatting("test_fuzzing_prettify_decimals"))
     suite.addTest(TestDecimalFormatting("test_round_to_n"))
