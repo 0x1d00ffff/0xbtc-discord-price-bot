@@ -66,14 +66,17 @@ class CoinMarketCapAPI(BaseExchangeAPI):
             return
 
         parameters = {
-            'symbol':self.currency_symbol
+            'symbol': self.currency_symbol
         }
         headers = {
             'Accepts': 'application/json',
             'X-CMC_PRO_API_KEY': COINMARKETCAP_API_KEY,
         }
         method = "/cryptocurrency/quotes/latest"
-        data = await self._get_json_via_get_request(self._SERVER_URL+method, parameters, headers)
+        data = await self._get_json_from_url(
+            self._SERVER_URL + method,
+            parameters=parameters,
+            headers=headers)
 
         # CMC-only attributes; TODO: use market_cap in !market or something
         self.rank = int(data['data'][self.currency_symbol]['cmc_rank'])
@@ -97,10 +100,11 @@ class CoinMarketCapAPI(BaseExchangeAPI):
         if self.currency_symbol == "ETH":
             self.price_eth = 1
             self.eth_price_usd = self.price_usd
-        
+
         if self.currency_symbol == "BTC":
             self.price_btc = 1
             self.btc_price_usd = self.price_usd
+
 
 if __name__ == "__main__":
     eth_api = CoinMarketCapAPI('ETH')

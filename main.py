@@ -135,6 +135,7 @@ async def check_update_all_time_high(apis):
 
 @tasks.loop(seconds=config.UPDATE_RATE)
 async def background_update():
+    # TODO: time this. even better: time each exchange
     try:
         await apis.exchanges.update()
     except RuntimeError as e:
