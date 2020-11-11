@@ -30,6 +30,8 @@ exchanges = (
         "0x6af162b6c48Fc99722c7A656ABA9520f43338c72"),
     (("DUST", "KIWI", "UNI", "LINK", "0xBTC", "BAL", "WETH", "GRT"),
         "0x63A63f2cAd45fee80b242436BA71e0f462A4178E"),
+    (("DUST", "0xBTC"),
+        "0x2b36d183be387Ca2cF81B63EFddDb030F3a643eb"),
 )
 
 
@@ -39,6 +41,14 @@ def get_exchange_addresses_for_token(token_symbol):
         if token_symbol in token_symbols:
             result_list.append(exchange_address)
     return result_list
+
+
+def is_token_in_exchange(token_address, exchange_address):
+    for symbols, address in exchanges:
+        if (exchange_address.lower() == address.lower() 
+                and token_address.lower() in list(s.lower() for s in symbols)):
+            return True
+    return False
 
 
 def is_pool_empty(web3, bpool_address):
@@ -105,6 +115,12 @@ def get_price(web3, bpool_address, tokenin_address, tokenout_address):
     """Get price at a balancer pool located at address bpool_address.
     Price is given as the number of tokenin required to buy a single tokenout."""
     if is_pool_empty(web3, bpool_address):
+        return 0
+
+    if not is_token_in_exchange(Token.from_address(tokenin_address).symbol, bpool_address):
+        return 0
+
+    if not is_token_in_exchange(Token.from_address(tokenout_address).symbol, bpool_address):
         return 0
 
     bpool = web3.eth.contract(address=bpool_address, abi=bpool_abi)
@@ -276,6 +292,21 @@ def main():
     # an event it does not recognise.. not sure why this is a case. It is very loud.
     warnings.filterwarnings("ignore", category=UserWarning)
     web3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
+
+
+    price_dai = get_price(
+        web3,
+        "0x63A63f2cAd45fee80b242436BA71e0f462A4178E",
+        Token("WETH").address,
+        "0xB6eD7644C69416d67B522e20bC294A9a9B405B31")
+    print('exchange price existing token:', price_dai)
+    price_dai = get_price(
+        web3,
+        "0x63A63f2cAd45fee80b242436BA71e0f462A4178E",
+        Token("DAI").address,
+        "0xB6eD7644C69416d67B522e20bC294A9a9B405B31")
+    print('exchange price missing token:', price_dai)
+
     print()
     print('volume: {}'.format(get_volume(web3, "0xDBCd8b30eC1C4b136e740C147112f39D41a10166")))
     print()
@@ -295,6 +326,7 @@ def main():
     print('0xbtc and ETH reserves: {}'.format(get_reserves(web3, "0xDBCd8b30eC1C4b136e740C147112f39D41a10166")))
     print()
     print('balance_of_user: {}'.format(get_pooled_balance_for_address(web3, "0xDBCd8b30eC1C4b136e740C147112f39D41a10166", "0xA7165A762099Cc7044d67CD98a3C8699c03e28A7")))
+
 
     # print('$1 in USDC will swap for {} 0xBTC tokens'.format(get_swap_amount(web3, 1, "USDC", "0xBTC")))
     # print('$1 in DAI will swap for {} 0xBTC tokens'.format(get_swap_amount(web3, 1, "DAI", "0xBTC")))
