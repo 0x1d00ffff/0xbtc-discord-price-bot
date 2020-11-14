@@ -9,7 +9,7 @@ from configuration import UPDATE_RATE
 from weighted_average import WeightedAverage
 
 # data older than this is completely ignored
-_OLDEST_ALLOWED_DATA_SECONDS = 600
+_OLDEST_ALLOWED_DATA_SECONDS = UPDATE_RATE * 3
 
 class MultiExchangeManager():
     def __init__(self, api_obj_list):

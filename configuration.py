@@ -5,7 +5,7 @@ TOKEN_SYMBOL = '0xBTC'
 TOKEN_NAME = '0xBitcoin'
 TOKEN_ETH_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31"
 
-UPDATE_RATE = 120  # how often to update all APIs (in seconds)
+UPDATE_RATE = 240  # how often to update all APIs (in seconds)
 TOKEN_HOLDER_UPDATE_RATE_HOURS = 6  # how often to update the token holder chart (in hours)
 COMMAND_CHARACTER = '!'  # what character should prepend all commands
 

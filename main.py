@@ -33,7 +33,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.4.8"
+_VERSION = "0.4.9"
 
 
 old_status_string = None
@@ -562,11 +562,20 @@ def main():
                 background_update.start()
                 client.run(TOKEN)
             except (SystemExit, KeyboardInterrupt):
-                raise
-            except:
+                # what we expect to get when exiting with Ctrl+C
+                break
+            except RuntimeError as e:
+                if str(e) == "Event loop is closed":
+                    # this error is sometimes thrown when exiting the bot with Ctrl+C
+                    break
+                else:
+                    logging.exception('Unexpected error from Discord... retrying')
+                    time.sleep(10)  # wait a little time to prevent cpu spins
+            except Exception:
                 logging.exception('Unexpected error from Discord... retrying')
                 time.sleep(10)  # wait a little time to prevent cpu spins
 
+        logging.info("Exiting...bye!")
 
 if __name__ == "__main__":
     main()
