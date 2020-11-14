@@ -5,15 +5,10 @@
 TODO: move commands out of main.py, this file is getting long
 """
 
-# uncomment to supress deprecation warnings within websockets and web3
-#import warnings
-#warnings.filterwarnings("ignore", category=DeprecationWarning) 
-
 import sys
 import os
 import time
-import websocket  # for websocket.enableTrace(False)
-import websockets  # for websockets.exceptions.ConnectionClosed
+import websockets  # for websockets.exceptions.ConnectionClosed  # TODO: verify we need this
 import asyncio
 import logging
 import discord

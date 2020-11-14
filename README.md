@@ -42,7 +42,6 @@ Bot to monitor/post price etc to the 0xbtc discord server ([link to the discord]
 
 ##### Requires:
  - python3
- - websocket
  - discord
  - web3.py
  - BeautifulSoup (only if !holders command is enabled)

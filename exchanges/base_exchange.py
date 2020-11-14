@@ -3,7 +3,6 @@ Base exchange class
 """
 import time
 import socket
-import websocket
 from urllib.error import URLError
 import datetime
 
@@ -38,10 +37,6 @@ class BaseExchangeAPI():
         self.change_24h = None
         self.eth_price_usd = None
         self.btc_price_usd = None
-
-    # TODO: make this function, use it in enclaves
-    async def _get_json_from_websocket(self, url, commands):
-        pass
 
     async def _get_json_from_url(self, url, parameters=None, headers=None, invalid_mimetype_to_allow=None):
         """
@@ -105,14 +100,10 @@ class BaseExchangeAPI():
         # else:
         #     return data
 
-
     async def update(self, timeout=10.0):
         try:
             await self._update(timeout=timeout)
-        except (websocket._exceptions.WebSocketTimeoutException,
-                websocket._exceptions.WebSocketBadStatusException,
-                websocket._exceptions.WebSocketAddressException,
-                TimeoutError,
+        except (TimeoutError,
                 ConnectionResetError,
                 ConnectionRefusedError,
                 socket.gaierror,
