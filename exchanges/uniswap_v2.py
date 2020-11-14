@@ -11,32 +11,11 @@ from .uniswap_v2_abi import exchange_abi
 from .uniswap_v2_router_abi import router_abi
 from secret_info import ETHEREUM_NODE_URL
 from constants import SECONDS_PER_ETH_BLOCK
+from token_class import Token
 
 # location of uniswap v2 router countract (shouldn't need to change this unless the
 # router is upgraded)
 router_address = "0xf164fC0Ec4E93095b804a4795bBe1e041497b92a"
-
-# list of tokens used by this module
-# token name, token address, token decimals
-tokens = (
-("SHUF", "0x3A9FfF453d50D4Ac52A6890647b823379ba36B9E", 18),
-("DAI", "0x6B175474E89094C44Da98b954EedeAC495271d0F", 18),
-("MATIC", "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0", 18),
-("USDC", "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 6),
-("0xBTC", "0xB6eD7644C69416d67B522e20bC294A9a9B405B31", 8),
-("WETH", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 18),
-("DONUT", "0xC0F9bD5Fa5698B6505F643900FFA515Ea5dF54A9", 18),
-("USDT", "0xdAC17F958D2ee523a2206206994597C13D831ec7", 6),
-)
-
-def getTokenAddressFromName(name):
-    return [i[1] for i in tokens if i[0] == name][0]
-def getTokenNameFromAddress(address):
-    return [i[0] for i in tokens if i[1].lower() == address.lower()][0]
-def getTokenDecimalsFromName(name):
-    return [i[2] for i in tokens if i[0] == name][0]
-def getTokenDecimalsFromAddress(address):
-    return [i[2] for i in tokens if i[1].lower() == address.lower()][0]
 
 # list of exchange contract addresses for uniswap v2. each pair has a unique address.
 # token0 name, token1 name, uniswap exchange address
@@ -51,7 +30,6 @@ exchanges = (
 ("DAI", "USDC", "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"),
 ("WETH", "USDT", "0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852"),
 ("MATIC", "WETH", "0x819f3450dA6f110BA6Ea52195B3beaFa246062dE"),
-
 )
 
 def getExchangeAddressesForToken(name):
@@ -59,11 +37,14 @@ def getExchangeAddressesForToken(name):
 def getTokensFromExchangeAddress(exchange_address):
     return [(i[0], i[1]) for i in exchanges if i[2].lower() == exchange_address.lower()][0]
 def getExchangeAddressForTokenPair(first_token_name, second_token_name):
-    token_addresses = sorted([getTokenAddressFromName(first_token_name).lower(), getTokenAddressFromName(second_token_name).lower()])
+    token_addresses = sorted([Token().from_symbol(first_token_name).address.lower(),
+                              Token().from_symbol(second_token_name).address.lower()])
     for token1_name, token2_name, address in exchanges:
         if (token1_name in [first_token_name, second_token_name]
             and token2_name in [first_token_name, second_token_name]):
-            return address, getTokenNameFromAddress(token_addresses[0]), getTokenNameFromAddress(token_addresses[1])
+            return (address,
+                    Token().from_address(token_addresses[0]).symbol,
+                    Token().from_address(token_addresses[1]).symbol)
     return None
 
 def wei_to_ether(amount_in_wei):
@@ -107,20 +88,17 @@ def get_swap_amount(web3, amount, token0_name, token1_name):
     if reserves[0] == 0 or reserves[1] == 0:
         return 0
 
-    token0_decimals = getTokenDecimalsFromName(token0_name)
-    token1_decimals = getTokenDecimalsFromName(token1_name)
-
     # TODO: replace this with the real function (commented below) once web3.py
     # supports solidity >= 0.6
     amount_out = get_amount_out__uniswap_router(
-        amount * 10**token0_decimals,
+        amount * 10**Token().from_symbol(token0_name).decimals,
         reserves[0],
         reserves[1])
     # amount_out = self._router.functions.getAmountOut(
     #     amount * 10**token0_decimals, 
     #     reserves[0], 
     #     reserves[1]).call()
-    return amount_out / 10**token1_decimals
+    return amount_out / 10**Token().from_symbol(token1_name).decimals
 
 def get_pooled_balance_for_address(web3, token0_name, token1_name, owner_address):
     """get the balance of a particular address in a uniswap v2 pool"""
@@ -144,8 +122,8 @@ def get_reserves(web3, token0_name, token1_name):
     exchange_address, first_token_name, second_token_name = getExchangeAddressForTokenPair(token0_name, token1_name)
     exchange = web3.eth.contract(address=exchange_address, abi=exchange_abi)
     reserves = exchange.functions.getReserves().call()
-    reserves[0] = reserves[0] / 10**getTokenDecimalsFromName(first_token_name)
-    reserves[1] = reserves[1] / 10**getTokenDecimalsFromName(second_token_name)
+    reserves[0] = reserves[0] / 10**Token().from_symbol(first_token_name).decimals
+    reserves[1] = reserves[1] / 10**Token().from_symbol(second_token_name).decimals
 
     if token0_name == second_token_name:
         reserves[0], reserves[1] = reserves[1], reserves[0]
@@ -166,7 +144,7 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         super().__init__()
         try:
             self._exchange_addresses = getExchangeAddressesForToken(currency_symbol)
-            self._decimals = getTokenDecimalsFromName(currency_symbol)
+            self._decimals = Token().from_symbol(currency_symbol).decimals
         except IndexError:
             raise RuntimeError("Unknown currency_symbol {}, need to add address to uniswap_v2.py".format(currency_symbol))
 
@@ -224,14 +202,14 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
                 amount1Out = correct_log.args.amount1Out
                 #block_number = correct_log.blockNumber
 
-                if getTokenNameFromAddress(token0_address) == self.currency_symbol:
+                if Token().from_address(token0_address).symbol.lower() == self.currency_symbol.lower():
                     # token0 is the tracked currency symbol
-                    volume_tokens += abs((amount0In - amount0Out) / 10**getTokenDecimalsFromAddress(token0_address))
-                    volume_pair += abs((amount1In - amount1Out) / 10**getTokenDecimalsFromAddress(token1_address))
-                elif getTokenNameFromAddress(token1_address) == self.currency_symbol:
+                    volume_tokens += abs((amount0In - amount0Out) / 10**Token().from_address(token0_address).decimals)
+                    volume_pair += abs((amount1In - amount1Out) / 10**Token().from_address(token1_address).decimals)
+                elif Token().from_address(token1_address).symbol.lower() == self.currency_symbol.lower():
                     # token1 is the tracked currency symbol
-                    volume_tokens += abs((amount1In - amount1Out) / 10**getTokenDecimalsFromAddress(token1_address))
-                    volume_pair += abs((amount0In - amount0Out) / 10**getTokenDecimalsFromAddress(token0_address))
+                    volume_tokens += abs((amount1In - amount1Out) / 10**Token().from_address(token1_address).decimals)
+                    volume_pair += abs((amount0In - amount0Out) / 10**Token().from_address(token0_address).decimals)
 
                 # print('    token', getTokenNameFromAddress(token0_address), 'send to exchange', (amount0In - amount0Out) / 10**getTokenDecimalsFromAddress(token0_address), getTokenNameFromAddress(token0_address))
                 # print('    token', getTokenNameFromAddress(token1_address), 'send to exchange', (amount1In - amount1Out) / 10**getTokenDecimalsFromAddress(token1_address), getTokenNameFromAddress(token1_address))

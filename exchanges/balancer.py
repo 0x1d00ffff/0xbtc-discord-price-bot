@@ -101,8 +101,7 @@ def get_reserves(web3, bpool_address):
 
     for address in tokens_in_pool:
         # print('address: {}'.format(address))
-        token = web3.eth.contract(address=address, abi=erc20_abi)
-        decimals = token.functions.decimals().call()
+        decimals = Token().from_address(address).decimals
         # print('--decimals: {}'.format(decimals))
         balance = bpool.functions.getBalance(address).call()
         # print('--balance: {}'.format(balance / 10**decimals))
@@ -124,10 +123,8 @@ def get_price(web3, bpool_address, tokenin_address, tokenout_address):
         return 0
 
     bpool = web3.eth.contract(address=bpool_address, abi=bpool_abi)
-    tokenin = web3.eth.contract(address=tokenin_address, abi=erc20_abi)
-    tokenin_decimals = tokenin.functions.decimals().call()
-    tokenout = web3.eth.contract(address=tokenout_address, abi=erc20_abi)
-    tokenout_decimals = tokenout.functions.decimals().call()
+    tokenin_decimals = Token().from_address(tokenin_address).decimals
+    tokenout_decimals = Token().from_address(tokenout_address).decimals
 
     # Get spot price - it represents the ratio of one asset to another in terms of wei
     # on both sides. It's the number of wei you'll receive of one asset per wei of the
@@ -169,6 +166,7 @@ def get_volume(web3, bpool_address, num_hours=24):
             receipt = web3.eth.getTransactionReceipt(event['transactionHash'])
             parsed_logs = bpool.events.LOG_SWAP().processReceipt(receipt)
 
+            # one TX may contain multiple logs - so find the correct one
             correct_log = None
             for log in parsed_logs:
                 if log.address.lower() == bpool.address.lower():
@@ -194,8 +192,7 @@ def get_volume(web3, bpool_address, num_hours=24):
             # logging.debug('unknown topic topic0 {}'.format(topic0))
 
     for token_address in token_volumes.keys():
-        token = web3.eth.contract(address=token_address, abi=erc20_abi)
-        token_volumes[token_address] /= 10**token.functions.decimals().call()
+        token_volumes[token_address] /= 10**Token().from_address(token_address).decimals
     return token_volumes
 
 
@@ -256,7 +253,7 @@ class BalancerAPI(Daily24hChangeTrackedAPI):
                     liquidity_eth = token_amount
                 if token_address.lower() == Token("DAI").address.lower():
                     liquidity_dai = token_amount
-                elif token_address.lower() == self._currency_address.lower():
+                if token_address.lower() == self._currency_address.lower():
                     liquidity_tokens = token_amount
 
             price_eth = get_price(
