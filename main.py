@@ -319,14 +319,14 @@ async def manual_command(cmd, apis, ignore_response=False):
         if ignore_response:
             return
 
-        if global_response != None and trading_response != None:
+        if global_response is not None and trading_response is not None:
             logging.warning("Command '{}' has both a global and trading response; only the global response will be shown".format(cmd))
-        
-        if global_response != None:
+
+        if global_response is not None:
             for line in global_response.split('\n'):
                 logging.info('>' + line)
             return
-        if trading_response != None:
+        if trading_response is not None:
             for line in trading_response.split('\n'):
                 logging.info('>' + line)
             return
@@ -443,19 +443,20 @@ def main():
     
     parser = argparse.ArgumentParser(description='{} v{}'.format(_PROGRAM_NAME, _VERSION),
                                      epilog='<3 0x1d00ffff')
-    parser.add_argument('--command_test', action='store_true', default=False,
-                        help=("If set, don't connect to Discord - instead "
-                              "run a CLI interface to allow command tests."))
-    parser.add_argument('--self_test', action='store_true', default=False,
-                        help=("Run unittests"))
-    parser.add_argument('--speed_test', action='store_true', default=False,
-                        help=("Run command processing speed test"))
-    parser.add_argument('--fuzz_test', action='store_true', default=False,
-                        help=("Run command processing fuzz test"))
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--command_test', action='store_true', default=False,
+                       help=("If set, don't connect to Discord - instead "
+                             "run a CLI interface to allow command tests."))
+    group.add_argument('--self_test', action='store_true', default=False,
+                       help=("Run unittests"))
+    group.add_argument('--speed_test', action='store_true', default=False,
+                       help=("Run command processing speed test"))
+    group.add_argument('--fuzz_test', action='store_true', default=False,
+                       help=("Run command processing fuzz test"))
+    group.add_argument('--version', action='version', 
+                       version='%(prog)s v{}'.format(_VERSION))
     parser.add_argument('--verbose', action='store_true', 
                         help=("Enable detailed debug messages"))
-    parser.add_argument('--version', action='version', 
-                        version='%(prog)s v{}'.format(_VERSION))
     args = parser.parse_args()
 
     start_time = time.time()
