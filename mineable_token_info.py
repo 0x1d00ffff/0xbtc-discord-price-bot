@@ -52,6 +52,7 @@ class MineableTokenInfo():
         self.tokens_minted = None
         self.addr_0_balance = None
         self.estimated_hashrate_24h = None  # DEPRECATED UNTIL REIMPLEMENTED
+        self.estimated_hashrate_since_readjustment = None
 
         if self.address == "0xB6eD7644C69416d67B522e20bC294A9a9B405B31":
             self._ETH_BLOCKS_PER_REWARD = 60
