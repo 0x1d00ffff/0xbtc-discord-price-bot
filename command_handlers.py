@@ -35,6 +35,7 @@ async def cmd_help(command_str, discord_message, apis):
             + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`\n"
             + "tools: `convert`  `income`  `mine`")
 
+
 async def cmd_compare_price_vs(apis, item_name="lambo", item_price=200000):
     if apis.exchanges.last_updated_time() == 0:
         return ":shrug:"
@@ -44,10 +45,11 @@ async def cmd_compare_price_vs(apis, item_name="lambo", item_price=200000):
     if token_price_usd == 0:
         return ":shrug:"
 
-    return "1 {} = **{}** {} (${})".format(item_name, 
+    return "1 {} = **{}** {} (${})".format(item_name,
                                            prettify_decimals(item_price / token_price_usd),
                                            config.TOKEN_SYMBOL,
                                            to_readable_thousands(item_price))
+
 
 async def cmd_graph(command_str, discord_message, apis):
     # Uniswap v2  **0.00067Ξ**   $0.20   34.5Ξ volume
@@ -95,7 +97,7 @@ async def cmd_graph(command_str, discord_message, apis):
                     graph_incomplete_msg = ""
 
                 graph_text = make_graph(prices, labels=['-24h', '-12h', 'now'])
-                
+
                 message = "{}  **{}Ξ**   ${}   {}Ξ volume\n```{}```{}".format(
                     exchange.exchange_name,
                     prettify_decimals(eth_token_price),
@@ -105,14 +107,15 @@ async def cmd_graph(command_str, discord_message, apis):
                     graph_incomplete_msg,
                 )
                 return message
-            
+
     return "Graph what? try `!graph uniswap`"
+
 
 def show_price_from_source(apis, source='aggregate'):
     if (apis.exchanges.last_updated_time(exchange_name=source) == 0):
         logging.debug("cannot show api '{}'; it has not been updated yet".format(source))
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(exchange_name=source))
-    
+
     eth_token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=source)
 
     if eth_token_price == 0:
@@ -130,7 +133,7 @@ def show_price_from_source(apis, source='aggregate'):
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(exchange_name=source))
 
     percent_change_str = ""
-    if apis.exchanges.change_24h(config.TOKEN_SYMBOL, exchange_name=source) == None:
+    if apis.exchanges.change_24h(config.TOKEN_SYMBOL, exchange_name=source) is None:
         percent_change_str = ""
     elif apis.exchanges.change_24h(config.TOKEN_SYMBOL, exchange_name=source) == 0:
         percent_change_str = "**0**% "
@@ -139,13 +142,14 @@ def show_price_from_source(apis, source='aggregate'):
                                                        percent_change_to_emoji(apis.exchanges.change_24h(config.TOKEN_SYMBOL, exchange_name=source)),)
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
     result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
-                            seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time(exchange_name=source)),
-                            '' if token_price == 0 else '**${:.3f}** '.format(token_price), 
+                            seconds_to_n_time_ago(time.time() - apis.exchanges.last_updated_time(exchange_name=source)),
+                            '' if token_price == 0 else '**${:.3f}** '.format(token_price),
                             eth_token_price,
                             percent_change_str,
-                            '' if eth_price_on_this_exchange == 0 else '(ETH: **${:.0f}**) '.format(eth_price_on_this_exchange), 
+                            '' if eth_price_on_this_exchange == 0 else '(ETH: **${:.0f}**) '.format(eth_price_on_this_exchange),
                             apis.exchanges.short_url(exchange_name=source))
     return result
+
 
 async def cmd_price(command_str, discord_message, apis):
     msg = ""
@@ -168,25 +172,26 @@ async def cmd_price(command_str, discord_message, apis):
                                 require_cmd_char=False):
         return await cmd_price_all(command_str, discord_message, apis)
     elif util.string_contains_any(command_str,
-                             ['0xbtc'],
-                             exhaustive_search=True,
-                             require_cmd_char=False):
+                                  ['0xbtc'],
+                                  exhaustive_search=True,
+                                  require_cmd_char=False):
         return show_price_from_source(apis)
         # in this call to string_contains_any, we ignore commands containing '0x'. That
         # way this does not match !0xbitcoin
     elif util.string_contains_any(command_str,
-                             ['btc', 'bitcoin'],
-                             exhaustive_search=True,
-                             require_cmd_char=False,
-                             ignore_matches_containing='0x'):
+                                  ['btc', 'bitcoin'],
+                                  exhaustive_search=True,
+                                  require_cmd_char=False,
+                                  ignore_matches_containing='0x'):
         return await cmd_bitcoinprice(command_str, discord_message, apis)
     elif util.string_contains_any(command_str,
-                             ['eth', 'ethereum'],
-                             exhaustive_search=True,
-                             require_cmd_char=False):
+                                  ['eth', 'ethereum'],
+                                  exhaustive_search=True,
+                                  require_cmd_char=False):
         return await cmd_ethereumprice(command_str, discord_message, apis)
     else:
         return show_price_from_source(apis)
+
 
 def exchange_has_low_volume(apis, exchange):
     volume_usd = 0
@@ -200,12 +205,13 @@ def exchange_has_low_volume(apis, exchange):
         pass
     return volume_usd < 100
 
+
 async def cmd_price_all(command_str, discord_message, apis):
     msg = ""
     for exchange in sorted(apis.exchanges.alive_exchanges, key=lambda a: a.exchange_name):
         # skip CMC, LCW and apis not directly tracking the main currency
-        if (exchange.currency_symbol != config.TOKEN_SYMBOL 
-            or exchange.exchange_name == "Coin Market Cap" 
+        if (exchange.currency_symbol != config.TOKEN_SYMBOL
+            or exchange.exchange_name == "Coin Market Cap"
             or exchange.exchange_name == "Live Coin Watch"):
             continue
         # TODO: skip exchanges with <$100 volume in last 24h?
@@ -221,6 +227,7 @@ async def cmd_price_all(command_str, discord_message, apis):
         return ":shrug:"
     return msg
 
+
 async def cmd_bitcoinprice(command_str, discord_message, apis):
     if apis.exchanges.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url())
@@ -229,9 +236,10 @@ async def cmd_bitcoinprice(command_str, discord_message, apis):
         return ":shrug:"
 
     fmt_str = "Bitcoin price {}: **${:.0f}**"
-    result = fmt_str.format(seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time()),
+    result = fmt_str.format(seconds_to_n_time_ago(time.time() - apis.exchanges.last_updated_time()),
                             apis.exchanges.btc_price_usd())
     return result
+
 
 async def cmd_ethereumprice(command_str, discord_message, apis):
     if apis.exchanges.last_updated_time() == 0:
@@ -241,9 +249,10 @@ async def cmd_ethereumprice(command_str, discord_message, apis):
         return ":shrug:"
 
     fmt_str = "Ethereum price {}: **${:.0f}**"
-    result = fmt_str.format(seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time()), 
+    result = fmt_str.format(seconds_to_n_time_ago(time.time() - apis.exchanges.last_updated_time()), 
                             apis.exchanges.eth_price_usd())
     return result
+
 
 async def cmd_marketcap(command_str, discord_message, apis):
     if apis.exchanges.last_updated_time() == 0:
@@ -261,14 +270,16 @@ async def cmd_marketcap(command_str, discord_message, apis):
                             prettify_decimals(apis.token.tokens_minted))
     return result
 
+
 async def cmd_challenge(command_str, discord_message, apis):
-    if apis.token.challenge_number == None:
+    if apis.token.challenge_number is None:
         return ":shrug:"
 
     return "Current challenge: `{}`".format(apis.token.challenge_number)
 
+
 async def cmd_difficulty(command_str, discord_message, apis):
-    if apis.token.difficulty == None:
+    if apis.token.difficulty is None:
         return ":shrug:"
 
     if apis.token.seconds_until_readjustment == float('inf'):
@@ -281,14 +292,16 @@ async def cmd_difficulty(command_str, discord_message, apis):
                             retarget_str)
     return result
 
+
 async def cmd_blocktime(command_str, discord_message, apis):
-    if apis.token.seconds_per_reward == None:
+    if apis.token.seconds_per_reward is None:
         return ":shrug:"
 
     fmt_str = "Current average block time: **{}** (average taken over the last {})"
     result = fmt_str.format('unknown' if apis.token.seconds_per_reward == float('inf') else seconds_to_time(apis.token.seconds_per_reward),
                             seconds_to_time(apis.token.seconds_since_readjustment, granularity=1))
     return result
+
 
 async def cmd_hashrate(command_str, discord_message, apis):
     if apis.token.estimated_hashrate_since_readjustment is None:
@@ -309,8 +322,9 @@ async def cmd_hashrate(command_str, discord_message, apis):
                                 to_readable_thousands(apis.token.estimated_hashrate_24h, unit_type="hashrate", decimals=2))
     return result
 
+
 async def cmd_balance_of(command_str, discord_message, apis):
-    if apis.token.estimated_hashrate_since_readjustment == None:
+    if apis.token.estimated_hashrate_since_readjustment is None:
         return ":shrug:"
 
     try:
@@ -328,15 +342,17 @@ async def cmd_balance_of(command_str, discord_message, apis):
     else:
         return result
 
+
 async def cmd_tokens_minted(command_str, discord_message, apis):
-    if apis.token.tokens_minted == None:
+    if apis.token.tokens_minted is None:
         return ":shrug:"
 
     fmt_str = "Tokens in circulation: **{}** / {} {}"
-    result = fmt_str.format(prettify_decimals(apis.token.tokens_minted), 
+    result = fmt_str.format(prettify_decimals(apis.token.tokens_minted),
                             prettify_decimals(apis.token.total_supply),
                             apis.token.symbol)
     return result
+
 
 async def cmd_era(command_str, discord_message, apis):
     try:
@@ -344,7 +360,7 @@ async def cmd_era(command_str, discord_message, apis):
     except AttributeError:
         return ":shrug:"
 
-    if apis.token.era == None:
+    if apis.token.era is None:
         return ":shrug:"
 
     if apis.token.era == 39:
@@ -357,19 +373,21 @@ async def cmd_era(command_str, discord_message, apis):
                             apis.token.symbol)
     return result
 
+
 async def cmd_tokens_burned(command_str, discord_message, apis):
-    if apis.token.lost_token_balance == None:
+    if apis.token.lost_token_balance is None:
         return ":shrug:"
 
     fmt_str = "**{}** {} burned [<https://bit.ly/2AulG0C>, <https://bit.ly/3csDklj>]"
     result = fmt_str.format(apis.token.lost_token_balance, apis.token.symbol)
     return result
 
+
 async def cmd_holders(command_str, discord_message, apis):
     # TODO: fix holders chart and remove this stub
     return ":shrug: etherscan's API is not working"
 
-    if apis.token.addr_0_balance == None:
+    if apis.token.addr_0_balance is None:
         return ":shrug:"
 
     await apis.client.send_file(discord_message.channel,
@@ -383,6 +401,7 @@ async def cmd_holders(command_str, discord_message, apis):
     # await channel.send("content", file=file)
 
     return 'OK-noresponse'
+
 
 async def cmd_income(command_str, discord_message, apis):
     if apis.token.difficulty is None:
@@ -424,12 +443,13 @@ async def cmd_income(command_str, discord_message, apis):
     if tokens_per_day > 1:
         tokens_over_time_str = "**{}** tokens/day".format(prettify_decimals(tokens_per_day))
     else:
-        tokens_over_time_str = "**{}** tokens/week".format(prettify_decimals(tokens_per_day*7))
+        tokens_over_time_str = "**{}** tokens/week".format(prettify_decimals(tokens_per_day * 7))
 
     fmt_str = "Income for {}: {}; **{}** per block solo"
     return fmt_str.format(to_readable_thousands(hashrate, unit_type='hashrate'),
                           tokens_over_time_str,
                           seconds_to_time(seconds_per_block))
+
 
 def check_and_set_top_share(apis, resulting_difficulty, author_name, author_id, digest):
     result = ""
@@ -453,21 +473,23 @@ def check_and_set_top_share(apis, resulting_difficulty, author_name, author_id, 
         result += "\n~~~~~"
     return result
 
+
 def parse_mining_results(apis, nonce, digest, save_high_score=False, author_name=None, author_id=None):
     resulting_difficulty = apis.token.max_target / Web3.toInt(digest)
     percent_of_the_way_to_full_target = apis.token.mining_target / Web3.toInt(digest)
     fmt_str = "Nonce `0x{}...` -> Digest `0x{}...`\nDiff: {} ({}% of the way to a full solution)"
     result = fmt_str.format(nonce[:5].hex(),
                             digest[:5].hex(),
-                            prettify_decimals(resulting_difficulty), 
+                            prettify_decimals(resulting_difficulty),
                             prettify_decimals(percent_of_the_way_to_full_target * 100.0))
     if save_high_score:
         result += check_and_set_top_share(apis,
-                                          resulting_difficulty, 
+                                          resulting_difficulty,
                                           author_name,
                                           author_id,
                                           digest)
     return result
+
 
 async def cmd_mine(command_str, discord_message, apis):
     if apis.token.mining_target is None:
@@ -498,6 +520,7 @@ async def cmd_mine(command_str, discord_message, apis):
                                 author_name=discord_message.author.name,
                                 author_id=discord_message.author.id)
 
+
 async def cmd_mine_test(command_str, discord_message, apis):
     """ wrapper around get_digest_for_nonce to make testing easier. Example:
 
@@ -518,13 +541,14 @@ async def cmd_mine_test(command_str, discord_message, apis):
         return "Error parsing address"
 
     try:
-        nonce, digest = apis.token.get_digest_for_nonce_str(nonce, 
-                                                            address, 
+        nonce, digest = apis.token.get_digest_for_nonce_str(nonce,
+                                                            address,
                                                             challenge_number)
     except RuntimeError as e:
         return str(e)
-    
+
     return parse_mining_results(apis, nonce, digest)
+
 
 async def cmd_bestshare(command_str, discord_message, apis):
     fmt_str = "Best share digest: `0x{}...` (Difficulty: {}) by {}"
@@ -532,6 +556,7 @@ async def cmd_bestshare(command_str, discord_message, apis):
                             prettify_decimals(apis.storage.top_miner_difficulty.get()),
                             apis.storage.top_miner_name.get())
     return result
+
 
 async def cmd_all_time_high(command_str, discord_message, apis):
     time_eth = unix_timestamp_to_readable_date(apis.storage.all_time_high_eth_timestamp.get())
@@ -549,6 +574,7 @@ async def cmd_all_time_high(command_str, discord_message, apis):
                                 prettify_decimals(apis.storage.all_time_high_usd_price.get()),
                                 time_usd)
     return result
+
 
 async def cmd_set_all_time_high(command_str, discord_message, apis):
     # !setath 0.007719 2018-06-06 4.68 2018-06-06
@@ -575,6 +601,7 @@ async def cmd_set_all_time_high(command_str, discord_message, apis):
     apis.storage.all_time_high_usd_timestamp.set(time_usd)
 
     return "New ATH set!\n---\n{}".format(await cmd_all_time_high(command_str, discord_message, apis))
+
 
 async def cmd_set_all_time_high_image_filename(command_str, discord_message, apis):
     if discord_message.author.id not in config.PRIVILEGED_USER_IDS:
@@ -607,6 +634,7 @@ async def cmd_set_all_time_high_image_filename(command_str, discord_message, api
         await asyncio.sleep(5.0)
         return "New all-time-high filename set! `{}`".format(image_filename)
 
+
 async def cmd_set_bestshare(command_str, discord_message, apis):
     if discord_message.author.id not in config.PRIVILEGED_USER_IDS:
         fmt_str = 'User not allowed to run cmd_set_best_share: {} ({})'
@@ -637,6 +665,7 @@ async def cmd_set_bestshare(command_str, discord_message, apis):
                           difficulty,
                           await cmd_bestshare(command_str, discord_message, apis))
 
+
 async def cmd_set_user_address(command_str, discord_message, apis):
     try:
         address = command_str.split()[-1]
@@ -658,6 +687,7 @@ async def cmd_set_user_address(command_str, discord_message, apis):
 
     await discord_message.add_reaction("\U0001F44D")  # :thumbsup:
     return "OK-noresponse"
+
 
 async def cmd_mod_command(command_str, discord_message, apis):
     if discord_message.author.id not in config.PRIVILEGED_USER_IDS:
@@ -683,6 +713,7 @@ async def cmd_mod_command(command_str, discord_message, apis):
     else:
         return "modcommand (poweroff)"
 
+
 async def get_ping_times(command_str, discord_message, apis):
     discord_time_delta = datetime.datetime.utcnow() - discord_message.created_at
     discord_latency_ms = discord_time_delta.total_seconds() * 1000.0
@@ -693,6 +724,7 @@ async def get_ping_times(command_str, discord_message, apis):
 
     return ping_times
 
+
 async def cmd_status(command_str, discord_message, apis):
     # TODO: this function should build a list of label, status tuples then
     # format them all at the end
@@ -700,10 +732,10 @@ async def cmd_status(command_str, discord_message, apis):
     # TODO: sort exchange list alphabetically
     for exchange in apis.exchanges.all_exchanges:
         full_exchange_name = "{} [{}]:".format(exchange.exchange_name,
-                                                    exchange.currency_symbol)
+                                               exchange.currency_symbol)
         if exchange.update_failure_count > 0:
             if exchange.last_updated_time == 0:
-                time_str = "not yet updated" 
+                time_str = "not yet updated"
             else:
                 time_str = "last updated {} ago".format(seconds_to_time(time.time() - exchange.last_updated_time),
                                                         granularity=1)
@@ -715,7 +747,7 @@ async def cmd_status(command_str, discord_message, apis):
     ping_times = await get_ping_times(command_str, discord_message, apis)
     for url, latency in ping_times:
         url = url + ':'
-        if latency == None:
+        if latency is None:
             response += "- {:<24} down\n".format(url)
         else:
             response += "+ {:<24} {:.1f} ms\n".format(url, latency)
@@ -726,23 +758,26 @@ async def cmd_status(command_str, discord_message, apis):
 
     return response + "```"
 
+
 async def cmd_pools(command_str, discord_message, apis):
     all_pools = (
         ("Token Mining Pool", "http://TokenMiningPool.com", "0xeabe"),
         ("mike.rs pool", "http://mike.rs", "0x5021"),
-        #("tosti.ro", "http://0xbtc.tosti.ro", "0x540d"),
+        # ("tosti.ro", "http://0xbtc.tosti.ro", "0x540d"),
         ("mvis.ca", "https://mvis.ca/", "0x7d3e"),
         # TODO: uncomment when extremehash finds a block
-        #("ExtremeHash.io", "http://0xbtc.extremehash.io/", "0xbbdf"),
-        )
+        # ("ExtremeHash.io", "http://0xbtc.extremehash.io/", "0xbbdf"),
+    )
     response = ""
     for name, url, address in all_pools:
         response += "{} <{}>\n".format(name, url)
 
     return response
 
+
 async def cmd_uptime(command_str, discord_message, apis):
     return "Uptime: {}".format(seconds_to_time(time.time() - apis.start_time))
+
 
 async def cmd_volume(command_str, discord_message, apis):
     if apis.exchanges.last_updated_time() == 0:
@@ -802,9 +837,10 @@ async def cmd_volume(command_str, discord_message, apis):
 
     if "better" in command_str:
         # !bettervolume
-        return ':star2:'*10 + '\n' + response + '\n' + ':star2:'*10
+        return ':star2:' * 10 + '\n' + response + '\n' + ':star2:' * 10
     else:
         return response
+
 
 async def cmd_ratio(command_str, discord_message, apis):
     if apis.exchanges.last_updated_time() == 0:
@@ -816,6 +852,7 @@ async def cmd_ratio(command_str, discord_message, apis):
 
     return "1 BTC : {:,.0f} {}".format(apis.exchanges.btc_price_usd() / token_price_usd, config.TOKEN_SYMBOL)
 
+
 async def cmd_rank(command_str, discord_message, apis):
     api_name = "Coin Market Cap"
     api_url = apis.exchanges.short_url(exchange_name=api_name)
@@ -824,18 +861,20 @@ async def cmd_rank(command_str, discord_message, apis):
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(api_url)
 
     rank = apis.exchanges.rank(currency_symbol=config.TOKEN_SYMBOL,
-                     exchange_name=api_name)
+                               exchange_name=api_name)
     if rank is None:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(api_url)
 
     return "Rank: **{}** on {} [<{}>]".format(rank, api_name, api_url)
 
-"""Convert from source currency to dest currency. _amount_ indicates total
-amount of source currency. Example:
->>> convert(100, 'cents', 'usd')
-1
-"""
+
 def convert(amount, src, dest, apis):
+    """
+    Convert from source currency to dest currency. _amount_ indicates total
+    amount of source currency. Example:
+    >>> convert(100, 'cents', 'usd')
+    1
+    """
     src = src.lower()
     dest = dest.lower()
     amount = string_to_float(amount)
@@ -874,7 +913,7 @@ def convert(amount, src, dest, apis):
                 usd_value = amount * price
                 break
 
-    if usd_value == None:
+    if usd_value is None:
         return "Bad currency ({}). 0xbtc, 0xsatoshis, eth, wei, btc, mbtc, satoshis, and usd are supported.".format(src)
 
     if dest in ['0xbtc', '0xbitcoins', '0xbitcoin']:
@@ -904,13 +943,14 @@ def convert(amount, src, dest, apis):
                 result = usd_value / price
                 break
 
-    if result == None:
+    if result is None:
         return "Bad currency ({}). 0xbtc, 0xsatoshis, eth, wei, btc, mbtc, satoshis, and usd are supported.".format(dest)
 
     amount = prettify_decimals(amount)
     result = prettify_decimals(result)
 
     return "{} {} = **{}** {}".format(amount, src, result, dest)
+
 
 async def cmd_convert(command_str, discord_message, apis):
     # example input: '!convert 1 usd to 0xbtc'

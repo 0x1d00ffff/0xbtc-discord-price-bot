@@ -12,11 +12,12 @@ import platform
 # a number too high may affect ping times
 _MAX_THREADS = 5
 
+
 def ping(ip, count=1):
     """Ping a specified ip, return text output.
 
     Raises Exception if no response."""
-    if platform.system().lower()=="windows":
+    if platform.system().lower() == "windows":
         ping_params = "-n {} -w 2000".format(count)
     else:
         ping_params = "-c {} -W 2".format(count)
@@ -28,6 +29,7 @@ def ping(ip, count=1):
         raise Exception("bad response from ping: server probably down")
 
     return complete_proc.stdout.decode("utf-8")
+
 
 def get_ping_time(ip, count=4):
     try:
@@ -60,6 +62,7 @@ def get_ping_time(ip, count=4):
         total += float(val)
     return total / count
 
+
 def ping_list(ip_list, count=4):
     """Check latencies using threads"""
     try:
@@ -72,12 +75,12 @@ def ping_list(ip_list, count=4):
     raw_results = ping_list.pool.map_async(get_ping_time, ip_list, count).get(999)
     return list(zip(ip_list, raw_results))
 
+
 if __name__ == "__main__":
 
     ping('8.8.8.8')
 
-    print("ping_list(['10.0.0.1','8.8.8.8']) = {}".format(ping_list(['10.0.0.1','8.8.8.8'])))
+    print("ping_list(['10.0.0.1','8.8.8.8']) = {}".format(ping_list(['10.0.0.1', '8.8.8.8'])))
 
     ping_times = ping_list(['api.infura.io', 'etherscan.io'])
     print(ping_times)
-

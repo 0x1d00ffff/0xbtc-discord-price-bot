@@ -1,5 +1,4 @@
 
-
 # token name, token address, token decimals
 tokens = (
     ("UNI",   "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", 18),
@@ -54,13 +53,11 @@ def get_token_address_from_name(name):
         raise RuntimeError("Unknown name {}, need to edit token_class.py".format(name))
 
 
-
 def get_token_name_from_address(address):
     try:
         return [i[0] for i in tokens if i[1].lower() == address.lower()][0]
     except IndexError:
         raise RuntimeError("Unknown address {}, need to edit token_class.py".format(address))
-
 
 
 def get_token_decimals_from_name(name):
@@ -70,13 +67,11 @@ def get_token_decimals_from_name(name):
         raise RuntimeError("Unknown name {}, need to edit token_class.py".format(name))
 
 
-
 def get_token_decimals_from_address(address):
     try:
         return [i[2] for i in tokens if i[1].lower() == address.lower()][0]
     except IndexError:
         raise RuntimeError("Unknown address {}, need to edit token_class.py".format(address))
-
 
 
 def main():

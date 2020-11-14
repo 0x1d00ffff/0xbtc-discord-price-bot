@@ -18,6 +18,7 @@ async def handle_global_command(command_str, discord_message, apis):
                 return await cmd_def.response(command_str, discord_message, apis)
     return None
 
+
 async def handle_trading_command(command_str, discord_message, apis):
     msg = None
 
@@ -41,7 +42,5 @@ async def handle_trading_command(command_str, discord_message, apis):
                 return cmd_def.response
             else:
                 return await cmd_def.response(command_str, discord_message, apis)
-
-
 
     return msg

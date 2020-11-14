@@ -1,14 +1,17 @@
+
 class WeightedAverage():
     def __init__(self):
         self.values = []
         self.sum_of_weight = 0
+
     def add(self, value, weight):
         self.sum_of_weight += weight
-        if value == None:
+        if value is None:
             value = 0
-        if weight == None:
+        if weight is None:
             weight = 0
         self.values.append((value, weight))
+
     def average(self):
         if len(self.values) == 0:
             return 0

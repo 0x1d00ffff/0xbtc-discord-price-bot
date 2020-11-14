@@ -44,6 +44,7 @@ async def update_status(client, status_string):
             type=discord.ActivityType.playing,
             name=status_string))
 
+
 async def send_message_to_user_by_id(apis, user_id, message):
     user = discord.utils.get(apis.client.get_all_members(), id=user_id)
 
@@ -56,6 +57,7 @@ async def send_message_to_user_by_id(apis, user_id, message):
     else:
         raise RuntimeError("send_message_to_user_by_id could not find user id {}".format(user_id))
 
+
 async def send_message_to_channel_by_id(apis, channel_id, message):
     channel = apis.client.get_channel(channel_id)
 
@@ -63,6 +65,7 @@ async def send_message_to_channel_by_id(apis, channel_id, message):
         await apis.client.send_message(channel, message)
     else:
         raise RuntimeError("send_message_to_channel_by_id could not find channel id {}".format(channel_id))
+
 
 async def send_file_to_channel_by_id(apis, channel_id, filepath):
     channel = apis.client.get_channel(channel_id)
@@ -73,19 +76,20 @@ async def send_file_to_channel_by_id(apis, channel_id, filepath):
     else:
         raise RuntimeError("send_file_to_channel_by_id could not find channel id {}".format(channel_id))
 
+
 async def show_all_time_high_image(apis):
     try:
         apis.storage.all_time_high_image_filename.get()
     except KeyError:
         return
 
-    if apis.storage.all_time_high_image_filename.get() == None:
+    if apis.storage.all_time_high_image_filename.get() is None:
         return
 
     logging.info("Showing ath image. Filename is '{}'".format(apis.storage.all_time_high_image_filename.get()))
     try:
-        await send_file_to_channel_by_id(apis, 
-                                         config.ANNOUNCEMENT_CHANNEL_ID, 
+        await send_file_to_channel_by_id(apis,
+                                         config.ANNOUNCEMENT_CHANNEL_ID,
                                          os.path.join(config.DATA_FOLDER,
                                                       apis.storage.all_time_high_image_filename.get()))
     except Exception as e:
@@ -96,11 +100,13 @@ async def show_all_time_high_image(apis):
         # once the image is sent, clear the filename in storage
         apis.storage.all_time_high_image_filename.set(None)
 
+
 async def send_all_time_high_announcement(apis, message):
     await show_all_time_high_image(apis)
 
     await send_message_to_channel_by_id(apis, config.ANNOUNCEMENT_CHANNEL_ID, message)
     logging.info('Sending announcement: {}'.format(message))
+
 
 async def check_update_all_time_high(apis):
     price_eth = apis.exchanges.price_eth(config.TOKEN_SYMBOL)
@@ -127,6 +133,7 @@ async def check_update_all_time_high(apis):
             apis.storage.all_time_high_eth_timestamp.set(time.time())
     except:
         logging.exception('Failed to save ATH data')
+
 
 @tasks.loop(seconds=config.UPDATE_RATE)
 async def background_update():
@@ -175,7 +182,8 @@ async def background_update():
         if apis.token.estimated_hashrate_since_readjustment is not None and apis.token.estimated_hashrate_since_readjustment > 0:
             end_of_status = formatting_helpers.to_readable_thousands(apis.token.estimated_hashrate_since_readjustment, unit_type='short_hashrate')
         else:
-            end_of_status = formatting_helpers.seconds_to_n_time_ago(time.time()-apis.exchanges.last_updated_time())
+            end_of_status = formatting_helpers.seconds_to_n_time_ago(
+                time.time() - apis.exchanges.last_updated_time())
 
         # wait until at least one successful update to show status
         if apis.exchanges.last_updated_time() != 0:
@@ -189,10 +197,12 @@ async def background_update():
     except:
         logging.exception('Failed to change status')
 
+
 @background_update.before_loop
 async def before_background_update():
     # prevent background_update loops from starting until bot is ready
     await apis.client.wait_until_ready()
+
 
 async def send_discord_msg_to_channel(channel, message):
     # don't send messages that are only 'OK-noresponse' (this indicates
@@ -251,14 +261,14 @@ def show_startup_info(client):
                                                               client.user.name,
                                                               client.user.id))
 
+
 def setup_logging(path, verbose=False):
     class DiscordLogFilter(logging.Filter):
         """Filter to hide uninformative/annoying discord errors"""
         def filter(self, record):
             ignored_messages = (
                 "PyNaCl is not installed, voice will NOT be supported",
-                #"We have stopped responding to the gateway.",
-                )
+            )
             return not record.getMessage() in ignored_messages
 
     # set up logging to file
@@ -283,10 +293,9 @@ def setup_logging(path, verbose=False):
     console.setFormatter(formatter)
 
     logging.basicConfig(handlers=[filehandler, console],
-        level=logging.DEBUG)
+                        level=logging.DEBUG)
 
     # make libraries be quiet
-    websocket.enableTrace(False)
     logging.getLogger('asyncio').setLevel(logging.WARNING)
     logging.getLogger('websockets').setLevel(logging.WARNING)
     logging.getLogger('web3').setLevel(logging.INFO)
@@ -295,6 +304,7 @@ def setup_logging(path, verbose=False):
     logging.getLogger('discord').setLevel(logging.WARNING)
 
     logging.info('Logging debug info to {}'.format(path))
+
 
 async def manual_api_update():
     logging.info('Updating APIs')
@@ -329,6 +339,7 @@ async def manual_command(cmd, apis, ignore_response=False):
         raise
     except:
         logging.exception('Got exception from command handler')
+
 
 async def command_test():
     global apis
@@ -365,36 +376,44 @@ async def command_test():
 
         await manual_command(cmd, apis)
 
+
 def blocking_api_update():
     asyncio.get_event_loop().run_until_complete(manual_api_update())
+
 
 def raw_message_test():
     asyncio.get_event_loop().run_until_complete(manual_command("asdfasdf", apis, ignore_response=True))
 
+
 def invalid_command_test():
     asyncio.get_event_loop().run_until_complete(manual_command("!asdfasdf", apis, ignore_response=True))
+
 
 def string_command_test():
     asyncio.get_event_loop().run_until_complete(manual_command("!hug", apis, ignore_response=True))
 
+
 def price_command_test():
     asyncio.get_event_loop().run_until_complete(manual_command("!priceall", apis, ignore_response=True))
+
 
 def worst_case_command_test():
     asyncio.get_event_loop().run_until_complete(manual_command("!mine abc", apis, ignore_response=True))
 
+
 def run_function_and_time_it(function_name, iterations):
     import timeit
-    timer = timeit.Timer("{}()".format(function_name), 
+    timer = timeit.Timer("{}()".format(function_name),
                          "gc.enable(); from main import {}".format(function_name))
     speed = min(timer.repeat(repeat=3, number=iterations))
     time_per_run = speed / iterations
-    messages_per_sec = 1 / (speed/iterations)
+    messages_per_sec = 1 / (speed / iterations)
     fmt_str = "{:>23}:{:>12} seconds per call{:>12} runs per sec"
-    logging.info(fmt_str.format(function_name, 
+    logging.info(fmt_str.format(function_name,
                                 formatting_helpers.prettify_decimals(time_per_run),
                                 formatting_helpers.prettify_decimals(messages_per_sec)))
-    
+
+
 def speed_test():
     global apis
     iterations = 2000
@@ -412,13 +431,15 @@ def speed_test():
     # simple non-command message processing speed
     run_function_and_time_it('price_command_test', iterations)
     # simple non-command message processing speed
-    run_function_and_time_it('worst_case_command_test', iterations//10)
+    run_function_and_time_it('worst_case_command_test', iterations // 10)
 
     return
+
 
 # todo: encapsulate these
 apis = None
 client = None
+
 
 class APIWrapper():
     def __init__(self, client, storage, exchanges, token, start_time):
@@ -429,13 +450,14 @@ class APIWrapper():
 
         self.start_time = start_time
 
+
 def main():
     import argparse
     import os
 
     # TODO: make client NOT global.
     global client, apis
-    
+
     parser = argparse.ArgumentParser(description='{} v{}'.format(_PROGRAM_NAME, _VERSION),
                                      epilog='<3 0x1d00ffff')
     group = parser.add_mutually_exclusive_group()
@@ -448,9 +470,9 @@ def main():
                        help=("Run command processing speed test"))
     group.add_argument('--fuzz_test', action='store_true', default=False,
                        help=("Run command processing fuzz test"))
-    group.add_argument('--version', action='version', 
+    group.add_argument('--version', action='version',
                        version='%(prog)s v{}'.format(_VERSION))
-    parser.add_argument('--verbose', action='store_true', 
+    parser.add_argument('--verbose', action='store_true',
                         help=("Enable detailed debug messages"))
     args = parser.parse_args()
 
@@ -466,8 +488,7 @@ def main():
 
     token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
     storage = Storage(config.DATA_FOLDER)
-    exchange_manager = exchanges.MultiExchangeManager(
-    [
+    exchange_manager = exchanges.MultiExchangeManager([
         exchanges.CoinMarketCapAPI(config.TOKEN_SYMBOL),
         # exchanges.CoinMarketCapAPI('ETH'),
         # exchanges.CoinMarketCapAPI('BTC'),
@@ -546,21 +567,6 @@ def main():
                 logging.exception('Unexpected error from Discord... retrying')
                 time.sleep(10)  # wait a little time to prevent cpu spins
 
-            # old reconnecting-bot code used with discord 0.16. if discord 1.0+ still
-            # has reconnecting issues, it will need to be used again
-            #
-            # try:
-            #     asyncio.get_event_loop().run_until_complete(keep_running(client, TOKEN))
-            # except (SystemExit, KeyboardInterrupt):
-            #     raise
-            # except:
-            #     logging.exception('Unexpected error from Discord... retrying')
-            #     time.sleep(10)  # wait a little time to prevent cpu spins
-            #     try:
-            #         asyncio.get_event_loop().run_until_complete(client.close())
-            #         asyncio.get_event_loop().run_until_complete(client.logout())
-            #     except:
-            #         pass
 
 if __name__ == "__main__":
     main()

@@ -18,9 +18,7 @@ import logging
 
 import mineable_token_abis
 
-import json
 import binascii
-import web3
 from web3 import Web3
 from web3.exceptions import ValidationError
 
@@ -54,7 +52,6 @@ class MineableTokenInfo():
         else:
             fmt_str = "constants for contract {} are missing, need to edit mineable_token_info.py"
             raise RuntimeError(fmt_str.format(token_address))
-
 
         self._contract = self._w3.eth.contract(address=self.address, abi=abi)
 
@@ -119,7 +116,7 @@ class MineableTokenInfo():
         }
         logs = []
         for event in self._w3.eth.getLogs({
-                'fromBlock': self._current_eth_block - (days * int(60*60*24 / SECONDS_PER_ETH_BLOCK)),
+                'fromBlock': self._current_eth_block - (days * int(60 * 60 * 24 / SECONDS_PER_ETH_BLOCK)),
                 'toBlock': self._current_eth_block - 1,
                 'address': self.address}):
             topic0 = self._w3.toHex(event['topics'][0])
@@ -155,9 +152,9 @@ class MineableTokenInfo():
 
     def balance_of(self, address):
         return self._contract.functions.balanceOf(address).call() / self.decimal_divisor
-        
+
     def _estimated_hashrate_n_days(self, days):
-        eth_blocks_in_window = int(days * 60*60*24 / SECONDS_PER_ETH_BLOCK)
+        eth_blocks_in_window = int(days * 60 * 60 * 24 / SECONDS_PER_ETH_BLOCK)
         eth_block_at_start = self._current_eth_block - eth_blocks_in_window
         epoch_at_start = self._contract.functions.epochCount().call(block_identifier=-eth_blocks_in_window)
         #epoch_at_start = self._w3.toInt(self._w3.eth.getStorageAt(self.address, 0x7, eth_block_at_start))
@@ -173,13 +170,13 @@ class MineableTokenInfo():
         else:
             # difficulty changed within the window - so calculation must
             # consider multiple difficulties
-            previous_mining_target = self._contract.functions.getMiningTarget().call(block_identifier=self.last_difficulty_start_block-1)
+            previous_mining_target = self._contract.functions.getMiningTarget().call(block_identifier=self.last_difficulty_start_block - 1)
             previous_difficulty = int(self.max_target / previous_mining_target)
 
             # load the eth block where the difficulty changed to the *previous*
             # difficulty. If it is inside the window, exit completely, because
             # it means the window contains 3 or more difficulties.
-            eth_block_two_readjustments_ago = self._contract.functions.latestDifficultyPeriodStarted().call(block_identifier=self.last_difficulty_start_block-1)
+            eth_block_two_readjustments_ago = self._contract.functions.latestDifficultyPeriodStarted().call(block_identifier=self.last_difficulty_start_block - 1)
             if eth_block_two_readjustments_ago >= eth_block_at_start:
                 raise RuntimeError("Average window too large: this function only supports at most two difficulty periods.")
 
@@ -196,7 +193,7 @@ class MineableTokenInfo():
             estimated_hashrate_24h = wa.average()
 
         return estimated_hashrate_24h
-        
+
     def _estimated_hashrate_24h(self):
         return self._estimated_hashrate_n_days(1)
 
@@ -254,7 +251,6 @@ class MineableTokenInfo():
                 URLError):
             raise RuntimeError("Could not connect to infura.io")
 
-
     def get_digest_for_nonce_str(self, nonce_as_str, address, challenge_number=None):
         if not Web3.isAddress(address):
             raise RuntimeError("Bad address")
@@ -308,9 +304,10 @@ class MineableTokenInfo():
         # pad end with 32 bytes of zeros, then drop all but first 32 bytes
         nonce = (nonce + (b'\x00' * 32))[:32]
 
-        digest = Web3.soliditySha3(['bytes32', 'address', 'uint256'], 
+        digest = Web3.soliditySha3(['bytes32', 'address', 'uint256'],
                                    [challenge_number, address, Web3.toInt(nonce)])
         return nonce, digest
+
 
 if __name__ == "__main__":
 

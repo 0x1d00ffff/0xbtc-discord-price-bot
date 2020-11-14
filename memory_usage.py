@@ -2,6 +2,7 @@
 
 import sys
 
+
 def rss_resource():
     """Return the resident set size of this process + its children in
     megabytes. NOTE: http://man7.org/linux/man-pages/man2/getrusage.2.html
@@ -15,6 +16,7 @@ def rss_resource():
     mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / rusage_denom
     mem += resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss / rusage_denom
     return mem
+
 
 def rss_proc():
     """Memory usage of the current process in megabytes. Requires /proc
@@ -39,5 +41,3 @@ def rss_proc():
 if __name__ == "__main__":
     print('rss_resource:', rss_resource(), 'MB')
     print('rss_proc    :', rss_proc(), 'MB')
-
-

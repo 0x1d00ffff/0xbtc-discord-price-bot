@@ -1,6 +1,7 @@
 import datetime
 import platform
 
+
 def unix_timestamp_to_readable_date(timestamp):
     time = datetime.datetime.fromtimestamp(timestamp)
 
@@ -8,6 +9,7 @@ def unix_timestamp_to_readable_date(timestamp):
         return time.strftime("%a %B %-e %Y")
     else:
         return time.strftime("%a %B %#e %Y")
+
 
 def unix_timestamp_to_readable_date_time(timestamp):
     # TODO: implement
@@ -17,6 +19,7 @@ def unix_timestamp_to_readable_date_time(timestamp):
         return time.strftime("%a %B %-e %Y")
     else:
         return time.strftime("%a %B %#e %Y")
+
 
 def string_to_float(value):
     """custom version of float() that supports commas as decimal separators
@@ -29,6 +32,7 @@ def string_to_float(value):
         value = value.replace(',', '')
 
     return float(value)
+
 
 def percent_change_to_emoji(percent_change):
     values = [
@@ -49,10 +53,12 @@ def percent_change_to_emoji(percent_change):
     # return the last option as fallback
     return values[-1:][0][1]
 
+
 def round_to_n_decimals(x, n=1):
     from math import log10, floor
     assert n >= 1
-    return round(x, -int(floor(log10(abs(x))))+n-1)
+    return round(x, -int(floor(log10(abs(x)))) + n - 1)
+
 
 def prettify_decimals(number):
     if number == 0:
@@ -75,6 +81,7 @@ def prettify_decimals(number):
 
     return "{:.2e}".format(number).replace("+", "")
 
+
 def to_readable_thousands(value, unit_type='short', decimals=1):
     if unit_type == "long":
         units = ['', ' thousand', ' million', ' billion', ' trillion', ' quadrillion', ' sextillion', ' septillion', ' octillion', ' nonillion']
@@ -91,7 +98,8 @@ def to_readable_thousands(value, unit_type='short', decimals=1):
         value /= 1000
 
     fmt_str = "{:." + str(decimals) + "f}{}"
-    return fmt_str.format(value*1000, units[-1])
+    return fmt_str.format(value * 1000, units[-1])
+
 
 def seconds_to_n_time_ago(seconds):
     if seconds < 60:
@@ -103,16 +111,17 @@ def seconds_to_n_time_ago(seconds):
 
     return "{:.0f}h ago".format(minutes / 60)
 
+
 def seconds_to_time(seconds, granularity=2):
     result = []
     intervals = (
-        ('centuries', 60*60*24*7*4.34524*12*10*10),
-        ('decades',   60*60*24*7*4.34524*12*10),
-        ('years',     60*60*24*7*4.34524*12),
-        ('months',    60*60*24*7*4.34524),
-        ('weeks',     60*60*24*7),
-        ('days',      60*60*24),
-        ('hours',     60*60),
+        ('centuries', 60 * 60 * 24 * 7 * 4.34524 * 12 * 10 * 10),
+        ('decades',   60 * 60 * 24 * 7 * 4.34524 * 12 * 10),
+        ('years',     60 * 60 * 24 * 7 * 4.34524 * 12),
+        ('months',    60 * 60 * 24 * 7 * 4.34524),
+        ('weeks',     60 * 60 * 24 * 7),
+        ('days',      60 * 60 * 24),
+        ('hours',     60 * 60),
         ('minutes',   60),
         ('seconds',   1),
     )
@@ -128,5 +137,3 @@ def seconds_to_time(seconds, granularity=2):
                 name = name.rstrip('s')
             result.append("{:.0f} {}".format(value, name))
     return ', '.join(result[:granularity])
-
-    

@@ -14,6 +14,7 @@ class KeyValueStore():
         with shelve.open(self._db_file) as db:
             db[str(key)] = value
 
+
 class SingleValueStore():
     def __init__(self, database_folder, identifier, default=None):
         self.identifier = identifier
@@ -34,8 +35,9 @@ class SingleValueStore():
         with shelve.open(self._db_file) as db:
             db[self.identifier] = value
 
-# Class to provide a view into all persistent data available to the bot.
+
 class Storage:
+    """Class to provide a view into all persistent data available to the bot."""
     def __init__(self, database_folder):
         self._database_folder = database_folder
         if not os.path.exists(self._database_folder):
@@ -46,16 +48,16 @@ class Storage:
                                                          'user_addresses.db'))
 
         # timestamp of last update of holders chart
-        self.last_holders_update_timestamp = SingleValueStore(self._database_folder,"last_holders_update_timestamp", 0)
+        self.last_holders_update_timestamp = SingleValueStore(self._database_folder, "last_holders_update_timestamp", 0)
 
         # !topscore info for !mine
-        self.top_miner_name = SingleValueStore(self._database_folder,"top_miner_name", "Nobody")
-        self.top_miner_id = SingleValueStore(self._database_folder,"top_miner_id", 0)
-        self.top_miner_difficulty = SingleValueStore(self._database_folder,"top_miner_difficulty", 0)
-        self.top_miner_digest = SingleValueStore(self._database_folder,"top_miner_digest", b'\x00')
+        self.top_miner_name = SingleValueStore(self._database_folder, "top_miner_name", "Nobody")
+        self.top_miner_id = SingleValueStore(self._database_folder, "top_miner_id", 0)
+        self.top_miner_difficulty = SingleValueStore(self._database_folder, "top_miner_difficulty", 0)
+        self.top_miner_digest = SingleValueStore(self._database_folder, "top_miner_digest", b'\x00')
 
         # forkdelta's price is not available via api, so it is remembered here
-        self.last_forkdelta_price = SingleValueStore(self._database_folder,"last_forkdelta_price", 0)
+        self.last_forkdelta_price = SingleValueStore(self._database_folder, "last_forkdelta_price", 0)
 
         # 0xBitcoin ATH Notes as of Oct 27 2018:
         # $4.66 on June 6 2018  https://www.coingecko.com/en/price_charts/0xbitcoin/usd
@@ -85,12 +87,12 @@ class Storage:
         # Probably OK to use $4.68, 0.007719Ξ, timestamp 1528286400.0 (Noon GMT on June 6 2018)
         # `!setath 0.007719 2018-06-06 4.68 2018-06-06`
 
-        self.all_time_high_usd_price = SingleValueStore(self._database_folder,"all_time_high_usd_price", 4.68)
-        self.all_time_high_usd_timestamp = SingleValueStore(self._database_folder,"all_time_high_usd_timestamp", 1528286400.0)
-        self.all_time_high_eth_price = SingleValueStore(self._database_folder,"all_time_high_eth_price", 0.007719)
-        self.all_time_high_eth_timestamp = SingleValueStore(self._database_folder,"all_time_high_eth_timestamp", 1528286400.0)
+        self.all_time_high_usd_price = SingleValueStore(self._database_folder, "all_time_high_usd_price", 4.68)
+        self.all_time_high_usd_timestamp = SingleValueStore(self._database_folder, "all_time_high_usd_timestamp", 1528286400.0)
+        self.all_time_high_eth_price = SingleValueStore(self._database_folder, "all_time_high_eth_price", 0.007719)
+        self.all_time_high_eth_timestamp = SingleValueStore(self._database_folder, "all_time_high_eth_timestamp", 1528286400.0)
 
-        self.all_time_high_image_filename = SingleValueStore(self._database_folder,"all_time_high_image_filename")
+        self.all_time_high_image_filename = SingleValueStore(self._database_folder, "all_time_high_image_filename")
 
 
 if __name__ == "__main__":
