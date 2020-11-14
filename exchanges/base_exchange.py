@@ -26,6 +26,7 @@ class BaseExchangeAPI():
         self.command_names = []
         self.short_url = ""
         self.last_updated_time = 0
+        self.last_update_duration = 0
         self.update_failure_count = 0
 
         self.price_eth = None
@@ -101,6 +102,7 @@ class BaseExchangeAPI():
         #     return data
 
     async def update(self, timeout=10.0):
+        time_start = time.time()
         try:
             await self._update(timeout=timeout)
         except (TimeoutError,
@@ -117,7 +119,12 @@ class BaseExchangeAPI():
             raise
         else:
             self.last_updated_time = time.time()
+            self.last_update_duration = self.last_updated_time - time_start
             self.update_failure_count = 0
+        finally:
+            run_time = time.time() - time_start
+            if run_time > 5.0:
+                logging.warning('Exchange {} update took {} seconds'.format(self.exchange_name, run_time))
 
     def print_all_values(self):
         print(self.exchange_name, self.currency_symbol, 'price_eth    ', self.price_eth)

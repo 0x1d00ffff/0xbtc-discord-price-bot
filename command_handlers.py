@@ -719,7 +719,9 @@ async def get_ping_times(command_str, discord_message, apis):
     discord_latency_ms = discord_time_delta.total_seconds() * 1000.0
 
     ping_times = [('Discord API', discord_latency_ms)]
-    ping_times += ping_wrapper.ping_list(['api.infura.io', 'etherscan.io'],
+    ping_times += ping_wrapper.ping_list(['mainnet.infura.io',
+                                          'etherscan.io',
+                                          'rpc-mainnet.matic.network'],
                                          count=2)
 
     return ping_times
@@ -742,7 +744,8 @@ async def cmd_status(command_str, discord_message, apis):
             response += "- {:<24} {}\n".format(full_exchange_name,
                                                time_str)
         else:
-            response += "+ {:<24} OK\n".format(full_exchange_name)
+            response += "+ {:<24} OK (took {})\n".format(
+                full_exchange_name, seconds_to_time(exchange.last_update_duration))
 
     ping_times = await get_ping_times(command_str, discord_message, apis)
     for url, latency in ping_times:
