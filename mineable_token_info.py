@@ -32,7 +32,7 @@ except:
     from urllib import urlencode
     from urllib import quote
 
-import requests
+import requests  # TODO: remove after switch to aioethereum
 
 from urllib.error import URLError
 
@@ -43,8 +43,15 @@ import secret_info
 class MineableTokenInfo():
     def __init__(self, token_address):
         self._w3 = Web3(Web3.HTTPProvider(secret_info.ETHEREUM_NODE_URL))
-
         self.address = self._w3.toChecksumAddress(token_address)
+        self.total_supply = None
+        self.last_difficulty_start_block = None
+        self.mining_target = None
+        self.difficulty = None
+        self.challenge_number = None
+        self.tokens_minted = None
+        self.addr_0_balance = None
+        self.estimated_hashrate_24h = None  # DEPRECATED UNTIL REIMPLEMENTED
 
         if self.address == "0xB6eD7644C69416d67B522e20bC294A9a9B405B31":
             self._ETH_BLOCKS_PER_REWARD = 60
@@ -54,22 +61,20 @@ class MineableTokenInfo():
             raise RuntimeError(fmt_str.format(token_address))
 
         self._contract = self._w3.eth.contract(address=self.address, abi=abi)
+        self._initialized = False
 
-        self.symbol = self._contract.functions.symbol().call()
-        self.min_target = self._contract.functions._MINIMUM_TARGET().call()
-        self.max_target = self._contract.functions._MAXIMUM_TARGET().call()
-        self.blocks_per_readjustment = self._contract.functions._BLOCKS_PER_READJUSTMENT().call()
-        self.decimals = self._contract.functions.decimals().call()
-        self.decimal_divisor = 10 ** self.decimals
-        self.ideal_block_time_seconds = self._ETH_BLOCKS_PER_REWARD * SECONDS_PER_ETH_BLOCK
-
-        self.total_supply = None
-        self.last_difficulty_start_block = None
-        self.mining_target = None
-        self.difficulty = None
-        self.challenge_number = None
-        self.tokens_minted = None
-        self.addr_0_balance = None
+    def _initialize_all_constant_contract_values(self):
+        if self._initialized:
+            return
+        else:
+            self.symbol = self._contract.functions.symbol().call()
+            self.min_target = self._contract.functions._MINIMUM_TARGET().call()
+            self.max_target = self._contract.functions._MAXIMUM_TARGET().call()
+            self.blocks_per_readjustment = self._contract.functions._BLOCKS_PER_READJUSTMENT().call()
+            self.decimals = self._contract.functions.decimals().call()
+            self.decimal_divisor = 10 ** self.decimals
+            self.ideal_block_time_seconds = self._ETH_BLOCKS_PER_REWARD * SECONDS_PER_ETH_BLOCK
+            self._initialized = True
 
     def _read_contract_variable_at_index(self, index, convert_to_int=True, divisor=1, timeout=10.0):
         # UNUSED
@@ -109,6 +114,7 @@ class MineableTokenInfo():
         TODO: there is a OwnershipTransferred event, but for 0xBTC ownership is
         burned so this does not matter. This event should be handled to make
         this library more generic."""
+        # MUST CALL UPDATE() BEFORE THIS FUNCTION
         event_types = {
             "0xcf6fbb9dcea7d07263ab4f5c3a92f53af33dffc421d9d121e1c74b307e68189d": "mint",
             "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef": "transfer",
@@ -154,6 +160,7 @@ class MineableTokenInfo():
         return self._contract.functions.balanceOf(address).call() / self.decimal_divisor
 
     def _estimated_hashrate_n_days(self, days):
+        # MUST CALL UPDATE() BEFORE THIS FUNCTION
         eth_blocks_in_window = int(days * 60 * 60 * 24 / SECONDS_PER_ETH_BLOCK)
         eth_block_at_start = self._current_eth_block - eth_blocks_in_window
         epoch_at_start = self._contract.functions.epochCount().call(block_identifier=-eth_blocks_in_window)
@@ -195,9 +202,12 @@ class MineableTokenInfo():
         return estimated_hashrate_24h
 
     def _estimated_hashrate_24h(self):
+        # MUST CALL UPDATE() BEFORE THIS FUNCTION
         return self._estimated_hashrate_n_days(1)
 
     def _update(self):
+        self._initialize_all_constant_contract_values()
+
         self.total_supply = self._contract.functions.totalSupply().call() / self.decimal_divisor
         self.last_difficulty_start_block = self._contract.functions.latestDifficultyPeriodStarted().call()
         self.mining_target = self._contract.functions.getMiningTarget().call()
@@ -238,16 +248,17 @@ class MineableTokenInfo():
 
         # catch error thrown by new infura v3 api since it does not support this
         # anymore, unfortunately
-        try:
-            self.estimated_hashrate_24h = self._estimated_hashrate_24h()
-        except (ValueError, requests.exceptions.HTTPError):
-            self.estimated_hashrate_24h = None
+        # try:
+        #     self.estimated_hashrate_24h = self._estimated_hashrate_24h()
+        # except (ValueError, requests.exceptions.HTTPError):
+        #     self.estimated_hashrate_24h = None
 
     def update(self):
         try:
             return self._update()
         except (requests.exceptions.ConnectionError,
                 requests.exceptions.ReadTimeout,
+                requests.exceptions.HTTPError,
                 URLError):
             raise RuntimeError("Could not connect to infura.io")
 

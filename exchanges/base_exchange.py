@@ -8,10 +8,12 @@ import datetime
 
 import aiohttp
 import asyncio
+import requests  # for requests.exceptions.HTTPError  # TODO: remove after switch to aioethereum
 
 import json
 
 import logging
+
 
 
 class NoLiquidityException(Exception):
@@ -109,7 +111,8 @@ class BaseExchangeAPI():
                 socket.gaierror,
                 socket.timeout,
                 NoLiquidityException,
-                URLError) as e:
+                URLError,
+                requests.exceptions.HTTPError) as e:
             self.update_failure_count += 1
             raise TimeoutError(str(e)) from e
         except Exception:
