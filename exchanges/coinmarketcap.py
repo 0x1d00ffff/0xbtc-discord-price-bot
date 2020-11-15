@@ -101,7 +101,7 @@ class CoinMarketCapAPI(BaseExchangeAPI):
         # called. combined with the 2m normal update rate, this should limit CMC to an
         # update only every 20m.
         if self._skip_counter <= 0:
-            self._update_cmc_data(timeout)
+            await self._update_cmc_data(timeout)
             self._skip_counter = 10
         else:
             self._skip_counter -= 1
