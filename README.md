@@ -55,6 +55,8 @@ Bot to monitor/post price etc to the 0xbtc discord server ([link to the discord]
 
 ##### Todo:
  - replace web3 with aioethereum to fix the "heartbeat blocked for 10 seconds..." errors
+ - a memoized web3 implementation would likely reduce overall traffic. Each time the
+   APIs need updating, clear the memo and run all updates with the same web3 instance.
  - at boot the !status commands shows all exchanges as OK. it should show "not yet
    updated" until the first update is done
  - modify background_update so that it updates all exchanges independently, that way
