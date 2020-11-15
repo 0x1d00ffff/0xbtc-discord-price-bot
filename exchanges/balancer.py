@@ -2,6 +2,10 @@
 API for Balancer distributed exchange (balancer.exchange)
 Price info is pulled from the smart contract
 
+TODO: this module uses total token liquidity to determine price weighting across
+      multiple pools that contain token. this weighting should also take pool fee
+      into consideration - but it currently does not.
+
 NOTE: Balancer is in the first stage of 3 main stages of development. Things will change
       in v2 and 3, so this is a minimal implementation to support v1. Known changes
       include Smart Order Router which will be used in the future to pick the best route
@@ -32,6 +36,8 @@ exchanges = (
         "0x63A63f2cAd45fee80b242436BA71e0f462A4178E"),
     (("DUST", "0xBTC"),
         "0x2b36d183be387Ca2cF81B63EFddDb030F3a643eb"),
+    (("DUST", "0xBTC"),
+        "0x9c1B855a9Cd2d6232A6DEBd6F8b431c19a54C14E"),
 )
 
 
@@ -231,48 +237,66 @@ class BalancerAPI(Daily24hChangeTrackedAPI):
         self.volume_usd = volume_dai
         self.volume_tokens = volume_tokens
 
-    async def _update(self, timeout=10.0):
-        if all(is_pool_empty(self._w3, e) for e in self._exchange_addresses):
-            raise NoLiquidityException("Pool has no liquidity")
+    async def _get_liquidity_and_price_at_pool_addr(self, exchange_address):
+        """Get liquidity (in eth, dai, and tokens) and get price of token priced in
+        eth and dai. Returns a 5-tuple."""
+        liquidity_eth = 0
+        liquidity_dai = 0
+        liquidity_tokens = 0
 
-        self.liquidity_eth = 0
-        self.liquidity_dai = 0
-        self.liquidity_tokens = 0
+        price_eth = 0
+        price_dai = 0
 
-        price_eth_avg = WeightedAverage()
-        price_dai_avg = WeightedAverage()
+        for token_address, token_amount in get_reserves(self._w3, exchange_address):
+            if token_address.lower() == Token("WETH").address.lower():
+                liquidity_eth = token_amount
+            if token_address.lower() == Token("DAI").address.lower():
+                liquidity_dai = token_amount
+            if token_address.lower() == self._currency_address.lower():
+                liquidity_tokens = token_amount
 
-        for exchange_address in self._exchange_addresses:
-            liquidity_eth = 0
-            liquidity_dai = 0
-            liquidity_tokens = 0
-
-            pool_liquidity = get_reserves(self._w3, exchange_address)
-            for token_address, token_amount in pool_liquidity:
-                if token_address.lower() == Token("WETH").address.lower():
-                    liquidity_eth = token_amount
-                if token_address.lower() == Token("DAI").address.lower():
-                    liquidity_dai = token_amount
-                if token_address.lower() == self._currency_address.lower():
-                    liquidity_tokens = token_amount
-
+        if liquidity_tokens == 0:
+            # no liquidity; don't bother updating price
+            pass
+        else:
             price_eth = get_price(
                 self._w3,
                 exchange_address,
                 Token("WETH").address,
                 self._currency_address)
-            price_eth_avg.add(price_eth, liquidity_eth)
 
             price_dai = get_price(
                 self._w3,
                 exchange_address,
                 Token("DAI").address,
                 self._currency_address)
+
+        return liquidity_eth, liquidity_dai, liquidity_tokens, price_eth, price_dai
+
+    async def _update(self, timeout=10.0):
+        total_liquidity_eth = 0
+        total_liquidity_dai = 0
+        total_liquidity_tokens = 0
+
+        price_eth_avg = WeightedAverage()
+        price_dai_avg = WeightedAverage()
+
+        for exchange_address in self._exchange_addresses:
+            liquidity_eth, liquidity_dai, liquidity_tokens, price_eth, price_dai = await self._get_liquidity_and_price_at_pool_addr(exchange_address)
+
+            price_eth_avg.add(price_eth, liquidity_eth)
             price_dai_avg.add(price_dai, liquidity_dai)
 
-            self.liquidity_dai += liquidity_dai
-            self.liquidity_eth += liquidity_eth
-            self.liquidity_tokens += liquidity_tokens
+            total_liquidity_eth += liquidity_eth
+            total_liquidity_dai += liquidity_dai
+            total_liquidity_tokens += liquidity_tokens
+
+        if total_liquidity_tokens == 0:
+            raise NoLiquidityException("Pool has no liquidity")
+
+        self.liquidity_dai = total_liquidity_dai
+        self.liquidity_eth = total_liquidity_eth
+        self.liquidity_tokens = total_liquidity_tokens
 
         self.price_eth = price_eth_avg.average()
         self.price_usd = price_dai_avg.average()
@@ -346,7 +370,7 @@ def main():
     e.load_once_and_print_values()
     print()
     print('0xbtc-weth liquidity in eth', e.liquidity_eth)
-    print('0xbtc-weth volume in tokens', e.liquidity_tokens)
+    print('0xbtc-weth liquidity in tokens', e.liquidity_tokens)
 
     # e = Uniswapv2API('DAI')
     # e.load_once_and_print_values()
