@@ -466,6 +466,28 @@ class TestDecimalFormatting(unittest.TestCase):
         self.assertEqual(string_to_float('0.00012345'),     0.00012345)
         self.assertEqual(string_to_float('1234567'),        1234567)
 
+    def test_seconds_to_time(self):
+        from formatting_helpers import seconds_to_time
+
+        self.assertEqual(seconds_to_time(3600), '1 hour')
+        self.assertEqual(seconds_to_time(100), '1 minute, 40 seconds')
+        self.assertEqual(seconds_to_time(0.1), '0 seconds')
+        self.assertEqual(seconds_to_time(0), '0 seconds')
+        self.assertEqual(seconds_to_time(0, show_subsecond_values=True), '0 seconds')
+        self.assertEqual(seconds_to_time(0, granularity=5, show_subsecond_values=True), '0 seconds')
+
+        self.assertEqual(seconds_to_time(3661, granularity=1), '1 hour')
+        self.assertEqual(seconds_to_time(3661, granularity=2), '1 hour, 1 minute')
+        self.assertEqual(seconds_to_time(3661, granularity=3), '1 hour, 1 minute, 1 second')
+
+        self.assertEqual(seconds_to_time(0.1, show_subsecond_values=True), '100 milliseconds')
+        self.assertEqual(seconds_to_time(0.12301, granularity=1, show_subsecond_values=True), '123 milliseconds')
+        self.assertEqual(seconds_to_time(0.12391, granularity=1, show_subsecond_values=True), '123 milliseconds')
+        # python float error causes this one to be off by 1, but thats OK
+        self.assertEqual(seconds_to_time(0.12301, show_subsecond_values=True), '123 milliseconds, 9 nanoseconds')
+        self.assertEqual(seconds_to_time(0.12391, show_subsecond_values=True), '123 milliseconds, 910 nanoseconds')
+
+
 class TestMineableTokenInfo(unittest.TestCase):
     
     def setUp(self):
@@ -586,6 +608,7 @@ def suite():
     suite.addTest(TestDecimalFormatting("test_fuzzing_prettify_decimals"))
     suite.addTest(TestDecimalFormatting("test_round_to_n"))
     suite.addTest(TestDecimalFormatting("test_str_to_float"))
+    suite.addTest(TestDecimalFormatting("test_seconds_to_time"))
 
     suite.addTest(TestMineableTokenInfo("test_reading_0xbtc_values"))
     suite.addTest(TestMineableTokenInfo("test_hashing_nonces"))

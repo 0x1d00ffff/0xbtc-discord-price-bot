@@ -54,17 +54,7 @@ class CoinMarketCapAPI(BaseExchangeAPI):
         self.update_failure_count = 0
         self._skip_counter = 0
 
-    async def _update(self, timeout=10.0):
-        # HACK: since coinmarketcap has a much lower api limit than the other data
-        # sources, add a check here to only update every 10th time this function is
-        # called. combined with the 2m normal update rate, this should limit CMC to an
-        # update only every 20m.
-        if self._skip_counter <= 0:
-            self._skip_counter = 10
-        else:
-            self._skip_counter -= 1
-            return
-
+    async def _update_cmc_data(self, timeout):
         parameters = {
             'symbol': self.currency_symbol
         }
@@ -104,6 +94,18 @@ class CoinMarketCapAPI(BaseExchangeAPI):
         if self.currency_symbol == "BTC":
             self.price_btc = 1
             self.btc_price_usd = self.price_usd
+
+    async def _update(self, timeout=10.0):
+        # HACK: since coinmarketcap has a much lower api limit than the other data
+        # sources, add a check here to only update every 10th time this function is
+        # called. combined with the 2m normal update rate, this should limit CMC to an
+        # update only every 20m.
+        if self._skip_counter <= 0:
+            self._update_cmc_data(timeout)
+            self._skip_counter = 10
+        else:
+            self._skip_counter -= 1
+            return
 
 
 if __name__ == "__main__":

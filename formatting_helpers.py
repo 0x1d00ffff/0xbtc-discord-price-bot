@@ -112,19 +112,29 @@ def seconds_to_n_time_ago(seconds):
     return "{:.0f}h ago".format(minutes / 60)
 
 
-def seconds_to_time(seconds, granularity=2):
+def seconds_to_time(seconds, granularity=2, show_subsecond_values=False):
     result = []
     intervals = (
-        ('centuries', 60 * 60 * 24 * 7 * 4.34524 * 12 * 10 * 10),
-        ('decades',   60 * 60 * 24 * 7 * 4.34524 * 12 * 10),
-        ('years',     60 * 60 * 24 * 7 * 4.34524 * 12),
-        ('months',    60 * 60 * 24 * 7 * 4.34524),
-        ('weeks',     60 * 60 * 24 * 7),
-        ('days',      60 * 60 * 24),
-        ('hours',     60 * 60),
-        ('minutes',   60),
-        ('seconds',   1),
+        ('centuries',     60 * 60 * 24 * 7 * 4.34524 * 12 * 10 * 10),
+        ('decades',       60 * 60 * 24 * 7 * 4.34524 * 12 * 10),
+        ('years',         60 * 60 * 24 * 7 * 4.34524 * 12),
+        ('months',        60 * 60 * 24 * 7 * 4.34524),
+        ('weeks',         60 * 60 * 24 * 7),
+        ('days',          60 * 60 * 24),
+        ('hours',         60 * 60),
+        ('minutes',       60),
+        ('seconds',       1),
     )
+    subsecond_intervals = (
+        ('milliseconds',  1 / 1000.0),
+        ('nanoseconds',   1 / 1000.0 / 1000.0),
+        ('picoseconds',   1 / 1000.0 / 1000.0 / 1000.0),
+    )
+
+    if show_subsecond_values:
+        intervals += subsecond_intervals
+    else:
+        seconds = int(seconds)
 
     if seconds == 0:
         return '0 seconds'

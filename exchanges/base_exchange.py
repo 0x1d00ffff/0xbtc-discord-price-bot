@@ -29,7 +29,9 @@ class BaseExchangeAPI():
         self.short_url = ""
         self.last_updated_time = 0
         self.last_update_duration = 0
-        self.update_failure_count = 0
+        # initialize all apis as having 'failed' initially, otherwise callers might
+        # assume data is valid
+        self.update_failure_count = 1
 
         self.price_eth = None
         self.price_usd = None
