@@ -5,15 +5,14 @@ import time
 import socket
 from urllib.error import URLError
 import datetime
-
 import aiohttp
 import asyncio
 import requests  # for requests.exceptions.HTTPError  # TODO: remove after switch to aioethereum
-
 import json
-
 import logging
 
+# if an update takes this long, print a warning log message
+_UPDATE_DURATION_WARN_TIME_SECONDS = 10.0
 
 
 class NoLiquidityException(Exception):
@@ -128,8 +127,8 @@ class BaseExchangeAPI():
             self.update_failure_count = 0
         finally:
             run_time = time.time() - time_start
-            if run_time > 5.0:
-                logging.warning('Exchange {} update took {} seconds'.format(self.exchange_name, run_time))
+            if run_time > _UPDATE_DURATION_WARN_TIME_SECONDS:
+                logging.warning('Exchange {} update took {:.3f} seconds'.format(self.exchange_name, run_time))
 
     def print_all_values(self):
         print(self.exchange_name, self.currency_symbol, 'price_eth    ', self.price_eth)
