@@ -107,6 +107,8 @@ EXPENSIVE_STUFF = [
      ['SpaceX Falcon 9', 'falcon9']),
     (150e9,  # 150 billion 
      ['International Space Station', 'iss']),
+    (115500,
+     ['BMW 545e', 'bmw545e']),
 ]
 
 
