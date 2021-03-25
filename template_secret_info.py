@@ -17,3 +17,6 @@ ETHEREUM_NODE_URL = "mainnet.infura.io/v3/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 # CoinMarketCap API key. Onle necessary if you want to use the coinmarketcap.py exchange
 # Get one free at https://coinmarketcap.com/api
 COINMARKETCAP_API_KEY = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+
+# URL for matic provider. Probably don't need to change this.
+MATIC_NODE_URL = "https://rpc-mainnet.matic.network"

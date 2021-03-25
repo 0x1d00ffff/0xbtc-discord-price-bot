@@ -12,6 +12,7 @@ from .base_exchange import Daily24hChangeTrackedAPI
 from .uniswap_v1_abi import exchange_abi
 from .erc20_abi import erc20_abi
 from secret_info import ETHEREUM_NODE_URL
+from secret_info import MATIC_NODE_URL
 from .uniswap_v2 import get_price as uniswap_v2_get_price
 
 SECONDS_PER_MATIC_BLOCK = 2.1
@@ -44,7 +45,7 @@ class SwapmaticAPI(Daily24hChangeTrackedAPI):
 
         self._time_volume_last_updated = 0
 
-        self._w3 = Web3(Web3.HTTPProvider("https://rpc-mainnet.matic.network"))
+        self._w3 = Web3(Web3.HTTPProvider(MATIC_NODE_URL))
         self._exchange = self._w3.eth.contract(address=self.exchange_address, abi=exchange_abi)
 
     async def _update_24h_volume(self, matic_eth_price, timeout=10.0):
@@ -140,5 +141,6 @@ class SwapmaticAPI(Daily24hChangeTrackedAPI):
 if __name__ == "__main__":
     e = SwapmaticAPI('0xBTC')
     e.load_once_and_print_values()
+    print('reserves:', e.get_reserves())
     # e = SwapmaticAPI('DAI')
     # e.load_once_and_print_values()

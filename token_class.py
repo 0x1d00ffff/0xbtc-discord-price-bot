@@ -17,20 +17,27 @@ tokens = (
     ("USDT",  "0xdAC17F958D2ee523a2206206994597C13D831ec7", 6),
 )
 
+# token name, token address, token decimals
+matic_tokens = (
+    ("0xBTC", "0x71B821aa52a49F32EEd535fCA6Eb5aa130085978", 8),
+)
+
 
 class Token():
     """Token info class - allows token address and decimals lookup."""
+    _token_definitions = tokens
+
     def __init__(self, token_symbol=None):
         self._token_symbol = token_symbol
 
     @classmethod
     def from_symbol(cls, token_symbol):
-        return cls(token_symbol)
+        return cls(token_symbol=token_symbol)
 
     @classmethod
     def from_address(cls, address):
-        token_symbol = get_token_name_from_address(address)
-        return cls(token_symbol)
+        token_symbol = get_token_name_from_address(cls._token_definitions, address)
+        return cls(token_symbol=token_symbol)
 
     @property
     def symbol(self):
@@ -38,38 +45,45 @@ class Token():
 
     @property
     def address(self):
-        return get_token_address_from_name(self._token_symbol)
+        return get_token_address_from_name(self._token_definitions, self._token_symbol)
 
     @property
     def decimals(self):
-        return get_token_decimals_from_name(self._token_symbol)\
+        return get_token_decimals_from_name(self._token_definitions, self._token_symbol)
 
 
+class MaticToken(Token):
+    _token_definitions = matic_tokens
 
-def get_token_address_from_name(name):
+    """Token info class for Matic tokens."""
+    def __init__(self, token_symbol=None):
+        super().__init__(token_symbol=token_symbol)
+
+
+def get_token_address_from_name(token_definitions, name):
     try:
-        return [i[1] for i in tokens if i[0].lower() == name.lower()][0]
+        return [i[1] for i in token_definitions if i[0].lower() == name.lower()][0]
     except IndexError:
         raise RuntimeError("Unknown name {}, need to edit token_class.py".format(name))
 
 
-def get_token_name_from_address(address):
+def get_token_name_from_address(token_definitions, address):
     try:
-        return [i[0] for i in tokens if i[1].lower() == address.lower()][0]
+        return [i[0] for i in token_definitions if i[1].lower() == address.lower()][0]
     except IndexError:
         raise RuntimeError("Unknown address {}, need to edit token_class.py".format(address))
 
 
-def get_token_decimals_from_name(name):
+def get_token_decimals_from_name(token_definitions, name):
     try:
-        return [i[2] for i in tokens if i[0].lower() == name.lower()][0]
+        return [i[2] for i in token_definitions if i[0].lower() == name.lower()][0]
     except IndexError:
         raise RuntimeError("Unknown name {}, need to edit token_class.py".format(name))
 
 
-def get_token_decimals_from_address(address):
+def get_token_decimals_from_address(token_definitions, address):
     try:
-        return [i[2] for i in tokens if i[1].lower() == address.lower()][0]
+        return [i[2] for i in token_definitions if i[1].lower() == address.lower()][0]
     except IndexError:
         raise RuntimeError("Unknown address {}, need to edit token_class.py".format(address))
 
@@ -84,6 +98,8 @@ def main():
     print("0xba100000625a3754423978a60c9317c58a424e3D symbol:",
           Token.from_address("0xba100000625a3754423978a60c9317c58a424e3D").symbol)
 
+    print("0xbtc address on matic:",
+          MaticToken.from_symbol("0xBTC").address)
 
 if __name__ == "__main__":
     main()

@@ -58,7 +58,11 @@ class MercatoxAPI(BaseExchangeAPI):
         data = await self._get_json_from_url(self._SERVER_URL+method)
 
         for pair_name in data['pairs']:
-            currency, base_pair = pair_name.split('_')
+            try:
+                currency, base_pair = pair_name.split('_')
+            except ValueError as e:
+                raise ValueError("Fail to split pair_name '{}': {}".format(pair_name, repr(e)))
+
             # skip reverse-pairings
             if currency != self.currency_symbol:
                 continue
