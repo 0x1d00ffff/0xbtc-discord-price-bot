@@ -9,36 +9,36 @@ import time
 from .base_exchange import Daily24hChangeTrackedAPI, NoLiquidityException
 from .uniswap_v2_abi import exchange_abi
 from .uniswap_v2_router_abi import router_abi
-from secret_info import ETHEREUM_NODE_URL
-from constants import SECONDS_PER_ETH_BLOCK
-from token_class import Token, NoTokenMatchError
+from secret_info import MATIC_NODE_URL
+from constants import SECONDS_PER_MATIC_BLOCK
+from token_class import MaticToken, NoTokenMatchError
 from weighted_average import WeightedAverage
 
 # list of exchange contract addresses. each pair has a unique address.
 # token0 name, token1 name, uniswap exchange address
 exchanges = (
-("0xBTC", "WETH", "0xc12c4c3E0008B838F75189BFb39283467cf6e5b3"),
-("DAI", "0xBTC", "0x095739e9Ea7B0d11CeE1c1134FB76549B610f4F3"),
-("USDC", "0xBTC", "0xA99F7Bc92c932A2533909633AB19cD7F04805059"),
-("SHUF", "0xBTC", "0x1f9119d778d0B631f9B3b8974010ea2B750e4d33"),
-("DAI", "WETH", "0xA478c2975Ab1Ea89e8196811F51A7B7Ade33eB11"),
-("USDC", "WETH", "0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc"),
-("DAI", "USDT", "0xB20bd5D04BE54f870D5C0d3cA85d82b34B836405"),
-("DAI", "USDC", "0xAE461cA67B15dc8dc81CE7615e0320dA1A9aB8D5"),
-("WETH", "USDT", "0x0d4a11d5EEaaC28EC3F61d100daF4d40471f1852"),
-("MATIC", "WETH", "0x819f3450dA6f110BA6Ea52195B3beaFa246062dE"),
-("0xBTC", "USDT", "0x2Fe04156a0b47A8EB6298eEa6A0e00Fe47cb9B3B"),
-("KIWI", "WETH", "0x524C8a7563034aA33F8E53A934909929024C3937"),
+
+# WETH pairs
+("USDC", "WETH", "0x853Ee4b2A13f8a742d64C8F088bE7bA2131f670d"),
+("WETH", "DAI", "0x4A35582a710E1F4b2030A3F826DA20BfB6703C09"),
+("WETH", "USDT", "0xF6422B997c7F54D1c6a6e103bcb1499EeA0a7046"),
+("WMATIC", "WETH", "0xadbF1854e5883eB8aa7BAf50705338739e558E5b"),
+("maWETH", "WETH", "0x587381961298A6019926329468f2dB73C414cf68"),
+("WETH", "SWAM", "0xe3aD20db6f1B061024F4dF761DEB80bCd3e3E2a7"),
+# 0xBTC pairs
+("maWETH", "0xBTC", "0x83Eaa0dD0146fb2494eDb1b260eC7C830d356AF7"),
+("WMATIC", "0xBTC", "0x74FE2ea44ACe1AEee9937A2FDc7554CFC9288964"),
+("0xBTC", "WETH", "0x58BBC687Ad7113e46D35314776FAd9c4B73e200C"),
+("USDC", "0xBTC", "0x19FcFD016a5Fa35286C1FBb3F96Fe9b3fF44530e"),
+("0xBTC", "USDT", "0xa3F3b3ad33C233633242bd1236072355a8af6f52"),
+("KIWI", "0xBTC", "0xf115308E8347E816D23566EAafB4C0BCb1349432"),
+# KIWI pairs
+("0xBTC", "DAI", "0xc5e5208A9544Bd0589063D4670E9747535127E16"),
+("KIWI", "SWAM", "0x0cD19Fb530D0ff9caB6F233d61dE6240E7f4660F"),
+("WMATIC", "KIWI", "0xb97759d3b6210F2b7Af081E023Db972856523A5a"),
+("KIWI", "SWAM", "0x6233132c03DAC2Af6495A9dAB02DF18b2A9DA892"),
+
 )
-
-
-
-
-
-
-
-
-
 
 class PairNotDefinedError(Exception):
     pass
@@ -48,14 +48,14 @@ def getExchangeAddressesForToken(name):
 def getTokensFromExchangeAddress(exchange_address):
     return [(i[0], i[1]) for i in exchanges if i[2].lower() == exchange_address.lower()][0]
 def getExchangeAddressForTokenPair(first_token_name, second_token_name):
-    token_addresses = sorted([Token().from_symbol(first_token_name).address.lower(),
-                              Token().from_symbol(second_token_name).address.lower()])
+    token_addresses = sorted([MaticToken().from_symbol(first_token_name).address.lower(),
+                              MaticToken().from_symbol(second_token_name).address.lower()])
     for token1_name, token2_name, address in exchanges:
         if (token1_name in [first_token_name, second_token_name]
             and token2_name in [first_token_name, second_token_name]):
             return (address,
-                    Token().from_address(token_addresses[0]).symbol,
-                    Token().from_address(token_addresses[1]).symbol)
+                    MaticToken().from_address(token_addresses[0]).symbol,
+                    MaticToken().from_address(token_addresses[1]).symbol)
     raise PairNotDefinedError(f"No pair {first_token_name}-{second_token_name} found")
 
 def wei_to_ether(amount_in_wei):
@@ -102,14 +102,14 @@ def get_swap_amount(web3, amount, token0_name, token1_name):
     # TODO: replace this with the real function (commented below) once web3.py
     # supports solidity >= 0.6
     amount_out = get_amount_out__uniswap_router(
-        amount * 10**Token().from_symbol(token0_name).decimals,
+        amount * 10**MaticToken().from_symbol(token0_name).decimals,
         reserves[0],
         reserves[1])
     # amount_out = self._router.functions.getAmountOut(
     #     amount * 10**token0_decimals, 
     #     reserves[0], 
     #     reserves[1]).call()
-    return amount_out / 10**Token().from_symbol(token1_name).decimals
+    return amount_out / 10**MaticToken().from_symbol(token1_name).decimals
 
 def get_pooled_balance_for_address(web3, token0_name, token1_name, owner_address):
     """get the balance of a particular address in a uniswap v2 pool"""
@@ -133,8 +133,8 @@ def get_reserves(web3, token0_name, token1_name):
     exchange_address, first_token_name, second_token_name = getExchangeAddressForTokenPair(token0_name, token1_name)
     exchange = web3.eth.contract(address=exchange_address, abi=exchange_abi)
     reserves = exchange.functions.getReserves().call()
-    reserves[0] = reserves[0] / 10**Token().from_symbol(first_token_name).decimals
-    reserves[1] = reserves[1] / 10**Token().from_symbol(second_token_name).decimals
+    reserves[0] = reserves[0] / 10**MaticToken().from_symbol(first_token_name).decimals
+    reserves[1] = reserves[1] / 10**MaticToken().from_symbol(second_token_name).decimals
 
     if token0_name == second_token_name:
         reserves[0], reserves[1] = reserves[1], reserves[0]
@@ -150,24 +150,24 @@ def get_price(web3, token0_name, token1_name):
         return reserves[0] / reserves[1]
 
 
-class Uniswapv2API(Daily24hChangeTrackedAPI):
+class QuickSwapAPI(Daily24hChangeTrackedAPI):
     def __init__(self, currency_symbol):
         super().__init__()
         try:
             self._exchange_addresses = getExchangeAddressesForToken(currency_symbol)
-            self._decimals = Token().from_symbol(currency_symbol).decimals
+            self._decimals = MaticToken().from_symbol(currency_symbol).decimals
         except IndexError:
-            raise RuntimeError("Unknown currency_symbol {}, need to add address to uniswap_v2.py".format(currency_symbol))
+            raise RuntimeError("Unknown currency_symbol {}, need to add address to token_class.py".format(currency_symbol))
 
         self.currency_symbol = currency_symbol
-        self.exchange_name = "Uniswap"
-        self.command_names = ["uniswap"]
-        self.short_url = "https://bit.ly/35nae4n"  # main uniswap pre-selected to 0xbtc
+        self.exchange_name = "QuickSwap"
+        self.command_names = ["quickswap"]
+        self.short_url = "https://bit.ly/2R42MbO"  # main quickswap pre-selected to 0xbtc
         self.volume_eth = 0
 
         self._time_volume_last_updated = 0
 
-        self._w3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
+        self._w3 = Web3(Web3.HTTPProvider(MATIC_NODE_URL))
         self._exchanges = [self._w3.eth.contract(address=a, abi=exchange_abi) for a in self._exchange_addresses]
 
     async def _get_volume_at_exchange_contract(self, exchange_contract, timeout=10.0):
@@ -187,7 +187,7 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         current_eth_block = self._w3.eth.blockNumber
 
         for event in self._w3.eth.getLogs({
-                'fromBlock': current_eth_block - (int(60*60*24 / SECONDS_PER_ETH_BLOCK)),
+                'fromBlock': current_eth_block - (int(60*60*24 / SECONDS_PER_MATIC_BLOCK)),
                 'toBlock': current_eth_block - 1,
                 'address': exchange_contract.address}):
             topic0 = self._w3.toHex(event['topics'][0])
@@ -212,14 +212,14 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
                 amount1Out = correct_log.args.amount1Out
                 #block_number = correct_log.blockNumber
 
-                if Token().from_address(token0_address).symbol.lower() == self.currency_symbol.lower():
+                if MaticToken().from_address(token0_address).symbol.lower() == self.currency_symbol.lower():
                     # token0 is the tracked currency symbol
-                    volume_tokens += abs((amount0In - amount0Out) / 10**Token().from_address(token0_address).decimals)
-                    volume_pair += abs((amount1In - amount1Out) / 10**Token().from_address(token1_address).decimals)
-                elif Token().from_address(token1_address).symbol.lower() == self.currency_symbol.lower():
+                    volume_tokens += abs((amount0In - amount0Out) / 10**MaticToken().from_address(token0_address).decimals)
+                    volume_pair += abs((amount1In - amount1Out) / 10**MaticToken().from_address(token1_address).decimals)
+                elif MaticToken().from_address(token1_address).symbol.lower() == self.currency_symbol.lower():
                     # token1 is the tracked currency symbol
-                    volume_tokens += abs((amount1In - amount1Out) / 10**Token().from_address(token1_address).decimals)
-                    volume_pair += abs((amount0In - amount0Out) / 10**Token().from_address(token0_address).decimals)
+                    volume_tokens += abs((amount1In - amount1Out) / 10**MaticToken().from_address(token1_address).decimals)
+                    volume_pair += abs((amount0In - amount0Out) / 10**MaticToken().from_address(token0_address).decimals)
 
                 # print('    token', getTokenNameFromAddress(token0_address), 'send to exchange', (amount0In - amount0Out) / 10**getTokenDecimalsFromAddress(token0_address), getTokenNameFromAddress(token0_address))
                 # print('    token', getTokenNameFromAddress(token1_address), 'send to exchange', (amount1In - amount1Out) / 10**getTokenDecimalsFromAddress(token1_address), getTokenNameFromAddress(token1_address))
@@ -273,9 +273,9 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         for exchange_contract in self._exchanges:
             token0_address = exchange_contract.functions.token0().call().lower()
             token1_address = exchange_contract.functions.token1().call().lower()
-            paired_token_address = token0_address if token1_address.lower() == Token().from_symbol(self.currency_symbol).address.lower() else token1_address
+            paired_token_address = token0_address if token1_address.lower() == MaticToken().from_symbol(self.currency_symbol).address.lower() else token1_address
             try:
-                paired_token_symbol = Token().from_address(paired_token_address).symbol
+                paired_token_symbol = MaticToken().from_address(paired_token_address).symbol
             except NoTokenMatchError:
                 logging.warning(f"no token with address {paired_token_address} found (need to edit token_class.py); skipping")
                 continue
@@ -334,7 +334,7 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
 
 if __name__ == "__main__":
     # run some generic uniswap v2 functions
-    web3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
+    web3 = Web3(Web3.HTTPProvider(MATIC_NODE_URL))
     print('$1 in USDC will swap for {} 0xBTC tokens'.format(get_swap_amount(web3, 1, "USDC", "0xBTC")))
     print('$1 in DAI will swap for {} 0xBTC tokens'.format(get_swap_amount(web3, 1, "DAI", "0xBTC")))
     print('1 0xBTC token will swap for {} DAI'.format(get_swap_amount(web3, 1, "0xBTC", "DAI")))
@@ -351,16 +351,16 @@ if __name__ == "__main__":
     print('1 in ETH will swap for {} DAI '.format(get_swap_amount(web3, 1, "WETH", "DAI")))
     print()
 
-    # get some data from 0xBTC pool via Uniswapv2API
-    e = Uniswapv2API('0xBTC')
-    e.load_once_and_print_values()
-    print()
-    print('0xBTC-WETH liquidity in eth', e.liquidity_eth)
-    print('0xBTC-WETH liquidity in tokens', e.liquidity_tokens)
-    print()
+    # get some data from 0xBTC pool via QuickSwapAPI
+    # e = QuickSwapAPI('0xBTC')
+    # e.load_once_and_print_values()
+    # print()
+    # print('0xBTC-WETH liquidity in eth', e.liquidity_eth)
+    # print('0xBTC-WETH liquidity in tokens', e.liquidity_tokens)
+    # print()
 
-    # get some data from KIWI pool via Uniswapv2API
-    e = Uniswapv2API('KIWI')
+    # get some data from KIWI pool via QuickSwapAPI
+    e = QuickSwapAPI('KIWI')
     e.load_once_and_print_values()
     print()
     try:
@@ -369,6 +369,6 @@ if __name__ == "__main__":
         pass
     print('KIWI-WETH liquidity in tokens', e.liquidity_tokens)
 
-    # e = Uniswapv2API('DAI')
+    # e = QuickSwapAPI('DAI')
     # e.load_once_and_print_values()
 

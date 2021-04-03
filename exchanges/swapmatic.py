@@ -13,9 +13,8 @@ from .uniswap_v1_abi import exchange_abi
 from .erc20_abi import erc20_abi
 from secret_info import ETHEREUM_NODE_URL
 from secret_info import MATIC_NODE_URL
+from constants import SECONDS_PER_MATIC_BLOCK
 from .uniswap_v2 import get_price as uniswap_v2_get_price
-
-SECONDS_PER_MATIC_BLOCK = 2.1
 
 
 def wei_to_ether(amount_in_wei):

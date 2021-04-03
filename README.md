@@ -54,6 +54,9 @@ Bot to monitor/post price etc to the 0xbtc discord server ([link to the discord]
    to explicitly check for this.
 
 ##### Todo:
+ - merge quickswap.py and uniswap_v2.py. They are the same except the use of different
+   RPC urls (MATIC_NODE_URL vs ETHEREUM_NODE_URL), token class (Token vs MaticToken),
+   and blocktime (SECONDS_PER_MATIC_BLOCK vs SECONDS_PER_ETH_BLOCK).
  - replace web3 with aioethereum to fix the "heartbeat blocked for 10 seconds..." errors
  - a memoized web3 implementation would likely reduce overall traffic. Each time the
    APIs need updating, clear the memo and run all updates with the same web3 instance.

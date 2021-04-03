@@ -19,9 +19,21 @@ tokens = (
 
 # token name, token address, token decimals
 matic_tokens = (
-    ("0xBTC", "0x71B821aa52a49F32EEd535fCA6Eb5aa130085978", 8),
+    ("WMATIC", "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", 18),
+    ("maWETH", "0x20D3922b4a1A8560E1aC99FBA4faDe0c849e2142", 18),
+    ("USDC",   "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", 6),
+    ("KIWI",   "0x578360AdF0BbB2F10ec9cEC7EF89Ef495511ED5f", 8),
+    ("0xBTC",  "0x71B821aa52a49F32EEd535fCA6Eb5aa130085978", 8),
+    ("WETH",   "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", 18),
+    ("QUICK",  "0x831753DD7087CaC61aB5644b308642cc1c33Dc13", 18),
+    ("DAI",    "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", 18),
+    ("SWAM",   "0x94C18174840F80D49d59DC3a1742aF0B884A8184", 18),
+    ("maUSDC", "0x9719d867A500Ef117cC201206B8ab51e794d3F82", 6),
+    ("USDT",   "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", 6),
 )
 
+class NoTokenMatchError(Exception):
+    pass
 
 class Token():
     """Token info class - allows token address and decimals lookup."""
@@ -64,28 +76,28 @@ def get_token_address_from_name(token_definitions, name):
     try:
         return [i[1] for i in token_definitions if i[0].lower() == name.lower()][0]
     except IndexError:
-        raise RuntimeError("Unknown name {}, need to edit token_class.py".format(name))
+        raise NoTokenMatchError("Unknown name {}, need to edit token_class.py".format(name))
 
 
 def get_token_name_from_address(token_definitions, address):
     try:
         return [i[0] for i in token_definitions if i[1].lower() == address.lower()][0]
     except IndexError:
-        raise RuntimeError("Unknown address {}, need to edit token_class.py".format(address))
+        raise NoTokenMatchError("Unknown address {}, need to edit token_class.py".format(address))
 
 
 def get_token_decimals_from_name(token_definitions, name):
     try:
         return [i[2] for i in token_definitions if i[0].lower() == name.lower()][0]
     except IndexError:
-        raise RuntimeError("Unknown name {}, need to edit token_class.py".format(name))
+        raise NoTokenMatchError("Unknown name {}, need to edit token_class.py".format(name))
 
 
 def get_token_decimals_from_address(token_definitions, address):
     try:
         return [i[2] for i in token_definitions if i[1].lower() == address.lower()][0]
     except IndexError:
-        raise RuntimeError("Unknown address {}, need to edit token_class.py".format(address))
+        raise NoTokenMatchError("Unknown address {}, need to edit token_class.py".format(address))
 
 
 def main():
@@ -100,6 +112,7 @@ def main():
 
     print("0xbtc address on matic:",
           MaticToken.from_symbol("0xBTC").address)
+
 
 if __name__ == "__main__":
     main()
