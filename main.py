@@ -22,6 +22,7 @@ import etherscan
 
 import formatting_helpers
 import commands
+from command_handlers import helper_show_all_time_high_image_in_channel
 
 from util import preprocess_message
 
@@ -33,7 +34,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.4.11"
+_VERSION = "0.5.0"
 
 
 old_status_string = None
@@ -45,67 +46,21 @@ async def update_status(client, status_string):
             name=status_string))
 
 
-async def send_message_to_user_by_id(apis, user_id, message):
-    user = discord.utils.get(apis.client.get_all_members(), id=user_id)
-
-    if not isinstance(message, str):
-        logging.error("tried to respond with something other than a string - cancelling; message='{}' type={}".format(message, type(message)))
-        return
-
-    if user is not None:
-        await apis.client.send_message(user, message)
-    else:
-        raise RuntimeError("send_message_to_user_by_id could not find user id {}".format(user_id))
-
-
-async def send_message_to_channel_by_id(apis, channel_id, message):
-    channel = apis.client.get_channel(channel_id)
-
-    if channel is not None:
-        await apis.client.send_message(channel, message)
-    else:
-        raise RuntimeError("send_message_to_channel_by_id could not find channel id {}".format(channel_id))
-
-
-async def send_file_to_channel_by_id(apis, channel_id, filepath):
-    channel = apis.client.get_channel(channel_id)
-
-    if channel is not None:
-        await apis.client.send_file(channel,
-                                    filepath)
-    else:
-        raise RuntimeError("send_file_to_channel_by_id could not find channel id {}".format(channel_id))
-
-
-async def show_all_time_high_image(apis):
+async def send_all_time_high_announcement(apis, message):
     try:
-        apis.storage.all_time_high_image_filename.get()
-    except KeyError:
-        return
-
-    if apis.storage.all_time_high_image_filename.get() is None:
-        return
-
-    logging.info("Showing ath image. Filename is '{}'".format(apis.storage.all_time_high_image_filename.get()))
-    try:
-        await send_file_to_channel_by_id(apis,
-                                         config.ANNOUNCEMENT_CHANNEL_ID,
-                                         os.path.join(config.DATA_FOLDER,
-                                                      apis.storage.all_time_high_image_filename.get()))
+        await helper_show_all_time_high_image_in_channel(
+            apis,
+            apis.client.get_channel(config.ANNOUNCEMENT_CHANNEL_ID))
     except Exception as e:
-        logging.warning('Failed to send image to channel: {}'.format(str(e)))
+        logging.warning(f"Failed to send image to channel: {str(e)}")
     else:
         # wait some time to make sure image is uploaded
         await asyncio.sleep(5.0)
         # once the image is sent, clear the filename in storage
         apis.storage.all_time_high_image_filename.set(None)
 
-
-async def send_all_time_high_announcement(apis, message):
-    await show_all_time_high_image(apis)
-
-    await send_message_to_channel_by_id(apis, config.ANNOUNCEMENT_CHANNEL_ID, message)
-    logging.info('Sending announcement: {}'.format(message))
+        logging.info('Sending announcement: {}'.format(message))
+        await apis.client.get_channel(config.ANNOUNCEMENT_CHANNEL_ID).send(message)
 
 
 async def check_update_all_time_high(apis):
@@ -120,19 +75,19 @@ async def check_update_all_time_high(apis):
         if (price_usd > apis.storage.all_time_high_usd_price.get()
             and formatting_helpers.prettify_decimals(price_usd)
                 != formatting_helpers.prettify_decimals(apis.storage.all_time_high_usd_price.get())):
-            msg = 'New USD all-time-high **${}**'.format(formatting_helpers.prettify_decimals(price_usd))
+            msg = 'New USD all-time-high! **${}**'.format(formatting_helpers.prettify_decimals(price_usd))
             await send_all_time_high_announcement(apis, msg)
             apis.storage.all_time_high_usd_price.set(price_usd)
             apis.storage.all_time_high_usd_timestamp.set(time.time())
         if (price_eth > apis.storage.all_time_high_eth_price.get()
             and formatting_helpers.prettify_decimals(price_eth)
                 != formatting_helpers.prettify_decimals(apis.storage.all_time_high_eth_price.get())):
-            msg = 'New Ethereum all-time-high **{}Ξ**'.format(formatting_helpers.prettify_decimals(price_eth))
+            msg = 'New Ethereum all-time-high! **{}Ξ**'.format(formatting_helpers.prettify_decimals(price_eth))
             await send_all_time_high_announcement(apis, msg)
             apis.storage.all_time_high_eth_price.set(price_eth)
             apis.storage.all_time_high_eth_timestamp.set(time.time())
-    except:
-        logging.exception('Failed to save ATH data')
+    except Exception as e:
+        logging.exception(f"Failed to compare and/or save ATH data: {str(e)}")
 
 
 @tasks.loop(seconds=config.UPDATE_RATE)

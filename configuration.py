@@ -6,37 +6,41 @@ TOKEN_NAME = '0xBitcoin'
 TOKEN_ETH_ADDRESS = "0xB6eD7644C69416d67B522e20bC294A9a9B405B31"
 
 UPDATE_RATE = 240  # how often to update all APIs (in seconds)
+#UPDATE_RATE = 20  # testing rate
+
 TOKEN_HOLDER_UPDATE_RATE_HOURS = 6  # how often to update the token holder chart (in hours)
 COMMAND_CHARACTER = '!'  # what character should prepend all commands
 
 DATA_FOLDER = './databases/'  # folder to store persistent data (all-time high prices, etc)
 
 # Channel ID to send announcements (for now, all-time-high prices)
-ANNOUNCEMENT_CHANNEL_ID = "412483801265078273"  # 0xbitcoin - trading
+ANNOUNCEMENT_CHANNEL_ID = 412483801265078273  # 0xbitcoin - trading
+#ANNOUNCEMENT_CHANNEL_ID = 828027316848164884  # testing channel
+
 
 # Channels listed here will be ignored by the bot for all but 'global' commands
 BLACKLISTED_CHANNEL_IDS = [
     # 0xbitcoin server
-    '454156227446964226',  # announcements
-    '417834372864147456',  # articles
-    '413927301932253185',  # useful-links
-    '412477591778492429',  # 0xbitcoin
-    #'412483801265078273',  # trading (allowed)
-    '429103257026297866',  # marketing
-    '419929514316136473',  # miner-dev
-    '414664710210846722',  # development
-    '412483768541249536',  # support
-    '438693168393748500',  # mining
-    '435893447958986752',  # pools
-    '439217061475123200',  # memes
-    '421306695940046852',  # off-topic
-    '418282243186753537',  # alts-trading
+    454156227446964226,  # announcements
+    417834372864147456,  # articles
+    413927301932253185,  # useful-links
+    412477591778492429,  # 0xbitcoin
+    #412483801265078273,  # trading (allowed)
+    429103257026297866,  # marketing
+    419929514316136473,  # miner-dev
+    414664710210846722,  # development
+    412483768541249536,  # support
+    438693168393748500,  # mining
+    435893447958986752,  # pools
+    439217061475123200,  # memes
+    421306695940046852,  # off-topic
+    418282243186753537,  # alts-trading
 ]
 
 # List of users who should be allowed to run privileged commands (like !setath)
 PRIVILEGED_USER_IDS = [
     '0',                   # testing user ID
-    '400860916876574731',  # 0x1d00ffff
+    400860916876574731,  # 0x1d00ffff
 ]
 
 # List of object prices. This is used by two classes of bot commands:
@@ -245,11 +249,11 @@ TRADING_COMMANDS = [
         ['ath', 'all time high'],
         command_handlers.cmd_all_time_high),
     CmdDef(
-        ['setath'],
-        command_handlers.cmd_set_all_time_high),
-    CmdDef(
         ['setathfilename', 'setathimage'],
         command_handlers.cmd_set_all_time_high_image_filename),
+    CmdDef(
+        ['setath'],
+        command_handlers.cmd_set_all_time_high),
     CmdDef(
         ['setbestshare'],
         command_handlers.cmd_set_bestshare),

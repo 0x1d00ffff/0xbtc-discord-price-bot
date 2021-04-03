@@ -6,6 +6,7 @@ import datetime  # !help !ath
 import re
 import os
 import asyncio
+import discord
 
 import configuration as config
 import util
@@ -603,6 +604,16 @@ async def cmd_set_all_time_high(command_str, discord_message, apis):
     return "New ATH set!\n---\n{}".format(await cmd_all_time_high(command_str, discord_message, apis))
 
 
+async def helper_show_all_time_high_image_in_channel(apis, channel):
+    logging.info("Showing ath image. Filename is '{}'".format(apis.storage.all_time_high_image_filename.get()))
+    with open(os.path.join(config.DATA_FOLDER,
+                           apis.storage.all_time_high_image_filename.get()),
+              "rb") as handle:
+        filename_to_show = apis.storage.all_time_high_image_filename.get()
+        file_to_send = discord.File(handle, filename=filename_to_show)
+        await channel.send(file=file_to_send)
+
+
 async def cmd_set_all_time_high_image_filename(command_str, discord_message, apis):
     if discord_message.author.id not in config.PRIVILEGED_USER_IDS:
         fmt_str = 'User not allowed to run cmd_set_all_time_high_image_filename: {} ({})'
@@ -610,9 +621,17 @@ async def cmd_set_all_time_high_image_filename(command_str, discord_message, api
         return
 
     try:
+        current_filename = apis.storage.all_time_high_image_filename.get()
+    except KeyError:
+        current_filename = "<unset>"
+
+    try:
         command, image_filename = command_str.split()
-    except:
-        return "Error parsing; try `!set ath filename image.img`"
+    except ValueError:
+        response = "Error parsing; try `!set ath filename image.img` or  `!set ath filename none`"
+
+        response += f"\nCurrent filename: {current_filename}"
+        return response
 
     # to clear the filename, run the command with filename of 'none'
     if image_filename == "none":
@@ -628,9 +647,7 @@ async def cmd_set_all_time_high_image_filename(command_str, discord_message, api
     except:
         return "Error setting image filename. Try again later."
     else:
-        await apis.client.send_file(discord_message.channel,
-                                    os.path.join(config.DATA_FOLDER,
-                                                 apis.storage.all_time_high_image_filename.get()))
+        await helper_show_all_time_high_image_in_channel(apis, discord_message.channel)
         await asyncio.sleep(5.0)
         return "New all-time-high filename set! `{}`".format(image_filename)
 
