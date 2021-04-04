@@ -11,6 +11,7 @@ debug.log
 # Editors
 *.sublime-project
 *.sublime-workspace
+*.code-workspace
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

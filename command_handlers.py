@@ -605,11 +605,15 @@ async def cmd_set_all_time_high(command_str, discord_message, apis):
 
 
 async def helper_show_all_time_high_image_in_channel(apis, channel):
-    logging.info("Showing ath image. Filename is '{}'".format(apis.storage.all_time_high_image_filename.get()))
+    filename = apis.storage.all_time_high_image_filename.get()
+    if filename is None:
+        logging.info(f"Not showing all time high image; filename is '{filename}'")
+        return
+    logging.info(f"Showing ath image; filename is '{filename}'")
     with open(os.path.join(config.DATA_FOLDER,
-                           apis.storage.all_time_high_image_filename.get()),
+                           filename),
               "rb") as handle:
-        filename_to_show = apis.storage.all_time_high_image_filename.get()
+        filename_to_show = filename
         file_to_send = discord.File(handle, filename=filename_to_show)
         await channel.send(file=file_to_send)
 

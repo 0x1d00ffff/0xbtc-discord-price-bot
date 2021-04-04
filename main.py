@@ -47,10 +47,13 @@ async def update_status(client, status_string):
 
 
 async def send_all_time_high_announcement(apis, message):
+    announcement_channel = apis.client.get_channel(config.ANNOUNCEMENT_CHANNEL_ID)
+    if announcement_channel is None:
+        logging.warning(f"Failed to find announcement channel {config.ANNOUNCEMENT_CHANNEL_ID}")
+        return
+
     try:
-        await helper_show_all_time_high_image_in_channel(
-            apis,
-            apis.client.get_channel(config.ANNOUNCEMENT_CHANNEL_ID))
+        await helper_show_all_time_high_image_in_channel(apis, announcement_channel)
     except Exception as e:
         logging.warning(f"Failed to send image to channel: {str(e)}")
     else:
@@ -60,7 +63,7 @@ async def send_all_time_high_announcement(apis, message):
         apis.storage.all_time_high_image_filename.set(None)
 
         logging.info('Sending announcement: {}'.format(message))
-        await apis.client.get_channel(config.ANNOUNCEMENT_CHANNEL_ID).send(message)
+        await announcement_channel.send(message)
 
 
 async def check_update_all_time_high(apis):
@@ -71,18 +74,19 @@ async def check_update_all_time_high(apis):
         # check for prices so high they are likely bugs
         logging.warning(f"Prevented ATH announcement due to price too high ({price_eth} eth {price_usd} usd)")
         return
+
     try:
         if (price_usd > apis.storage.all_time_high_usd_price.get()
             and formatting_helpers.prettify_decimals(price_usd)
                 != formatting_helpers.prettify_decimals(apis.storage.all_time_high_usd_price.get())):
-            msg = 'New USD all-time-high! **${}**'.format(formatting_helpers.prettify_decimals(price_usd))
+            msg = 'New USD all-time-high **${}**'.format(formatting_helpers.prettify_decimals(price_usd))
             await send_all_time_high_announcement(apis, msg)
             apis.storage.all_time_high_usd_price.set(price_usd)
             apis.storage.all_time_high_usd_timestamp.set(time.time())
         if (price_eth > apis.storage.all_time_high_eth_price.get()
             and formatting_helpers.prettify_decimals(price_eth)
                 != formatting_helpers.prettify_decimals(apis.storage.all_time_high_eth_price.get())):
-            msg = 'New Ethereum all-time-high! **{}Ξ**'.format(formatting_helpers.prettify_decimals(price_eth))
+            msg = 'New Ethereum all-time-high **{}Ξ**'.format(formatting_helpers.prettify_decimals(price_eth))
             await send_all_time_high_announcement(apis, msg)
             apis.storage.all_time_high_eth_price.set(price_eth)
             apis.storage.all_time_high_eth_timestamp.set(time.time())
