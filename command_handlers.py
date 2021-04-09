@@ -806,6 +806,13 @@ async def cmd_uptime(command_str, discord_message, apis):
     return "Uptime: {}".format(seconds_to_time(time.time() - apis.start_time))
 
 
+async def cmd_washing_machine(command_str, discord_message, apis):
+    token_price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
+
+    return "jaykslol's washing machine cost **${}** (750 0xBTC)".format(
+        prettify_decimals(token_price_usd * 750.0))
+
+
 async def cmd_volume(command_str, discord_message, apis):
     if apis.exchanges.last_updated_time() == 0:
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url())

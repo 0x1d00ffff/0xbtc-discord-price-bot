@@ -264,6 +264,9 @@ TRADING_COMMANDS = [
         ['uptime'],
         command_handlers.cmd_uptime),
     CmdDef(
+        ['wash', 'washing machine'],
+        command_handlers.cmd_washing_machine),
+    CmdDef(
         ['ping', 'status'],
         command_handlers.cmd_status),
     CmdDef(
