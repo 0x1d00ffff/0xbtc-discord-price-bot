@@ -60,7 +60,7 @@ EXPENSIVE_STUFF = [
     (3.9*1000*1000*1000,
      ['Air Force One']),
     (1700,
-     ['Used Ford Taurus', 'used taurus', 'old ford taurus', 'old taurus', 'used ford torus', 'used tarus']),
+     ['Used Ford Taurus', 'used taurus', 'old ford taurus', 'old taurus', 'used ford torus', 'used tarus', 'uft']),
     (17600,
      ['Like-new Ford Taurus', 'like new ford taurus', 'like new taurus']),
     (28400,
@@ -75,6 +75,8 @@ EXPENSIVE_STUFF = [
       'avovado toast',
       'avacodo toast',
       'avo toast']),
+    (24,
+     ['Avocado Sandwich (2 Avocado Toasts)', 'avocado sandwich']),
     (1,
      ['oneaire']),
     (10,
@@ -272,5 +274,8 @@ TRADING_COMMANDS = [
     CmdDef(
         ['hi', 'hey bot'],
         "Sup :sunglasses:"),
+    CmdDef(
+        ['party'],
+        ":partying_face:"),
 ]
 
