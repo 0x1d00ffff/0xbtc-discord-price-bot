@@ -467,8 +467,8 @@ def main():
         # exchanges.EnclavesAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed ethex, they might be out of business. homepage says check later.
         # exchanges.EthexAPI(config.TOKEN_SYMBOL),
-        # 2/12/20 removed forkdelta, need new api. 7/26/20: reenabled forkdelta
-        exchanges.ForkDeltaAPI(config.TOKEN_SYMBOL, storage),
+        # 2/12/20 removed forkdelta, need new api. 7/26/20: reenabled forkdelta. 5/21/21 removed forkdelta. no volume in 6 months
+        # exchanges.ForkDeltaAPI(config.TOKEN_SYMBOL, storage),
         # 9/06/20 added balancer
         exchanges.BalancerAPI(config.TOKEN_SYMBOL),
         # exchanges.HotbitAPI(config.TOKEN_SYMBOL),
