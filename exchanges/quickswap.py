@@ -5,6 +5,7 @@ Price info is pulled from the smart contract
 import logging
 from web3 import Web3
 import time
+import requests
 
 from .base_exchange import Daily24hChangeTrackedAPI, NoLiquidityException
 from .uniswap_v2_abi import exchange_abi
@@ -39,6 +40,12 @@ exchanges = (
 ("KIWI", "SWAM", "0x6233132c03DAC2Af6495A9dAB02DF18b2A9DA892"),
 
 )
+
+_TIME_BETWEEN_VOLUME_UPDATES = 60 * 60  # 1 hour
+# if less than this many tokens in pair, don't use it for price
+_MINIMUM_ALLOWED_LIQUIDITY_IN_TOKENS = 0.1
+# if less than this many tokens in pair, don't check its volume
+_MINIMUM_ALLOWED_LIQUIDITY_TOKENS_TO_CHECK_VOLUME = 10
 
 class PairNotDefinedError(Exception):
     pass
@@ -151,7 +158,7 @@ def get_price(web3, token0_name, token1_name):
 
 
 class QuickSwapAPI(Daily24hChangeTrackedAPI):
-    def __init__(self, currency_symbol):
+    def __init__(self, currency_symbol, timeout=10.0):
         super().__init__()
         try:
             self._exchange_addresses = getExchangeAddressesForToken(currency_symbol)
@@ -167,10 +174,16 @@ class QuickSwapAPI(Daily24hChangeTrackedAPI):
 
         self._time_volume_last_updated = 0
 
-        self._w3 = Web3(Web3.HTTPProvider(MATIC_NODE_URL))
+        self._w3 = Web3(Web3.HTTPProvider(MATIC_NODE_URL, request_kwargs={'timeout': timeout}))
         self._exchanges = [self._w3.eth.contract(address=a, abi=exchange_abi) for a in self._exchange_addresses]
 
-    async def _get_volume_at_exchange_contract(self, exchange_contract, timeout=10.0):
+    def _is_time_to_update_volume(self):
+        return time.time() - self._time_volume_last_updated > _TIME_BETWEEN_VOLUME_UPDATES
+
+    def _mark_volume_as_updated(self):
+        self._time_volume_last_updated = time.time()
+
+    async def _get_volume_at_exchange_contract(self, exchange_contract, current_eth_block=None, timeout=10.0):
         volume_tokens = 0  # volume in units of <self.currency_symbol> tokens
         volume_pair = 0  # volume in units of the paired token
 
@@ -184,7 +197,8 @@ class QuickSwapAPI(Daily24hChangeTrackedAPI):
         token0_address = exchange_contract.functions.token0().call()
         token1_address = exchange_contract.functions.token1().call()
 
-        current_eth_block = self._w3.eth.blockNumber
+        if current_eth_block is None:
+            current_eth_block = self._w3.eth.blockNumber
 
         for event in self._w3.eth.getLogs({
                 'fromBlock': current_eth_block - (int(60*60*24 / SECONDS_PER_MATIC_BLOCK)),
@@ -243,94 +257,91 @@ class QuickSwapAPI(Daily24hChangeTrackedAPI):
 
         return volume_tokens, volume_pair
 
-    async def _update_24h_volume(self, timeout=10.0):
-        total_volume_tokens = 0
-        for exchange_contract in self._exchanges:
-            volume_tokens, volume_pair = await self._get_volume_at_exchange_contract(exchange_contract)
-            total_volume_tokens += volume_tokens
+    async def _get_price_and_liquidity_at_exchange_contract(self, exchange_contract):
+        token0_address = exchange_contract.functions.token0().call().lower()
+        token1_address = exchange_contract.functions.token1().call().lower()
+        paired_token_address = token0_address if token1_address.lower() == MaticToken().from_symbol(self.currency_symbol).address.lower() else token1_address
+        paired_token_symbol = MaticToken().from_address(paired_token_address).symbol
+        liquidity_tokens, liquidity_pair = get_reserves(self._w3, self.currency_symbol, paired_token_symbol)
 
-            #print('volume: {} {} was traded for {} tokens of the paired currency'.format(volume_tokens, self.currency_symbol, volume_pair))
-        return total_volume_tokens
+        # bail early if the number of tokens LPd is very small
+        # TODO: this should probably be configurable. Or generated automatically
+        #       based on some USD value, not token value
+        if liquidity_tokens < _MINIMUM_ALLOWED_LIQUIDITY_IN_TOKENS:
+            raise NoLiquidityException(f"Less than {_MINIMUM_ALLOWED_LIQUIDITY_IN_TOKENS} tokens LP'd for exchange contract.")
 
-    async def _update(self, timeout=10.0):
+        # get price of paired token (in USD) to determine price of 
+        # <self.currency_symbol> in USD. Strategy changes depending on pair
+        price_in_paired_token = get_price(self._w3, paired_token_symbol, self.currency_symbol)
+        if paired_token_symbol == "WETH":
+            paired_token_price_in_usd = self.eth_price_usd
+        else:
+            # get the paired token's price in Eth. If there is less than $500 in 
+            # liquidity to determine this, then skip this pair when determining price.
+            liquidity_eth_of_paired_token, _ = get_reserves(self._w3, "WETH", paired_token_symbol)
+            if liquidity_eth_of_paired_token < 500 / self.eth_price_usd:
+                raise NoLiquidityException(f"Less than {500} USD LP'd for paired token {paired_token_symbol}, pair token price not considered accurate. Skipping pair.")
+            else:
+                paired_token_price_in_eth = get_price(self._w3, "WETH", paired_token_symbol)
+                paired_token_price_in_usd = paired_token_price_in_eth * self.eth_price_usd
+
+        price_in_usd = price_in_paired_token * paired_token_price_in_usd
+        return price_in_usd, liquidity_tokens
+
+    async def _update_all_values(self, should_update_volume=False, timeout=10):
+        if should_update_volume:
+            current_eth_block = self._w3.eth.blockNumber
+
+        # get price of eth
         eth_prices = [
             get_price(self._w3, "DAI", "WETH"),
             get_price(self._w3, "USDT", "WETH"),
             get_price(self._w3, "USDC", "WETH"),
         ]
-        # TODO: weighted average would be better than a simple average
-        self.eth_price_usd = sum(eth_prices) / len(eth_prices)
+        self.eth_price_usd = sum(eth_prices) / len(eth_prices)  # TODO: should be weighted average
 
-        # matic_price_eth = get_price(self._w3, "WETH", "WMATIC")
-        # self.matic_price_usd = matic_price_eth * self.eth_price_usd
-
-        # swam_price_eth = get_price(self._w3, "WETH", "SWAM")
-        # self.swam_price_usd = swam_price_eth * self.eth_price_usd
-
-        total_liquidity_tokens = 0
+        # get token price (in USD), liquidity (in tokens), and volume (in tokens) for
+        # each pair. Note if liquidity is low for a pair, its voluem is not checked.
         price_usd_weighted_average = WeightedAverage()
-        # check each token that <self.currency_symbol> is paired with
+        total_liquidity_tokens = 0
+        total_volume_tokens = 0
         for exchange_contract in self._exchanges:
-            token0_address = exchange_contract.functions.token0().call().lower()
-            token1_address = exchange_contract.functions.token1().call().lower()
-            paired_token_address = token0_address if token1_address.lower() == MaticToken().from_symbol(self.currency_symbol).address.lower() else token1_address
             try:
-                paired_token_symbol = MaticToken().from_address(paired_token_address).symbol
-            except NoTokenMatchError:
-                logging.warning(f"no token with address {paired_token_address} found (need to edit token_class.py); skipping")
+                price_usd, liquidity_tokens = await self._get_price_and_liquidity_at_exchange_contract(exchange_contract)
+            except (NoTokenMatchError, PairNotDefinedError) as e:
+                logging.warning(f"Failed to update quickswap exchange: {str(e)}")
                 continue
-
-            try:
-                liquidity_tokens, liquidity_pair = get_reserves(self._w3, self.currency_symbol, paired_token_symbol)
-            except PairNotDefinedError:
-                logging.warning(f"pair {self.currency_symbol}-{paired_token_symbol} not found; skipping")
+            except NoLiquidityException:
+                # no liquidity is not an error; simply skip this exchange
                 continue
-
-            if liquidity_tokens < 0.001:
-                continue
-
-            total_liquidity_tokens += liquidity_tokens
-
-            if paired_token_symbol == "WETH":
-                self.price_eth = get_price(self._w3, paired_token_symbol, self.currency_symbol)
-                price_usd_weighted_average.add(self.price_eth * self.eth_price_usd, liquidity_tokens)
-                self.liquidity_eth = liquidity_pair
             else:
+                price_usd_weighted_average.add(price_usd, liquidity_tokens)
+                total_liquidity_tokens += liquidity_tokens
 
-                # get the paired token's price in Eth. If there is less than $500 in 
-                # liquidity to determine this, then skip this pair when determining price.
-                try:
-                    liquidity_eth, _ = get_reserves(self._w3, "WETH", paired_token_symbol)
-                except PairNotDefinedError:
-                    logging.warning(f"pair WETH-{paired_token_symbol} not found; skipping")
-                    continue
+                if should_update_volume and liquidity_tokens > _MINIMUM_ALLOWED_LIQUIDITY_TOKENS_TO_CHECK_VOLUME:
+                    try:
+                        volume_tokens, volume_pair = await self._get_volume_at_exchange_contract(exchange_contract, current_eth_block=current_eth_block, timeout=timeout)
+                        total_volume_tokens += volume_tokens
+                    except requests.exceptions.ReadTimeout:
+                        logging.warning(f"Failed to update QuickSwapAPI volume: ReadTimeout")
 
-                if liquidity_eth < 500 / self.eth_price_usd:
-                    continue
-
-                paired_token_price_in_eth = get_price(self._w3, "WETH", paired_token_symbol)
-                paired_token_price_in_usd = paired_token_price_in_eth * self.eth_price_usd
-
-                # get the price <self.currency_symbol> in terms of the paired token
-                price_in_paired_token = get_price(self._w3, paired_token_symbol, self.currency_symbol)
-
-                price_usd_weighted_average.add(price_in_paired_token * paired_token_price_in_usd, liquidity_tokens)
-
-        self.liquidity_tokens = total_liquidity_tokens
         self.price_usd = price_usd_weighted_average.average()
-
-        try:
-            self.price_eth = get_price(self._w3, "WETH", self.currency_symbol)
-        except PairNotDefinedError:
-            logging.warning(f"Failed to get WETH pair for {self.currency_symbol}; calculating backwards using average USD price")
-            self.price_eth = self.price_usd / self.eth_price_usd
-
-        # update volume once every hour since it (potentially) loads eth api
-        if time.time() - self._time_volume_last_updated > 60 * 60:
-            self.volume_tokens = await self._update_24h_volume()
+        self.price_eth = self.price_usd / self.eth_price_usd
+        self.liquidity_tokens = total_liquidity_tokens
+        self.liquidity_eth = self.liquidity_tokens * self.price_eth
+        if should_update_volume:
+            self.volume_tokens = total_volume_tokens
             self.volume_eth = self.volume_tokens * self.price_eth
-            self._time_volume_last_updated = time.time()
+            # NOTE: this sets _time_volume_last_updated even if all volume updates
+            #       failed. This is OK for now, it throttles struggling APIs (matic) but
+            #       may not be the ideal behavior.
+            self._mark_volume_as_updated()
 
+    async def _update(self, timeout=10.0):
+        if self._is_time_to_update_volume():
+            await self._update_all_values(timeout=timeout, should_update_volume=True)
+        else:
+            await self._update_all_values(timeout=timeout, should_update_volume=False)
 
 if __name__ == "__main__":
     # run some generic uniswap v2 functions
@@ -352,22 +363,24 @@ if __name__ == "__main__":
     print()
 
     # get some data from 0xBTC pool via QuickSwapAPI
-    # e = QuickSwapAPI('0xBTC')
-    # e.load_once_and_print_values()
-    # print()
-    # print('0xBTC-WETH liquidity in eth', e.liquidity_eth)
-    # print('0xBTC-WETH liquidity in tokens', e.liquidity_tokens)
-    # print()
-
-    # get some data from KIWI pool via QuickSwapAPI
-    e = QuickSwapAPI('KIWI')
+    e = QuickSwapAPI('0xBTC')
     e.load_once_and_print_values()
     print()
     try:
-        print('KIWI-WETH liquidity in eth', e.liquidity_eth)
+        print('0xBTC-WETH liquidity in eth', e.liquidity_eth)
     except AttributeError:
         pass
-    print('KIWI-WETH liquidity in tokens', e.liquidity_tokens)
+    print('0xBTC-WETH liquidity in tokens', e.liquidity_tokens)
+
+    # get some data from KIWI pool via QuickSwapAPI
+    # e = QuickSwapAPI('KIWI')
+    # e.load_once_and_print_values()
+    # print()
+    # try:
+    #     print('KIWI-WETH liquidity in eth', e.liquidity_eth)
+    # except AttributeError:
+    #     pass
+    # print('KIWI-WETH liquidity in tokens', e.liquidity_tokens)
 
     # e = QuickSwapAPI('DAI')
     # e.load_once_and_print_values()
