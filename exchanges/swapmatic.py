@@ -122,7 +122,14 @@ class SwapmaticAPI(Daily24hChangeTrackedAPI):
 
         # update volume once every hour since it (potentially) loads eth api
         if time.time() - self._time_volume_last_updated > 60*60:
-            await self._update_24h_volume(matic_eth_price)
+            try:
+                await self._update_24h_volume(matic_eth_price)
+            except requests.exceptions.ReadTimeout:
+                logging.warning(f"Failed to update QuickSwapAPI volume: ReadTimeout")
+            finally:
+                # always update this to throttle volume updates
+                self._time_volume_last_updated = time.time()
+
 
     # get the eth and token balance of a particular address in a uniswap v1 pool
     def get_pooled_balance_for_address(self, owner_address):
