@@ -103,6 +103,28 @@ class MultiExchangeManager():
                 result.add(a.price_usd, volume)
         return result.average()
 
+    def price_converted_to_usd(self, currency_symbol, exchange_name='aggregate'):
+        result = WeightedAverage()
+        for a in self.alive_exchanges:
+            if a.currency_symbol != currency_symbol:
+                continue
+            if a.price_usd is not None and a.price_usd != 0:
+                price_in_usd = a.price_usd
+                volume_in_usd = 0 if a.volume_usd is None else a.volume_usd
+            elif a.price_dai is not None and a.price_dai != 0:
+                price_in_usd = a.price_dai
+                volume_in_usd = 0 if a.volume_dai is None else a.volume_dai
+            elif a.price_eth is not None and a.price_eth != 0:
+                price_in_usd = a.price_eth * self.eth_price_usd()
+                volume_in_usd = 0 if a.volume_eth is None else a.volume_eth * self.eth_price_usd()
+            elif a.price_btc is not None and a.price_btc != 0:
+                price_in_usd = a.price_btc * self.eth_price_usd()
+                volume_in_usd = 0 if a.volume_btc is None else a.volume_btc * self.eth_price_usd()
+
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
+                result.add(price_in_usd, volume_in_usd)
+        return result.average()
+
     def volume_usd(self, currency_symbol, exchange_name='aggregate'):
         result = 0
         for a in self.alive_exchanges:
@@ -134,6 +156,61 @@ class MultiExchangeManager():
                 continue
             if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
                 result += a.volume_btc
+        return result
+
+    def liquidity_tokens(self, currency_symbol, exchange_name='aggregate'):
+        result = 0
+        for a in self.alive_exchanges:
+            if a.currency_symbol != currency_symbol:
+                continue
+            if a.liquidity_tokens == None:
+                continue
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
+                result += a.liquidity_tokens
+        return result
+
+    def liquidity_eth(self, currency_symbol, exchange_name='aggregate'):
+        result = 0
+        for a in self.alive_exchanges:
+            if a.currency_symbol != currency_symbol:
+                continue
+            if a.liquidity_eth == None:
+                continue
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
+                result += a.liquidity_eth
+        return result
+
+    def liquidity_btc(self, currency_symbol, exchange_name='aggregate'):
+        result = 0
+        for a in self.alive_exchanges:
+            if a.currency_symbol != currency_symbol:
+                continue
+            if a.liquidity_btc == None:
+                continue
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
+                result += a.liquidity_btc
+        return result
+
+    def liquidity_dai(self, currency_symbol, exchange_name='aggregate'):
+        result = 0
+        for a in self.alive_exchanges:
+            if a.currency_symbol != currency_symbol:
+                continue
+            if a.liquidity_dai == None:
+                continue
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
+                result += a.liquidity_dai
+        return result
+
+    def liquidity_usd(self, currency_symbol, exchange_name='aggregate'):
+        result = 0
+        for a in self.alive_exchanges:
+            if a.currency_symbol != currency_symbol:
+                continue
+            if a.liquidity_usd == None:
+                continue
+            if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
+                result += a.liquidity_usd
         return result
 
     def change_24h(self, currency_symbol, exchange_name='aggregate'):
