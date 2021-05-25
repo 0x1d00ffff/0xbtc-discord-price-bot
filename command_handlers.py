@@ -29,6 +29,7 @@ from memory_usage import rss_resource
 
 
 _TOKENS_PEGGED_TO_USD_LIST = ['USD', 'DAI', 'USDC', 'USDT']
+_MINIMUM_USD_LIQUIDITY_TO_DISPLAY = 50  # controls which exchanges are shown individually in !liquidity
 
 
 async def cmd_help(command_str, discord_message, apis):
@@ -208,8 +209,8 @@ def show_liquidity_from_source(apis, source='aggregate'):
                     liq_symbol,
             ))
 
-    if total_liq_usd == 0:
-        # hide exchanges with zero liquidity from this list
+    if total_liq_usd < _MINIMUM_USD_LIQUIDITY_TO_DISPLAY:
+        # hide exchanges with less than threshold liquidity from this list
         # this return value causes caller to hide the output alltogether, since the 
         # caller is looking for this exact error message. this should be refactored
         # to raise an exception or something, but currently no commands ever raise
@@ -217,9 +218,9 @@ def show_liquidity_from_source(apis, source='aggregate'):
         return generic_err_str
     else:
         source_name = "Total" if source == "aggregate" else source
-        return "{}: $**{}** ({})".format(
+        return "{}: $**{:,.0f}** ({})".format(
             source_name,
-            prettify_decimals(total_liq_usd),
+            total_liq_usd,
             " + ".join(individual_liquidity_strings))
 
 
