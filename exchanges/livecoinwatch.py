@@ -58,8 +58,8 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
         volume_usd_eth = 0
         volume_usd_btc = 0
 
-        wavg_eth_price_usd = WeightedAverage()
-        wavg_btc_price_usd = WeightedAverage()
+        wavg_eth_price_usd = WeightedAverage()  # price of eth in usd
+        wavg_btc_price_usd = WeightedAverage()  # price of btc in usd
 
         wavg_price_eth = WeightedAverage()
         wavg_price_btc = WeightedAverage()
