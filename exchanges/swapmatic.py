@@ -7,6 +7,7 @@ https://docs.uniswap.io/api/exchange
 import logging
 from web3 import Web3
 import time
+import requests
 
 from .base_exchange import Daily24hChangeTrackedAPI
 from .uniswap_v1_abi import exchange_abi
@@ -107,6 +108,10 @@ class SwapmaticAPI(Daily24hChangeTrackedAPI):
         matic_amount_buy = wei_to_ether(self._exchange.functions.getEthToTokenOutputPrice(amount_tokens * 10**self._decimals).call())
         matic_amount_sell = wei_to_ether(self._exchange.functions.getTokenToEthInputPrice(amount_tokens * 10**self._decimals).call())
         average_matic_amount = (matic_amount_buy + matic_amount_sell) / 2
+
+        liq_matic, liq_tokens = self.get_reserves()
+        self.liquidity_eth = liq_matic * matic_eth_price
+        self.liquidity_tokens = liq_tokens
 
         average_eth_amount = average_matic_amount * matic_eth_price
         self.price_eth = average_eth_amount / amount_tokens

@@ -28,6 +28,9 @@ from formatting_helpers import (prettify_decimals,
 from memory_usage import rss_resource
 
 
+_TOKENS_PEGGED_TO_USD_LIST = ['USD', 'DAI', 'USDC', 'USDT']
+
+
 async def cmd_help(command_str, discord_message, apis):
     return ("trading commands: `price`  `price <exchange>`  `volume`  `ratio`  `rank`  `btc`  `eth`  `marketcap`\n"
             + "price commands: {}\n".format("  ".join("`{}`".format(c[1][0]) for c in random.Random(datetime.date.today().strftime("%j")).sample(config.EXPENSIVE_STUFF, 5)))
@@ -120,15 +123,15 @@ def show_price_from_source(apis, source='aggregate'):
     eth_token_price = apis.exchanges.price_eth(config.TOKEN_SYMBOL, exchange_name=source)
 
     if eth_token_price == 0:
-        token_price = apis.exchanges.price_usd(config.TOKEN_SYMBOL, exchange_name=source)
-        eth_token_price = token_price / apis.exchanges.eth_price_usd()
+        token_price_usd = apis.exchanges.price_usd(config.TOKEN_SYMBOL, exchange_name=source)
+        eth_token_price = token_price_usd / apis.exchanges.eth_price_usd()
     else:
-        token_price = eth_token_price * apis.exchanges.eth_price_usd()
+        token_price_usd = eth_token_price * apis.exchanges.eth_price_usd()
 
     eth_price_on_this_exchange = float(apis.exchanges.eth_price_usd(exchange_name=source))
 
     # Enclaves usually fails this way
-    if token_price == 0:
+    if token_price_usd == 0:
         logging.debug("cannot show api '{}'; eth_token_price:{}; eth_price_usd:{}".format(
             source, eth_token_price, apis.exchanges.eth_price_usd()))
         return "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(exchange_name=source))
@@ -144,12 +147,80 @@ def show_price_from_source(apis, source='aggregate'):
     fmt_str = "{}{}: {}({:.5f} Ξ) {}{}[<{}>]"
     result = fmt_str.format('' if source == 'aggregate' else '**{}** '.format(source),
                             seconds_to_n_time_ago(time.time() - apis.exchanges.last_updated_time(exchange_name=source)),
-                            '' if token_price == 0 else '**${:.3f}** '.format(token_price),
+                            '' if token_price_usd == 0 else '**${:.3f}** '.format(token_price_usd),
                             eth_token_price,
                             percent_change_str,
                             '' if eth_price_on_this_exchange == 0 else '(ETH: **${:.0f}**) '.format(eth_price_on_this_exchange),
                             apis.exchanges.short_url(exchange_name=source))
     return result
+
+
+def show_liquidity_from_source(apis, source='aggregate'):
+    generic_err_str = "not sure yet... waiting on my APIs :sob: [<{}>]".format(apis.exchanges.short_url(exchange_name=source))
+    last_updated_time = apis.exchanges.last_updated_time(exchange_name=source)
+    if (last_updated_time == 0):
+        logging.debug("cannot show api '{}'; it has not been updated yet".format(source))
+        return generic_err_str
+
+    # liquidity types - entries are like (symbol, liq amount, symbol price)
+    #       where symbol       = string label to show for this liquidity type - probably a ticker symbol like DAI
+    #             liq amount   = liquidity amount available in units of 'symbol'
+    #             symbol price = price of the 'symbol' which is used to convert 'liq amount' to units of usd
+    liquidity_types = [
+        (
+            config.TOKEN_SYMBOL,
+            apis.exchanges.liquidity_tokens(config.TOKEN_SYMBOL, exchange_name=source),
+            apis.exchanges.price_converted_to_usd(config.TOKEN_SYMBOL, exchange_name=source)
+        ),
+        (
+            "Ξ",
+            apis.exchanges.liquidity_eth(config.TOKEN_SYMBOL, exchange_name=source),
+            apis.exchanges.eth_price_usd()
+        ),
+        (
+            "₿",
+            apis.exchanges.liquidity_btc(config.TOKEN_SYMBOL, exchange_name=source),
+            apis.exchanges.btc_price_usd()
+        ),
+        (
+            "DAI",
+            apis.exchanges.liquidity_dai(config.TOKEN_SYMBOL, exchange_name=source),
+            1
+        ),
+        (
+            "USD",
+            apis.exchanges.liquidity_usd(config.TOKEN_SYMBOL, exchange_name=source),
+            1
+        ),
+    ]
+
+    total_liq_usd = 0
+    individual_liquidity_strings = []
+
+    for liq_symbol, liq_amount, liq_price in liquidity_types:
+        if liq_amount is None or liq_amount == 0:
+            continue
+        else:
+            total_liq_usd += liq_amount * liq_price
+            individual_liquidity_strings.append(
+                "{} {}".format(
+                    prettify_decimals(liq_amount),
+                    liq_symbol,
+            ))
+
+    if total_liq_usd == 0:
+        # hide exchanges with zero liquidity from this list
+        # this return value causes caller to hide the output alltogether, since the 
+        # caller is looking for this exact error message. this should be refactored
+        # to raise an exception or something, but currently no commands ever raise
+        # exceptions (intentionally)
+        return generic_err_str
+    else:
+        source_name = "Total" if source == "aggregate" else source
+        return "{}: $**{}** ({})".format(
+            source_name,
+            prettify_decimals(total_liq_usd),
+            " + ".join(individual_liquidity_strings))
 
 
 async def cmd_price(command_str, discord_message, apis):
@@ -227,6 +298,36 @@ async def cmd_price_all(command_str, discord_message, apis):
     if msg == "":
         return ":shrug:"
     return msg
+
+
+async def cmd_liquidity(command_str, discord_message, apis):
+    response_lines = []
+    # iterate over all exchange names + one extra (named 'aggregate') to show totals
+    for exchange in sorted(apis.exchanges.alive_exchanges, key=lambda a: a.exchange_name):
+        # skip CMC, LCW and apis not directly tracking the main currency
+        if (exchange.currency_symbol != config.TOKEN_SYMBOL
+            or exchange.exchange_name == "Coin Market Cap"
+            or exchange.exchange_name == "Live Coin Watch"):
+            continue
+        # TODO: skip exchanges with <$100 volume in last 24h?
+        # if exchange_has_low_volume(apis, exchange):
+        #     continue
+        response_lines.append(show_liquidity_from_source(apis, source=exchange.exchange_name))
+
+    response_lines.append("")  # adds a blank line before the 'total' line
+    response_lines.append(show_liquidity_from_source(apis, source='aggregate'))
+
+    response_str = ""
+    for line in response_lines:
+        # TODO: remove this when 'alive_exchanges' excludes apis correctly
+        if line.startswith('not sure yet'):
+            logging.warning("bugcheck: removed line 'not sure yet' from liquidity ({})".format(line))
+        else:
+            response_str += line + '\n'
+
+    if response_str == "":
+        return ":shrug:"
+    return response_str
 
 
 async def cmd_bitcoinprice(command_str, discord_message, apis):
@@ -427,6 +528,7 @@ async def cmd_income(command_str, discord_message, apis):
         if char in hashrate:
             selected_multiplier = mult
 
+    # TODO: throws DeprecationWarning: invalid escape sequence \d
     match = re.match("([<\d.,]+)", hashrate)
     if not match:
         return "Bad hashrate; try `!income 5`, `!income 300mh`, or `!income 2.8gh`"

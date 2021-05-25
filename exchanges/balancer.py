@@ -299,7 +299,7 @@ class BalancerAPI(Daily24hChangeTrackedAPI):
         self.liquidity_tokens = total_liquidity_tokens
 
         self.price_eth = price_eth_avg.average()
-        self.price_usd = price_dai_avg.average()
+        self.price_usd = price_dai_avg.average()  # note: this is usually 0 because there are no dai pairs defined on balancer
 
         # update volume once every hour since it (potentially) loads eth api
         if time.time() - self._time_volume_last_updated > 60 * 60:

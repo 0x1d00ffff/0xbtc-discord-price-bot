@@ -32,15 +32,24 @@ class BaseExchangeAPI():
         # assume data is valid
         self.update_failure_count = 1
 
-        self.price_eth = None
-        self.price_usd = None
-        self.price_btc = None
-        self.volume_usd = None
+        self.price_eth = None  # price of currency_symbol in ETH
+        self.price_btc = None  # price of currency_symbol in BTC
+        self.price_usd = None  # price of currency_symbol in USD
+        self.price_dai = None  # price of currency_symbol in DAI
         self.volume_eth = None
         self.volume_btc = None
+        self.volume_usd = None
+        self.volume_dai = None
         self.change_24h = None
-        self.eth_price_usd = None
-        self.btc_price_usd = None
+        
+        self.eth_price_usd = None  # price of ETH in USD
+        self.btc_price_usd = None  # price of BTC in USD
+
+        self.liquidity_eth = None     # optional
+        self.liquidity_btc = None     # optional
+        self.liquidity_tokens = None  # optional
+        self.liquidity_usd = None     # optional
+        self.liquidity_dai = None     # optional
 
     async def _get_json_from_url(self, url, parameters=None, headers=None, invalid_mimetype_to_allow=None):
         """

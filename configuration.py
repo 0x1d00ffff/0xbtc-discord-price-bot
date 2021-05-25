@@ -179,6 +179,9 @@ TRADING_COMMANDS = [
         ['exchanges', 'wheretobuy'],
         command_handlers.cmd_price_all),
     CmdDef(
+        ['liq', 'liquidity'],
+        command_handlers.cmd_liquidity),
+    CmdDef(
         ['vol', 'völ', 'vil', 'bettervolume'],
         command_handlers.cmd_volume),
     CmdDef(

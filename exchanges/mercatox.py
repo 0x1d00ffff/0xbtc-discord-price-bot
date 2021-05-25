@@ -38,7 +38,10 @@ data =
 
 
 """
+import logging
 from .base_exchange import BaseExchangeAPI
+
+
 
 
 class MercatoxAPI(BaseExchangeAPI):
@@ -52,6 +55,34 @@ class MercatoxAPI(BaseExchangeAPI):
                               'meractox', 
                               'mecratox']
         self.short_url = "http://bitly.com/2LvDE6u"
+
+    async def get_orderbook_liquidity(self, currency_symbol, base_pair_symbol):
+        url = "https://mercatox.com/api/public/v1/orderbook?market_pair={}_{}".format(
+            currency_symbol,
+            base_pair_symbol)
+        # print('url1 is:', url)
+        # url = "https://mercatox.com/api/public/v1/orderbook?market_pair=0xBTC_BTC"
+        # print('url2 is:', url)
+        #url = "https://mercatox.com/api/public/v1/orderbook"
+        headers = {
+            'Accepts': 'application/json',
+        }
+        data = await self._get_json_from_url(
+            url,
+            #parameters={'market_pair': f"{currency_symbol}_{base_pair_symbol}"},
+            headers=headers)
+        total_currency_symbol_liquidity = 0
+        total_base_pair_liquidity = 0
+        asks = data['asks']
+        bids = data['bids']
+        for price, quantity in data['asks']:
+            price, quantity = float(price), float(quantity)
+            total_currency_symbol_liquidity += price * quantity
+        for price, quantity in data['bids']:
+            price, quantity = float(price), float(quantity)
+            total_base_pair_liquidity += price * quantity
+
+        return total_currency_symbol_liquidity, total_base_pair_liquidity
 
     async def _update(self, timeout=10.0):
         method = "/json24"
@@ -92,6 +123,19 @@ class MercatoxAPI(BaseExchangeAPI):
             self.price_btc = 1
             self.btc_price_usd = self.price_usd
 
+        try:
+            self.liquidity_tokens = 0
+            self.liquidity_eth = 0
+            self.liquidity_btc = 0
+            liquidity_tokens, liquidity_eth = await self.get_orderbook_liquidity(self.currency_symbol, 'ETH')
+            self.liquidity_tokens += liquidity_tokens
+            self.liquidity_eth += liquidity_eth
+            liquidity_tokens, liquidity_btc = await self.get_orderbook_liquidity(self.currency_symbol, 'BTC')
+            self.liquidity_tokens += liquidity_tokens
+            self.liquidity_btc += liquidity_btc
+        except Exception as e:
+            logging.warning(f"Failed to update mercatox liquidity ({self.currency_symbol})")
+
 if __name__ == "__main__":
     api = MercatoxAPI('ETH')
     api.load_once_and_print_values()
@@ -99,3 +143,6 @@ if __name__ == "__main__":
     api.load_once_and_print_values()
     api = MercatoxAPI('0xBTC')
     api.load_once_and_print_values()
+    print(f'liquidity_eth: {api.liquidity_eth}')
+    print(f'liquidity_btc: {api.liquidity_btc}')
+    print(f'liquidity_tokens: {api.liquidity_tokens}')
