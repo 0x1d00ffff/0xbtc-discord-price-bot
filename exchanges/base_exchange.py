@@ -124,7 +124,8 @@ class BaseExchangeAPI():
                 socket.timeout,
                 NoLiquidityException,
                 URLError,
-                requests.exceptions.HTTPError) as e:
+                requests.exceptions.HTTPError
+                requests.exceptions.ReadTimeout) as e:
             self.update_failure_count += 1
             raise TimeoutError(str(e)) from e
         except Exception:
