@@ -25,7 +25,7 @@ def ether_to_wei(amount_in_ether):
     return int(amount_in_ether * 1000000000000000000.0)
 
 class SwapmaticAPI(Daily24hChangeTrackedAPI):
-    def __init__(self, currency_symbol):
+    def __init__(self, currency_symbol, timeout=10.0):
         super().__init__()
         if currency_symbol == "0xBTC":
             self.exchange_address = "0x7c27aDF852c87D2A5BdF46abFDFa9531B76ef9c1"
@@ -45,7 +45,7 @@ class SwapmaticAPI(Daily24hChangeTrackedAPI):
 
         self._time_volume_last_updated = 0
 
-        self._w3 = Web3(Web3.HTTPProvider(MATIC_NODE_URL))
+        self._w3 = Web3(Web3.HTTPProvider(MATIC_NODE_URL, request_kwargs={'timeout': timeout}))
         self._exchange = self._w3.eth.contract(address=self.exchange_address, abi=exchange_abi)
 
     async def _update_24h_volume(self, matic_eth_price, timeout=10.0):

@@ -305,7 +305,11 @@ class BalancerAPI(Daily24hChangeTrackedAPI):
 
         # update volume once every hour since it (potentially) loads eth api
         if time.time() - self._time_volume_last_updated > 60 * 60:
-            await self._update_volume()
+            try:
+                await self._update_volume()
+            except requests.exceptions.ReadTimeout:
+                logging.warning(f"Failed to update QuickSwapAPI volume: ReadTimeout")
+            
             self._time_volume_last_updated = time.time()
 
 
