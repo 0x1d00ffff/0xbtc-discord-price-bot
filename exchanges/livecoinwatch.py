@@ -80,7 +80,10 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
             if base_pair == "ETH":
                 # average price of base pairs, they are NOT all the same
                 wavg_eth_price_usd.add(exchange_data['usdq'], relative_volume)
-            elif (base_pair in ["AUD", "CAD", "CNY", "DAI", "EUR", "EURO", "GBP", "JPY", "KRW", "RUB", "USDT", "USD"]):
+            elif (base_pair in ["KRW"]):
+                # skip base pairs that are constantly off-peg / outliers
+                continue
+            elif (base_pair in ["AUD", "CAD", "CNY", "DAI", "EUR", "EURO", "GBP", "JPY", "RUB", "USDT", "USD"]):
                 # allow all fiat pairings to count towards volume
                 pass
             elif (base_pair in ["BTC"]):
