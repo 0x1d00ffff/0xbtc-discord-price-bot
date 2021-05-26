@@ -30,14 +30,16 @@ from weighted_average import WeightedAverage
 exchanges = (
     (("0xBTC", "WETH"),
         "0xDBCd8b30eC1C4b136e740C147112f39D41a10166"),
-    (("DUST", "DAI", "0xBTC", "BAL", "MATIC"),
-        "0x6af162b6c48Fc99722c7A656ABA9520f43338c72"),
+    # removed 5/26/21: zero liquidity
+    # (("DUST", "DAI", "0xBTC", "BAL", "MATIC"),
+    #     "0x6af162b6c48Fc99722c7A656ABA9520f43338c72"),
     (("DUST", "KIWI", "UNI", "LINK", "0xBTC", "BAL", "WETH", "GRT"),
         "0x63A63f2cAd45fee80b242436BA71e0f462A4178E"),
     (("DUST", "0xBTC"),
         "0x2b36d183be387Ca2cF81B63EFddDb030F3a643eb"),
-    (("DUST", "0xBTC"),
-        "0x9c1B855a9Cd2d6232A6DEBd6F8b431c19a54C14E"),
+    # removed 5/26/21: under $20 liquidity
+    # (("DUST", "0xBTC"),
+    #     "0x9c1B855a9Cd2d6232A6DEBd6F8b431c19a54C14E"),
 )
 
 
