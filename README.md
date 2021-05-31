@@ -47,6 +47,13 @@ Bot to monitor/post price etc to the 0xbtc discord server ([link to the discord]
  - BeautifulSoup (only if !holders command is enabled)
  - matplotlib (only if !holders command is enabled)
 
+##### How to update uniswap-python
+
+        cd 0xbtc-discord-price-bot
+        rm -rf uniswap
+        git clone https://github.com/uniswap-python/uniswap-python.git /tmp/uniswap-python
+        cp -r /tmp/uniswap-python/uniswap .
+
 ##### Bugs:
  - bot creates the 'databases' folder in a location relative to the current
    directory, rather than the location of the bot code

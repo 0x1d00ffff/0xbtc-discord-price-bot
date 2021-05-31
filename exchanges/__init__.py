@@ -30,3 +30,5 @@ from .zxchange import ZxchangeAPI
 from .swapmatic import SwapmaticAPI
 # 4/03/21 added quickswap
 from .quickswap import QuickSwapAPI
+# 5/30/21 added uniswap v3
+from .uniswap_v3 import Uniswapv3API

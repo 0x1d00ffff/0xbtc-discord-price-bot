@@ -34,7 +34,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.5.4"
+_VERSION = "0.6.0"
 
 
 old_status_string = None
@@ -478,6 +478,8 @@ def main():
         exchanges.SwapmaticAPI(config.TOKEN_SYMBOL),
         # 4/03/21 added quickswap
         exchanges.QuickSwapAPI(config.TOKEN_SYMBOL),
+        # 5/30/21 added quickswap
+        exchanges.Uniswapv3API(config.TOKEN_SYMBOL),
     ])
 
     if args.self_test:

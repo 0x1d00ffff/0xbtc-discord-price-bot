@@ -161,9 +161,8 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
 
         self.currency_symbol = currency_symbol
         self.exchange_name = "Uniswap v2"
-        self.command_names = ["uniswap"]
-        # TODO: fix this link, for now its auto-redirecting to v3
-        self.short_url = "https://bit.ly/35nae4n"  # main uniswap pre-selected to 0xbtc
+        self.command_names = ["uniswapv2", "univ2", "uniswap v2", "uni v2"]
+        self.short_url = "https://bit.ly/3wPyeu5"  # main uniswap pre-selected to 0xbtc
         self.volume_eth = 0
 
         self._time_volume_last_updated = 0
