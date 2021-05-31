@@ -17,3 +17,4 @@ aiohttp~=3.6.2
 
 # required by uniswap-python
 python-dotenv~=0.17.1
+click~=7.1.2
