@@ -115,6 +115,13 @@ class MercatoxAPI(BaseExchangeAPI):
             except TypeError as e:
                 raise TimeoutError("Could not convert data to float") from e
 
+        # Mercatox lies (blatantly) about its volume, so divide it by 10 to get it
+        # much closer to reality. Need to do something sophisticated to remove wash
+        # trades only like the stats on 0xbitcointoken.com
+        self.volume_eth /= 10.0
+        self.volume_btc /= 10.0
+
+
         if self.currency_symbol == "ETH":
             self.price_eth = 1
             self.eth_price_usd = self.price_usd
