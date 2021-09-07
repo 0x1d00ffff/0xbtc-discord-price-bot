@@ -34,7 +34,7 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.6.1"
+_VERSION = "0.6.2"
 
 
 old_status_string = None
@@ -469,8 +469,8 @@ def main():
         # exchanges.EthexAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed forkdelta, need new api. 7/26/20: reenabled forkdelta. 5/21/21 removed forkdelta. no volume in 6 months
         # exchanges.ForkDeltaAPI(config.TOKEN_SYMBOL, storage),
-        # 9/06/20 added balancer
-        exchanges.BalancerAPI(config.TOKEN_SYMBOL),
+        # 8/18/21 remove balancer - no liquidity
+        # exchanges.BalancerAPI(config.TOKEN_SYMBOL),
         # exchanges.HotbitAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed merklex. seems to have rebranded to nitrade.
         # exchanges.MerkleXAPI(config.TOKEN_SYMBOL),
@@ -478,7 +478,7 @@ def main():
         exchanges.SwapmaticAPI(config.TOKEN_SYMBOL),
         # 4/03/21 added quickswap
         exchanges.QuickSwapAPI(config.TOKEN_SYMBOL),
-        # 5/30/21 added quickswap
+        # 5/30/21 added uniswap v3
         exchanges.Uniswapv3API(config.TOKEN_SYMBOL),
         # 8/18/21 added sushiswap on polygon
         exchanges.SushiSwapPolygonAPI(config.TOKEN_SYMBOL),
