@@ -18,7 +18,7 @@ from secret_info import TOKEN
 import exchanges
 
 from mineable_token_info import MineableTokenInfo
-import etherscan
+# import etherscan  # TODO: reenable when holders chart is fixed
 
 import formatting_helpers
 import commands

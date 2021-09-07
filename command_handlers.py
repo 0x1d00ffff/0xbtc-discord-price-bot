@@ -14,7 +14,7 @@ from text_graph import make_graph
 
 import ping_wrapper  # !ping command
 from web3 import Web3  # !mine command
-import etherscan  # !holders command
+#import etherscan  # !holders command, TODO: re-enable after fixing holders chart
 
 from formatting_helpers import (prettify_decimals, 
                                 percent_change_to_emoji,
@@ -490,20 +490,13 @@ async def cmd_holders(command_str, discord_message, apis):
     # TODO: fix holders chart and remove this stub
     return ":shrug: etherscan's API is not working"
 
-    if apis.token.addr_0_balance is None:
-        return ":shrug:"
+    # if apis.token.addr_0_balance is None:
+    #     return ":shrug:"
 
-    await apis.client.send_file(discord_message.channel,
-                                etherscan.saved_holders_chart_filename)
+    # await apis.client.send_file(discord_message.channel,
+    #                             etherscan.saved_holders_chart_filename)
 
-    # # Async
-    # await bot.send_file(channel, "filepath.png", content="...", filename="...")
-
-    # # Rewrite
-    # file = discord.File("filepath.png", filename="...")
-    # await channel.send("content", file=file)
-
-    return 'OK-noresponse'
+    # return 'OK-noresponse'
 
 
 async def cmd_income(command_str, discord_message, apis):
