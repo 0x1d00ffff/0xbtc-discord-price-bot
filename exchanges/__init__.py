@@ -32,3 +32,5 @@ from .swapmatic import SwapmaticAPI
 from .quickswap import QuickSwapAPI
 # 5/30/21 added uniswap v3
 from .uniswap_v3 import Uniswapv3API
+# 8/18/21 add sushiswap polygon
+from .sushiswap_polygon import SushiSwapPolygonAPI

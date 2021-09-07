@@ -480,6 +480,8 @@ def main():
         exchanges.QuickSwapAPI(config.TOKEN_SYMBOL),
         # 5/30/21 added quickswap
         exchanges.Uniswapv3API(config.TOKEN_SYMBOL),
+        # 8/18/21 added sushiswap on polygon
+        exchanges.SushiSwapPolygonAPI(config.TOKEN_SYMBOL),
     ])
 
     if args.self_test:
