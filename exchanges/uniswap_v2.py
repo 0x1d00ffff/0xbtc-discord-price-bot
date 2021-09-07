@@ -325,6 +325,11 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
             logging.warning(f"Failed to get WETH pair for {self.currency_symbol}; calculating backwards using average USD price")
             self.price_eth = self.price_usd / self.eth_price_usd
 
+        # TODO: switch to rolling 24-hour volume by loading 1 hour at a time to
+        # allow re-enable volume updates
+        # currently alchemyapi errors because 24h of events is too many for 1 call
+        return
+
         # update volume once every hour since it (potentially) loads eth api
         if time.time() - self._time_volume_last_updated > 60 * 60:
             self.volume_tokens = await self._update_24h_volume()

@@ -236,6 +236,14 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
         return price_in_usd, liquidity_tokens
 
     async def _update_all_values(self, timeout=10.0, should_update_volume=False):
+
+        # TODO: switch to rolling 24-hour volume by loading 1 hour at a time to
+        # allow re-enable volume updates
+        # currently alchemyapi errors because 24h of events is too many for 1 call
+        should_update_volume = False
+        # END TODO
+
+
         if should_update_volume:
             current_eth_block = self._w3.eth.blockNumber
 
@@ -282,6 +290,7 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
         self.price_eth = self.price_usd / self.eth_price_usd
         self.liquidity_tokens = total_liquidity_tokens
         self.liquidity_eth = self.liquidity_tokens * self.price_eth
+
         if should_update_volume:
             self.volume_tokens = total_volume_tokens
             self.volume_eth = self.volume_tokens * self.price_eth
@@ -298,7 +307,7 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 
     # get some data from 0xBTC pool via Uniswapv3API
     e = Uniswapv3API('0xBTC')

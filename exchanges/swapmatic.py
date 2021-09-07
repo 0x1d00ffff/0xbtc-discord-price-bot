@@ -120,6 +120,11 @@ class SwapmaticAPI(Daily24hChangeTrackedAPI):
         if self.currency_symbol == "DAI":
             self.eth_price_usd = 1 / self.price_eth
 
+        # TODO: switch to rolling 24-hour volume by loading 1 hour at a time to
+        # allow re-enable volume updates
+        # currently alchemyapi errors because 24h of events is too many for 1 call
+        return
+
         # update volume once every hour since it (potentially) loads eth api
         if time.time() - self._time_volume_last_updated > 60*60:
             try:

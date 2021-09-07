@@ -289,6 +289,14 @@ class QuickSwapAPI(Daily24hChangeTrackedAPI):
         return price_in_usd, liquidity_tokens
 
     async def _update_all_values(self, should_update_volume=False, timeout=10):
+
+        # TODO: switch to rolling 24-hour volume by loading 1 hour at a time to
+        # allow re-enable volume updates
+        # currently alchemyapi errors because 24h of events is too many for 1 call
+        should_update_volume = False
+        # END TODO
+
+
         if should_update_volume:
             current_eth_block = self._w3.eth.blockNumber
 
