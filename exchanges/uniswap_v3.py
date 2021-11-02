@@ -24,7 +24,7 @@ exchanges = (
 ("0xBTC", "WETH", "0xaFF587846a44aa086A6555Ff69055D3380fD379a", 10000),
 )
 
-_TIME_BETWEEN_VOLUME_UPDATES = 60 * 60  # 1 hour
+_TIME_BETWEEN_VOLUME_UPDATES = 60 * 60  # 1 hour. WARNING: don't change this without refactoring hourly volume logic
 # if less than this many tokens in pair, don't use it for price
 _MINIMUM_ALLOWED_LIQUIDITY_IN_TOKENS = 0.1
 # if less than this many tokens in pair, don't check its volume
@@ -121,6 +121,7 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
         self.short_url = "https://bit.ly/35nae4n"  # main uniswap pre-selected to 0xbtc
         self.volume_eth = 0
 
+        self._hourly_volume_tokens = []  # list of volume for each of the last N hours
         self._time_volume_last_updated = 0
 
         self._w3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
@@ -133,7 +134,7 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
     def _mark_volume_as_updated(self):
         self._time_volume_last_updated = time.time()
 
-    async def _get_volume_for_pair(self, token0_address, token1_address, fee, current_eth_block=None, timeout=10.0):
+    async def _get_volume_for_pair(self, token0_address, token1_address, fee, num_hours_into_past=1, current_eth_block=None, timeout=10.0):
         volume_tokens = 0  # volume in units of <self.currency_symbol> tokens
         volume_pair = 0  # volume in units of the paired token
 
@@ -156,7 +157,7 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
             current_eth_block = self._w3.eth.blockNumber
 
         for event in self._w3.eth.getLogs({
-                'fromBlock': current_eth_block - (int(60*60*24 / SECONDS_PER_ETH_BLOCK)),
+                'fromBlock': current_eth_block - (int(60*60*num_hours_into_past / SECONDS_PER_ETH_BLOCK)),
                 'toBlock': current_eth_block - 1,
                 'address': exchange_address}):
             topic0 = self._w3.toHex(event['topics'][0])
@@ -237,13 +238,6 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
 
     async def _update_all_values(self, timeout=10.0, should_update_volume=False):
 
-        # TODO: switch to rolling 24-hour volume by loading 1 hour at a time to
-        # allow re-enable volume updates
-        # currently alchemyapi errors because 24h of events is too many for 1 call
-        should_update_volume = False
-        # END TODO
-
-
         if should_update_volume:
             current_eth_block = self._w3.eth.blockNumber
 
@@ -292,7 +286,10 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
         self.liquidity_eth = self.liquidity_tokens * self.price_eth
 
         if should_update_volume:
-            self.volume_tokens = total_volume_tokens
+            self._hourly_volume_tokens.append(total_volume_tokens)
+            # trim list to 24 hours
+            self._hourly_volume_tokens = self._hourly_volume_tokens[-24:]
+            self.volume_tokens = sum(self._hourly_volume_tokens)
             self.volume_eth = self.volume_tokens * self.price_eth
             # NOTE: this sets _time_volume_last_updated even if all volume updates
             #       failed. This is OK for now, it throttles struggling APIs (matic) but

@@ -165,12 +165,13 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         self.short_url = "https://bit.ly/3wPyeu5"  # main uniswap pre-selected to 0xbtc
         self.volume_eth = 0
 
+        self._hourly_volume_tokens = []  # list of volume for each of the last N hours
         self._time_volume_last_updated = 0
 
         self._w3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
         self._exchanges = [self._w3.eth.contract(address=a, abi=exchange_abi) for a in self._exchange_addresses]
 
-    async def _get_volume_at_exchange_contract(self, exchange_contract, timeout=10.0):
+    async def _get_volume_at_exchange_contract(self, exchange_contract, num_hours_into_past=1, timeout=10.0):
         volume_tokens = 0  # volume in units of <self.currency_symbol> tokens
         volume_pair = 0  # volume in units of the paired token
 
@@ -187,7 +188,7 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         current_eth_block = self._w3.eth.blockNumber
 
         for event in self._w3.eth.getLogs({
-                'fromBlock': current_eth_block - (int(60*60*24 / SECONDS_PER_ETH_BLOCK)),
+                'fromBlock': current_eth_block - (int(60*60*num_hours_into_past / SECONDS_PER_ETH_BLOCK)),
                 'toBlock': current_eth_block - 1,
                 'address': exchange_contract.address}):
             topic0 = self._w3.toHex(event['topics'][0])
@@ -244,13 +245,27 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         return volume_tokens, volume_pair
 
     async def _update_24h_volume(self, timeout=10.0):
-        total_volume_tokens = 0
-        for exchange_contract in self._exchanges:
-            volume_tokens, volume_pair = await self._get_volume_at_exchange_contract(exchange_contract)
-            total_volume_tokens += volume_tokens
 
-            #print('volume: {} {} was traded for {} tokens of the paired currency'.format(volume_tokens, self.currency_symbol, volume_pair))
-        return total_volume_tokens
+        # update volume only once every hour since it (potentially) loads eth api
+        if time.time() - self._time_volume_last_updated > 60 * 60:
+
+            total_volume_tokens = 0
+            for exchange_contract in self._exchanges:
+                volume_tokens, volume_pair = await self._get_volume_at_exchange_contract(exchange_contract)
+                total_volume_tokens += volume_tokens
+
+                #print('volume: {} {} was traded for {} tokens of the paired currency'.format(volume_tokens, self.currency_symbol, volume_pair))
+
+            self._hourly_volume_tokens.append(total_volume_tokens)
+            # trim list to 24 hours
+            self._hourly_volume_tokens = self._hourly_volume_tokens[-24:]
+            self._time_volume_last_updated = time.time()
+            return sum(self._hourly_volume_tokens)
+
+        else:
+            # don't reload volume, just return existing
+            return sum(self._hourly_volume_tokens)
+
 
     async def _update(self, timeout=10.0):
         eth_prices = [
@@ -325,19 +340,20 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
             logging.warning(f"Failed to get WETH pair for {self.currency_symbol}; calculating backwards using average USD price")
             self.price_eth = self.price_usd / self.eth_price_usd
 
-        # TODO: switch to rolling 24-hour volume by loading 1 hour at a time to
-        # allow re-enable volume updates
-        # currently alchemyapi errors because 24h of events is too many for 1 call
-        return
-
-        # update volume once every hour since it (potentially) loads eth api
-        if time.time() - self._time_volume_last_updated > 60 * 60:
-            self.volume_tokens = await self._update_24h_volume()
-            self.volume_eth = self.volume_tokens * self.price_eth
-            self._time_volume_last_updated = time.time()
+        self.volume_tokens = await self._update_24h_volume()
+        self.volume_eth = self.volume_tokens * self.price_eth
 
 
-if __name__ == "__main__":
+def main():
+    # get some data from 0xBTC pool via Uniswapv2API
+    e = Uniswapv2API('0xBTC')
+    e.load_once_and_print_values()
+    print()
+    print('0xBTC-WETH liquidity in eth', e.liquidity_eth)
+    print('0xBTC-WETH liquidity in tokens', e.liquidity_tokens)
+    print()
+
+    return
     # run some generic uniswap v2 functions
     web3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
     print('$1 in USDC will swap for {} 0xBTC tokens'.format(get_swap_amount(web3, 1, "USDC", "0xBTC")))
@@ -356,14 +372,6 @@ if __name__ == "__main__":
     print('1 in ETH will swap for {} DAI '.format(get_swap_amount(web3, 1, "WETH", "DAI")))
     print()
 
-    # get some data from 0xBTC pool via Uniswapv2API
-    e = Uniswapv2API('0xBTC')
-    e.load_once_and_print_values()
-    print()
-    print('0xBTC-WETH liquidity in eth', e.liquidity_eth)
-    print('0xBTC-WETH liquidity in tokens', e.liquidity_tokens)
-    print()
-
     # get some data from KIWI pool via Uniswapv2API
     e = Uniswapv2API('KIWI')
     e.load_once_and_print_values()
@@ -376,4 +384,8 @@ if __name__ == "__main__":
 
     # e = Uniswapv2API('DAI')
     # e.load_once_and_print_values()
+
+
+if __name__ == "__main__":
+    main()
 

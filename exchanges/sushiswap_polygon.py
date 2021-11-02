@@ -162,6 +162,7 @@ class SushiSwapPolygonAPI(Daily24hChangeTrackedAPI):
         self.short_url = "https://bit.ly/2XsNMr0"
         self.volume_eth = 0
 
+        self._hourly_volume_tokens = []  # list of volume for each of the last N hours
         self._time_volume_last_updated = 0
 
         self._w3 = Web3(Web3.HTTPProvider(MATIC_NODE_URL, request_kwargs={'timeout': timeout}))
@@ -173,7 +174,7 @@ class SushiSwapPolygonAPI(Daily24hChangeTrackedAPI):
     def _mark_volume_as_updated(self):
         self._time_volume_last_updated = time.time()
 
-    async def _get_volume_at_exchange_contract(self, exchange_contract, current_eth_block=None, timeout=10.0):
+    async def _get_volume_at_exchange_contract(self, exchange_contract, num_hours_into_past=1, current_eth_block=None, timeout=10.0):
         volume_tokens = 0  # volume in units of <self.currency_symbol> tokens
         volume_pair = 0  # volume in units of the paired token
 
@@ -191,7 +192,7 @@ class SushiSwapPolygonAPI(Daily24hChangeTrackedAPI):
             current_eth_block = self._w3.eth.blockNumber
 
         for event in self._w3.eth.getLogs({
-                'fromBlock': current_eth_block - (int(60*60*24 / SECONDS_PER_MATIC_BLOCK)),
+                'fromBlock': current_eth_block - (int(60*60*num_hours_into_past / SECONDS_PER_MATIC_BLOCK)),
                 'toBlock': current_eth_block - 1,
                 'address': exchange_contract.address}):
             topic0 = self._w3.toHex(event['topics'][0])
@@ -280,13 +281,6 @@ class SushiSwapPolygonAPI(Daily24hChangeTrackedAPI):
 
     async def _update_all_values(self, should_update_volume=False, timeout=10):
 
-        # TODO: switch to rolling 24-hour volume by loading 1 hour at a time to
-        # allow re-enable volume updates
-        # currently alchemyapi errors because 24h of events is too many for 1 call
-        should_update_volume = False
-        # END TODO
-
-
         if should_update_volume:
             current_eth_block = self._w3.eth.blockNumber
 
@@ -328,7 +322,10 @@ class SushiSwapPolygonAPI(Daily24hChangeTrackedAPI):
         self.liquidity_tokens = total_liquidity_tokens
         self.liquidity_eth = self.liquidity_tokens * self.price_eth
         if should_update_volume:
-            self.volume_tokens = total_volume_tokens
+            self._hourly_volume_tokens.append(total_volume_tokens)
+            # trim list to 24 hours
+            self._hourly_volume_tokens = self._hourly_volume_tokens[-24:]
+            self.volume_tokens = sum(self._hourly_volume_tokens)
             self.volume_eth = self.volume_tokens * self.price_eth
             # NOTE: this sets _time_volume_last_updated even if all volume updates
             #       failed. This is OK for now, it throttles struggling APIs (matic) but
