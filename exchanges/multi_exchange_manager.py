@@ -79,13 +79,13 @@ class MultiExchangeManager():
                 continue
             if a.price_eth == None:
                 continue
-            if a.volume_eth == None:
+            if a.liquidity_tokens == None:
                 # use 0 eth as fallback so it does not affect weighted price
-                volume = 0
+                liquidity_tokens = 0
             else:
-                volume = a.volume_eth
+                liquidity_tokens = a.liquidity_tokens
             if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
-                result.add(a.price_eth, volume)
+                result.add(a.price_eth, liquidity_tokens)
         return result.average()
 
     def price_usd(self, currency_symbol, exchange_name='aggregate'):
@@ -95,12 +95,12 @@ class MultiExchangeManager():
                 continue
             if a.price_usd == None:
                 continue
-            if a.volume_usd == None:
-                volume = 0
+            if a.liquidity_tokens == None:
+                liquidity_tokens = 0
             else:
-                volume = a.volume_usd
+                liquidity_tokens = a.liquidity_tokens
             if exchange_name == 'aggregate' or a.exchange_name == exchange_name:
-                result.add(a.price_usd, volume)
+                result.add(a.price_usd, liquidity_tokens)
         return result.average()
 
     def price_converted_to_usd(self, currency_symbol, exchange_name='aggregate'):
