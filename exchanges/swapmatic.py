@@ -1,8 +1,8 @@
 """
-API for Uniswap distributed exchange (uniswap.exchange)
+API for Swapdog.io (previously swapmatic)
+
 Price info is pulled from the smart contract
 
-https://docs.uniswap.io/api/exchange
 """
 import logging
 from web3 import Web3
@@ -39,9 +39,9 @@ class SwapmaticAPI(Daily24hChangeTrackedAPI):
             raise RuntimeError("Unknown currency_symbol {}, need to add address to uniswap.py".format(currency_symbol))
 
         self.currency_symbol = currency_symbol
-        self.exchange_name = "SwapMatic"
-        self.command_names = ["swapmatic", "matic"]
-        self.short_url = "https://bit.ly/2RPc2xt"  # swapmatic pre-selected to 0xbtc
+        self.exchange_name = "Swapdog.io"
+        self.command_names = ["swapdog", "swapmatic"]
+        self.short_url = "https://bit.ly/3jWSypf"  # swapdog pre-selected to 0xbtc
 
         self._time_volume_last_updated = 0
 
