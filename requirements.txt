@@ -4,15 +4,14 @@ web3~=5.12.0
 discord.py~=1.5.1
 
 # used by !holders command
+#numpy~=1.15.3
 matplotlib~=3.0.1
-numpy~=1.15.3
 beautifulsoup4~=4.6.3
 
 # required by web3 AND explicitly imported by this app
 requests~=2.20.0
 
 # required by discord.py AND explicitly imported by this app
-websockets~=6.0
 aiohttp~=3.6.2
 
 # required by uniswap-python
