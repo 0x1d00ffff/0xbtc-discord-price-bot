@@ -1042,7 +1042,7 @@ def convert(amount, src, dest, apis):
         usd_value = amount / 100.0
     else:
         for price, names in config.EXPENSIVE_STUFF:
-            if util.string_contains_any(src, names, exhaustive_search=True, require_cmd_char=False):
+            if util.string_contains_any(src, names, exhaustive_search=True, require_cmd_char=False, ignore_case=True):
                 src = names[0]  # replace name with the non-typo'd version
                 usd_value = amount * price
                 break
@@ -1072,7 +1072,7 @@ def convert(amount, src, dest, apis):
         result = usd_value * 100.0
     else:
         for price, names in config.EXPENSIVE_STUFF:
-            if util.string_contains_any(dest, names, exhaustive_search=True, require_cmd_char=False):
+            if util.string_contains_any(dest, names, exhaustive_search=True, require_cmd_char=False, ignore_case=True):
                 dest = names[0]  # replaces provided name with the non-typo'd version
                 result = usd_value / price
                 break

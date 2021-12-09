@@ -38,9 +38,13 @@ def string_contains_command(input_string, command, exhaustive_search=False, perm
     return False
 
 
-def string_contains_any(input_string, command_list, exhaustive_search=False, permute_whitespace=True, require_cmd_char=True, ignore_matches_containing=None):
+def string_contains_any(input_string, command_list, exhaustive_search=False, permute_whitespace=True, require_cmd_char=True, ignore_matches_containing=None, ignore_case=False):
     """similar to string_contains_command but accepts a list of multiple command synonyms"""
+    if ignore_case:
+        input_string = input_string.lower()
     for command in command_list:
+        if ignore_case:
+            command = command.lower()
         if string_contains_command(input_string, command, exhaustive_search, permute_whitespace, require_cmd_char, ignore_matches_containing):
             return True
     return False
