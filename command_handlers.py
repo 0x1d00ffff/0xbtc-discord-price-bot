@@ -956,6 +956,10 @@ async def cmd_volume(command_str, discord_message, apis):
                 response += "+ "
             response += "$**{}** ".format(prettify_decimals(volume_usd))
 
+        number_of_hours_covered_by_volume = apis.exchanges.number_of_hours_covered_by_volume(config.TOKEN_SYMBOL, api.exchange_name)
+        if number_of_hours_covered_by_volume != None and number_of_hours_covered_by_volume != 24:
+            response += "*only showing last {} hours of volume ".format(number_of_hours_covered_by_volume)
+
         response += "\n"
 
     response += "\n"

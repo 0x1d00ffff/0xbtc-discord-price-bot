@@ -171,6 +171,10 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         self._w3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
         self._exchanges = [self._w3.eth.contract(address=a, abi=exchange_abi) for a in self._exchange_addresses]
 
+    @property
+    def number_of_hours_covered_by_volume(self):
+        return len(self._hourly_volume_tokens)
+
     async def _get_volume_at_exchange_contract(self, exchange_contract, num_hours_into_past=1, timeout=10.0):
         volume_tokens = 0  # volume in units of <self.currency_symbol> tokens
         volume_pair = 0  # volume in units of the paired token

@@ -136,6 +136,16 @@ class MultiExchangeManager():
                 result += a.volume_usd
         return result
 
+    def number_of_hours_covered_by_volume(self, currency_symbol, exchange_name):
+        result = 0
+        for a in self.alive_exchanges:
+            if a.currency_symbol != currency_symbol:
+                continue
+            if not hasattr(a, 'number_of_hours_covered_by_volume'):
+                continue
+            if a.exchange_name == exchange_name:
+                return a.number_of_hours_covered_by_volume
+
     def volume_eth(self, currency_symbol, exchange_name='aggregate'):
         result = 0
         for a in self.alive_exchanges:

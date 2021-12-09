@@ -128,6 +128,10 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
         self._uniswap_api = Uniswap(address=None, private_key=None, version=3, web3=self._w3)
         # self._exchanges = [self._w3.eth.contract(address=a, abi=exchange_abi) for a in self._exchange_addresses]
 
+    @property
+    def number_of_hours_covered_by_volume(self):
+        return len(self._hourly_volume_tokens)
+
     def _is_time_to_update_volume(self):
         return time.time() - self._time_volume_last_updated > _TIME_BETWEEN_VOLUME_UPDATES
 
