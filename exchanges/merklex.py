@@ -1,4 +1,5 @@
 from .base_exchange import BaseExchangeAPI
+from async_url_helpers import get_json_from_url
 
 class MerkleXAPI(BaseExchangeAPI):
     def __init__(self, currency_symbol):
@@ -15,7 +16,7 @@ class MerkleXAPI(BaseExchangeAPI):
 
     async def _update(self, timeout=10.0):
         method = "/markets/%s-DAI/stats" % self.currency_symbol
-        data = await self._get_json_from_url(self._SERVER_URL+method)
+        data = await get_json_from_url(self._SERVER_URL+method)
 
         try:
             self.price_usd = float(data['last_trade']['price'])

@@ -40,6 +40,7 @@ https://api.coinmarketcap.com/v2/ticker/1027/
 """
 from .base_exchange import BaseExchangeAPI
 from secret_info import COINMARKETCAP_API_KEY
+from async_url_helpers import get_json_from_url
 
 
 class CoinMarketCapAPI(BaseExchangeAPI):
@@ -63,7 +64,7 @@ class CoinMarketCapAPI(BaseExchangeAPI):
             'X-CMC_PRO_API_KEY': COINMARKETCAP_API_KEY,
         }
         method = "/cryptocurrency/quotes/latest"
-        data = await self._get_json_from_url(
+        data = await get_json_from_url(
             self._SERVER_URL + method,
             parameters=parameters,
             headers=headers)

@@ -40,7 +40,7 @@ data =
 """
 import logging
 from .base_exchange import BaseExchangeAPI
-
+from async_url_helpers import get_json_from_url
 
 
 
@@ -67,7 +67,7 @@ class MercatoxAPI(BaseExchangeAPI):
         headers = {
             'Accepts': 'application/json',
         }
-        data = await self._get_json_from_url(
+        data = await get_json_from_url(
             url,
             #parameters={'market_pair': f"{currency_symbol}_{base_pair_symbol}"},
             headers=headers)
@@ -86,7 +86,7 @@ class MercatoxAPI(BaseExchangeAPI):
 
     async def _update(self, timeout=10.0):
         method = "/json24"
-        data = await self._get_json_from_url(self._SERVER_URL+method)
+        data = await get_json_from_url(self._SERVER_URL+method)
 
         for pair_name in data['pairs']:
             try:

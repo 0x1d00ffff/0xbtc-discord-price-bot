@@ -2,6 +2,7 @@
 #
 # Thanks SEDO devs https://github.com/CryptoProjectDev/sedo-information-discord-bot/
 from .base_exchange import BaseExchangeAPI
+from async_url_helpers import get_json_from_url
 
 
 class YobitAPI(BaseExchangeAPI):
@@ -24,7 +25,7 @@ class YobitAPI(BaseExchangeAPI):
     async def _update(self, timeout=10.0):
         method = "/{0}_btc-{0}_eth-eth_usd-btc_usd".format(self._currency_name_on_exchange)
 
-        data = await self._get_json_from_url(self._SERVER_URL+method)
+        data = await get_json_from_url(self._SERVER_URL+method)
 
         self.price_btc = float(data['{}_btc'.format(self._currency_name_on_exchange)]['last'])
         self.volume_btc = float(data['{}_btc'.format(self._currency_name_on_exchange)]['vol'])

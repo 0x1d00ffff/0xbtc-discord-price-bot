@@ -33,6 +33,7 @@ data =
 """
 from .base_exchange import BaseExchangeAPI
 from weighted_average import WeightedAverage
+from async_url_helpers import get_json_from_url
 
 
 class LiveCoinWatchAPI(BaseExchangeAPI):
@@ -48,7 +49,7 @@ class LiveCoinWatchAPI(BaseExchangeAPI):
     async def _update(self, timeout=10.0):
         method = "/markets?currency=USD&coin={}".format(self.currency_symbol)
 
-        data = await self._get_json_from_url(self._SERVER_URL+method)
+        data = await get_json_from_url(self._SERVER_URL+method)
 
         # import pprint
         # print(self._SERVER_URL+method)

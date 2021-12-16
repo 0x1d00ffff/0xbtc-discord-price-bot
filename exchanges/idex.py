@@ -38,6 +38,7 @@ data =
 
 """
 from .base_exchange import BaseExchangeAPI
+from async_url_helpers import get_json_from_url
 
 
 class IDEXAPI(BaseExchangeAPI):
@@ -51,7 +52,7 @@ class IDEXAPI(BaseExchangeAPI):
 
     async def _update(self, timeout=10.0):
         method = "/returnTicker"
-        data = await self._get_json_from_url(self._SERVER_URL+method)
+        data = await get_json_from_url(self._SERVER_URL+method)
 
         for pair_name in data:
             base_pair, currency = pair_name.split('_')

@@ -24,6 +24,7 @@ Support only for WETH pairs
 
 """
 from .base_exchange import BaseExchangeAPI
+from async_url_helpers import get_json_from_url
 
 
 class ZxchangeAPI(BaseExchangeAPI):
@@ -42,7 +43,7 @@ class ZxchangeAPI(BaseExchangeAPI):
 
     async def _update(self, timeout=10.0):
         method = "markets/stats/"+self._symbol_on_exchange+"-WETH"
-        data = await self._get_json_from_url(self._SERVER_URL+method)
+        data = await get_json_from_url(self._SERVER_URL+method)
         try:
             self.price_eth = float(data['last_price'])
             self.volume_eth = float(data['quote_volume_24'])
@@ -54,7 +55,7 @@ class ZxchangeAPI(BaseExchangeAPI):
 
         # later on, DAI might be supported via this api
         method = "markets/stats/"+self._symbol_on_exchange+"-DAI"
-        data = await self._get_json_from_url(self._SERVER_URL+method)
+        data = await get_json_from_url(self._SERVER_URL+method)
         try:
             self.price_usd = float(data['last_price'])
             self.volume_usd = float(data['quote_volume_24'])

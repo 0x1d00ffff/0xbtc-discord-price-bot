@@ -81,6 +81,7 @@ GET https://www.coinexchange.io/api/v1/getmarketsummaries
 """
 from .base_exchange import BaseExchangeAPI
 from weighted_average import WeightedAverage
+from async_url_helpers import get_json_from_url
 
 
 class CoinExchangeAPI(BaseExchangeAPI):
@@ -100,7 +101,7 @@ class CoinExchangeAPI(BaseExchangeAPI):
     async def _get_market_id(self, asset_code, currency_code):
         """Get market ID for the given asset code ("0xBTC", "LTC", etc) and 
         currency code ("BTC", "ETH", etc)"""
-        data = await self._get_json_from_url(self._SERVER_URL+"/getmarkets")
+        data = await get_json_from_url(self._SERVER_URL+"/getmarkets")
 
         for element in data["result"]:
             if (element["MarketAssetCode"] == asset_code
@@ -111,7 +112,7 @@ class CoinExchangeAPI(BaseExchangeAPI):
 
     async def _fetch_market_data(self, market_id):
         method = "/getmarketsummary?market_id={}".format(market_id)
-        data = await self._get_json_from_url(self._SERVER_URL+method)
+        data = await get_json_from_url(self._SERVER_URL+method)
         return (float(data["result"]["LastPrice"]), 
                 float(data["result"]["Volume"]), 
                 float(data["result"]["Change"]) / 100.0)
