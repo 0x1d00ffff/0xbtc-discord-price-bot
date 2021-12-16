@@ -22,6 +22,8 @@ from uniswap import Uniswap
 # fee is in in basis points. so 3000 = 0.3%
 exchanges = (
 ("0xBTC", "WETH", "0xaFF587846a44aa086A6555Ff69055D3380fD379a", 10000),
+("USDC", "0xBTC", "0xc01435E578eb3182cABE05F11DB2bEa493dbe7CA", 10000),
+("USDC", "WETH", "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8", 3000),
 )
 
 _TIME_BETWEEN_VOLUME_UPDATES = 60 * 60  # 1 hour. WARNING: don't change this without refactoring hourly volume logic
