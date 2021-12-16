@@ -230,11 +230,11 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
         else:
             # get the paired token's price in Eth. If there is less than $500 in 
             # liquidity to determine this, then skip this pair when determining price.
-            liquidity_eth_of_paired_token, _ = get_reserves(self._w3, "WETH", paired_token_symbol, fee)
+            liquidity_eth_of_paired_token, _ = get_reserves(self._w3, "WETH", paired_token_symbol, _DEFAULT_PAIR_FEE)
             if liquidity_eth_of_paired_token < 500 / self.eth_price_usd:
                 raise NoLiquidityException(f"Less than {500} USD LP'd for paired token {paired_token_symbol}, pair token price not considered accurate. Skipping pair.")
             else:
-                paired_token_price_in_eth = get_price(self._uniswap_api, "WETH", paired_token_symbol)
+                paired_token_price_in_eth = get_price(self._uniswap_api, "WETH", paired_token_symbol, _DEFAULT_PAIR_FEE)
                 paired_token_price_in_usd = paired_token_price_in_eth * self.eth_price_usd
 
         price_in_usd = price_in_paired_token * paired_token_price_in_usd
@@ -268,7 +268,7 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
             try:
                 price_usd, liquidity_tokens = await self._get_price_and_liquidity_for_pair(token0_address, token1_address, fee)
             except (NoTokenMatchError, PairNotDefinedError) as e:
-                logging.warning(f"Failed to update uniswap v2 pair: {str(e)}")
+                logging.warning(f"Failed to update {self.exchange_name} pair: {str(e)}")
                 continue
             except NoLiquidityException:
                 # no liquidity is not an error; simply skip this exchange
