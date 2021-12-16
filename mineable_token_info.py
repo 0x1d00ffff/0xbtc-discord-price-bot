@@ -49,6 +49,7 @@ class MineableTokenInfo():
         self.mining_target = None
         self.difficulty = None
         self.challenge_number = None
+        self.reward = None
         self.tokens_minted = None
         self.addr_0_balance = None
         self.estimated_hashrate_24h = None  # DEPRECATED UNTIL REIMPLEMENTED
