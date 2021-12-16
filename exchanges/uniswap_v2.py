@@ -164,8 +164,9 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
         self.command_names = ["uniswapv2", "univ2", "uniswap v2", "uni v2"]
         self.short_url = "https://bit.ly/3wPyeu5"  # main uniswap pre-selected to 0xbtc
         self.volume_eth = 0
+        self.show_yield = True
 
-        self._hourly_volume_tokens = []  # list of volume for each of the last N hours
+        self.hourly_volume_tokens = []  # list of volume for each of the last N hours
         self._time_volume_last_updated = 0
 
         self._w3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
@@ -173,7 +174,7 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
 
     @property
     def number_of_hours_covered_by_volume(self):
-        return len(self._hourly_volume_tokens)
+        return len(self.hourly_volume_tokens)
 
     async def _get_volume_at_exchange_contract(self, exchange_contract, num_hours_into_past=1, timeout=10.0):
         volume_tokens = 0  # volume in units of <self.currency_symbol> tokens
@@ -260,15 +261,16 @@ class Uniswapv2API(Daily24hChangeTrackedAPI):
 
                 #print('volume: {} {} was traded for {} tokens of the paired currency'.format(volume_tokens, self.currency_symbol, volume_pair))
 
-            self._hourly_volume_tokens.append(total_volume_tokens)
-            # trim list to 24 hours
-            self._hourly_volume_tokens = self._hourly_volume_tokens[-24:]
+            self.hourly_volume_tokens.append(total_volume_tokens)
+            # trim list to 168 hours (7 days)
+            self.hourly_volume_tokens = self.hourly_volume_tokens[-168:]
             self._time_volume_last_updated = time.time()
-            return sum(self._hourly_volume_tokens)
+            # use last 24 hours for volume
+            return sum(self.hourly_volume_tokens[-24:])
 
         else:
             # don't reload volume, just return existing
-            return sum(self._hourly_volume_tokens)
+            return sum(self.hourly_volume_tokens[-24:])
 
 
     async def _update(self, timeout=10.0):

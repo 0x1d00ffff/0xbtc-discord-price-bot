@@ -245,6 +245,9 @@ TRADING_COMMANDS = [
         ['cost', 'mining cost', 'mining fee'],
         command_handlers.cmd_cost),
     CmdDef(
+        ['yield', 'lp fees', 'lp profit'],
+        command_handlers.cmd_yield),
+    CmdDef(
         ['mine'],
         command_handlers.cmd_mine),
     CmdDef(

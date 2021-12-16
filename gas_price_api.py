@@ -24,6 +24,8 @@ async def get_gas_price():
     for url, parser_fn in oracles:
         try:
             prices.append(parser_fn(await get_json_from_url(url)))
+        except TimeoutError:
+            logging.warning(f"fail to fetch gas price from {url}")
         except:
             logging.exception(f"fail to fetch gas price from {url}")
 

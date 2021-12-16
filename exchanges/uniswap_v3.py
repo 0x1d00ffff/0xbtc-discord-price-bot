@@ -122,8 +122,9 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
         self.command_names = ["uniswap"]
         self.short_url = "https://bit.ly/35nae4n"  # main uniswap pre-selected to 0xbtc
         self.volume_eth = 0
+        self.show_yield = True
 
-        self._hourly_volume_tokens = []  # list of volume for each of the last N hours
+        self.hourly_volume_tokens = []  # list of volume for each of the last N hours
         self._time_volume_last_updated = 0
 
         self._w3 = Web3(Web3.HTTPProvider(ETHEREUM_NODE_URL))
@@ -132,7 +133,7 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
 
     @property
     def number_of_hours_covered_by_volume(self):
-        return len(self._hourly_volume_tokens)
+        return len(self.hourly_volume_tokens)
 
     def _is_time_to_update_volume(self):
         return time.time() - self._time_volume_last_updated > _TIME_BETWEEN_VOLUME_UPDATES
@@ -292,10 +293,11 @@ class Uniswapv3API(Daily24hChangeTrackedAPI):
         self.liquidity_eth = self.liquidity_tokens * self.price_eth
 
         if should_update_volume:
-            self._hourly_volume_tokens.append(total_volume_tokens)
-            # trim list to 24 hours
-            self._hourly_volume_tokens = self._hourly_volume_tokens[-24:]
-            self.volume_tokens = sum(self._hourly_volume_tokens)
+            self.hourly_volume_tokens.append(total_volume_tokens)
+            # trim list to 168 hours (7 days)
+            self.hourly_volume_tokens = self.hourly_volume_tokens[-168:]
+            # use last 24 hours for volume
+            self.volume_tokens = sum(self.hourly_volume_tokens[-24:])
             self.volume_eth = self.volume_tokens * self.price_eth
             # NOTE: this sets _time_volume_last_updated even if all volume updates
             #       failed. This is OK for now, it throttles struggling APIs (matic) but

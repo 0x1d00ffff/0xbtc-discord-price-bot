@@ -593,6 +593,38 @@ async def cmd_cost(command_str, discord_message, apis):
     return response
 
 
+async def cmd_yield(command_str, discord_message, apis):
+    response = ""
+    if apis.gas_price_api.gas_price == None:
+        return "not sure yet... waiting on my APIs :sob:"
+
+    msg = ""
+    for exchange in sorted(apis.exchanges.alive_exchanges, key=lambda a: a.exchange_name):
+        # skip CMC, LCW and apis not directly tracking the main currency
+        if (exchange.currency_symbol != config.TOKEN_SYMBOL
+            or exchange.exchange_name == "Coin Market Cap"
+            or exchange.exchange_name == "Live Coin Watch"):
+            continue
+
+        number_of_hours_covered_by_volume = apis.exchanges.number_of_hours_covered_by_volume(config.TOKEN_SYMBOL, exchange.exchange_name)
+        if number_of_hours_covered_by_volume is None:
+            continue
+
+        if not exchange.show_yield:
+            continue
+
+        token_price_usd = apis.exchanges.price_eth(config.TOKEN_SYMBOL) * apis.exchanges.eth_price_usd()
+        msg += "**${:.1f}** in yield in the last {} on {}\n".format(
+            sum(exchange.hourly_volume_tokens) * token_price_usd * 0.01,  # assumes 1% pools
+            seconds_to_time(number_of_hours_covered_by_volume * 3600, granularity=1),
+            exchange.exchange_name
+        )
+
+    if msg == "":
+        return ":shrug:"
+    return msg
+
+
 def check_and_set_top_share(apis, resulting_difficulty, author_name, author_id, digest):
     result = ""
     if resulting_difficulty > apis.storage.top_miner_difficulty.get():

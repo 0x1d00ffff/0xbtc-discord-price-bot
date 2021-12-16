@@ -50,6 +50,8 @@ class BaseExchangeAPI():
         self.liquidity_usd = None     # optional
         self.liquidity_dai = None     # optional
 
+        self.show_yield = False       # if true, this exchange is allowed to show !yield
+
     async def update(self, timeout=10.0):
         time_start = time.time()
         try:
