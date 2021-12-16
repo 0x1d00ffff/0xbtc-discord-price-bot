@@ -548,6 +548,51 @@ async def cmd_income(command_str, discord_message, apis):
                           seconds_to_time(seconds_per_block))
 
 
+async def cmd_cost(command_str, discord_message, apis):
+    response = ""
+    if apis.gas_price_api.gas_price == None:
+        return "not sure yet... waiting on my APIs :sob:"
+
+    # gas cost
+
+    # about 92042 gas per mint (and 10% cost 94,854 and a diff adjust cost even more)
+    # 0.009513791719658944 eth for 103.3 gewi
+    # 0.010306009645882052 eth for 112 gwei
+    # -> 0.00009205830231906971 eth per gwei
+
+    gas_cost_per_mint_usd = apis.exchanges.eth_price_usd() * 0.00009205830231906971 * apis.gas_price_api.gas_price
+    gas_cost_per_token_usd = gas_cost_per_mint_usd / apis.token.reward
+    response += "Token cost: **${:.2f}** gas @ {:.1f} gwei".format(
+        gas_cost_per_token_usd,
+        apis.gas_price_api.gas_price)
+
+    # electricity cost
+
+    usd_cost_per_kwh = 0.05
+
+    # stats for blackminer f2
+    # https://shop.fpga.guide/products/blackminer-f2-by-hashaltcoin?variant=35115212931235
+    example_miner_hashrate = 27.4e9  # 27.4 gh/s
+    example_miner_power = 885  # 885 W
+
+    mints_per_day = 86400 * example_miner_hashrate / ((2**22) * apis.token.difficulty)
+    kwh_used_per_day = 24 * example_miner_power / 1000.0
+
+    kwh_used_per_mint = kwh_used_per_day / mints_per_day
+    usd_cost_per_mint = kwh_used_per_mint * usd_cost_per_kwh
+    usd_cost_per_token = usd_cost_per_mint / apis.token.reward
+
+    response += " + **${:.2f}** electricity ({} diff, Blackminer F2, 5¢/kwh)".format(
+        usd_cost_per_token,
+        prettify_decimals(apis.token.difficulty),
+        apis.gas_price_api.gas_price)
+
+    response += " = **${:.2f}** total".format(
+        gas_cost_per_token_usd + usd_cost_per_token)
+
+    return response
+
+
 def check_and_set_top_share(apis, resulting_difficulty, author_name, author_id, digest):
     result = ""
     if resulting_difficulty > apis.storage.top_miner_difficulty.get():

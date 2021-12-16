@@ -18,6 +18,7 @@ from secret_info import TOKEN
 import exchanges
 
 from mineable_token_info import MineableTokenInfo
+from gas_price_api import GasPriceAPI
 # import etherscan  # TODO: reenable when holders chart is fixed
 
 import formatting_helpers
@@ -96,6 +97,13 @@ async def check_update_all_time_high(apis):
 
 @tasks.loop(seconds=config.UPDATE_RATE)
 async def background_update():
+    try:
+        await apis.gas_price_api.update()
+    except RuntimeError as e:
+        logging.warning('Failed to update gas price: {}'.format(str(e)))
+    except:
+        logging.exception('Failed to update gas price')
+
     # TODO: time this. even better: time each exchange
     try:
         await apis.exchanges.update()
@@ -266,10 +274,12 @@ def setup_logging(path, verbose=False):
 
 
 async def manual_api_update():
+    global apis
     logging.info('Updating APIs')
     try:
         await apis.exchanges.update()
         apis.token.update()
+        await apis.gas_price_api.update()
     except Exception as e:
         logging.exception('failed to update prices / contract info')
 
@@ -401,13 +411,53 @@ client = None
 
 
 class APIWrapper():
-    def __init__(self, client, storage, exchanges, token, start_time):
+    def __init__(self, client, storage, exchanges, token, gas_price_api, start_time):
         self.client = client
         self.storage = storage
         self.exchanges = exchanges
         self.token = token
+        self.gas_price_api = gas_price_api
 
         self.start_time = start_time
+
+
+def connect_to_discord_and_run_forever(storage, exchange_manager, token, gas_price_api, start_time):
+    global client, apis
+
+    logging.info('{} v{}, discord.py v{}'.format(_PROGRAM_NAME, _VERSION, discord.__version__))
+
+    while True:
+        client = discord.Client()
+
+        @client.event
+        async def on_message(message):
+            await process_message(message)
+
+        @client.event
+        async def on_ready():
+            show_startup_info(client)
+
+        apis = APIWrapper(client, storage, exchange_manager, token, gas_price_api, start_time)
+
+        try:
+            background_update.cancel()  # stops the task only if it is running
+            background_update.start()
+            client.run(TOKEN)
+        except (SystemExit, KeyboardInterrupt):
+            # what we expect to get when exiting with Ctrl+C
+            break
+        except RuntimeError as e:
+            if str(e) == "Event loop is closed":
+                # this error is sometimes thrown when exiting the bot with Ctrl+C
+                break
+            else:
+                logging.exception('Unexpected error from Discord... retrying')
+                time.sleep(10)  # wait a little time to prevent cpu spins
+        except Exception:
+            logging.exception('Unexpected error from Discord... retrying')
+            time.sleep(10)  # wait a little time to prevent cpu spins
+
+    logging.info("Exiting...bye!")
 
 
 def main():
@@ -447,6 +497,7 @@ def main():
 
     token = MineableTokenInfo(config.TOKEN_ETH_ADDRESS)
     storage = Storage(config.DATA_FOLDER)
+    gas_price_api = GasPriceAPI()
     exchange_manager = exchanges.MultiExchangeManager([
         exchanges.CoinMarketCapAPI(config.TOKEN_SYMBOL),
         # exchanges.CoinMarketCapAPI('ETH'),
@@ -484,63 +535,26 @@ def main():
         #exchanges.SushiSwapPolygonAPI(config.TOKEN_SYMBOL),
     ])
 
-    if args.self_test:
-        client = MockClient()
-        apis = APIWrapper(client, storage, exchange_manager, token, start_time)
-        all_self_tests.run_all()
-    elif args.command_test:
-        client = MockClient()
-        apis = APIWrapper(client, storage, exchange_manager, token, start_time)
-        try:
-            asyncio.get_event_loop().run_until_complete(command_test())
-        except (SystemExit, KeyboardInterrupt):
-            return
-    elif args.speed_test:
-        client = MockClient()
-        apis = APIWrapper(client, storage, exchange_manager, token, start_time)
-        speed_test()
-    elif args.fuzz_test:
-        client = MockClient()
-        apis = APIWrapper(client, storage, exchange_manager, token, start_time)
-        try:
-            all_self_tests.run_command_fuzzer()
-        except (SystemExit, KeyboardInterrupt):
-            return
-    else:
-        logging.info('{} v{}, discord.py v{}'.format(_PROGRAM_NAME, _VERSION, discord.__version__))
+    if args.self_test or args.command_test or args.speed_test or args.fuzz_test:
+        client = MockClient()  # sets global var
+        apis = APIWrapper(client, storage, exchange_manager, token, gas_price_api, start_time)
 
-        while True:
-            client = discord.Client()
-
-            @client.event
-            async def on_message(message):
-                await process_message(message)
-
-            @client.event
-            async def on_ready():
-                show_startup_info(client)
-
-            apis = APIWrapper(client, storage, exchange_manager, token, start_time)
-
+        if args.self_test:
+            all_self_tests.run_all()
+        if args.command_test:
             try:
-                background_update.cancel()  # stops the task only if it is running
-                background_update.start()
-                client.run(TOKEN)
+                asyncio.get_event_loop().run_until_complete(command_test())
             except (SystemExit, KeyboardInterrupt):
-                # what we expect to get when exiting with Ctrl+C
-                break
-            except RuntimeError as e:
-                if str(e) == "Event loop is closed":
-                    # this error is sometimes thrown when exiting the bot with Ctrl+C
-                    break
-                else:
-                    logging.exception('Unexpected error from Discord... retrying')
-                    time.sleep(10)  # wait a little time to prevent cpu spins
-            except Exception:
-                logging.exception('Unexpected error from Discord... retrying')
-                time.sleep(10)  # wait a little time to prevent cpu spins
-
-        logging.info("Exiting...bye!")
+                return
+        if args.speed_test:
+            speed_test()
+        if args.fuzz_test:
+            try:
+                all_self_tests.run_command_fuzzer()
+            except (SystemExit, KeyboardInterrupt):
+                return
+    else:
+        connect_to_discord_and_run_forever(storage, exchange_manager, token, gas_price_api, start_time)
 
 if __name__ == "__main__":
     main()

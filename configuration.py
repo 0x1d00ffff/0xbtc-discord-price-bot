@@ -242,6 +242,9 @@ TRADING_COMMANDS = [
         ['income', 'profit', 'earnings', 'mining calculator', 'calculator'],
         command_handlers.cmd_income),
     CmdDef(
+        ['cost', 'mining cost', 'mining fee'],
+        command_handlers.cmd_cost),
+    CmdDef(
         ['mine'],
         command_handlers.cmd_mine),
     CmdDef(
