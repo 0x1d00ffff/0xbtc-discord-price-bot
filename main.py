@@ -5,6 +5,8 @@
 TODO: move commands out of main.py, this file is getting long
 """
 
+from version import __version__
+
 import sys
 import os
 import time
@@ -35,7 +37,6 @@ from mock_discord_classes import MockClient, MockMessage, MockAuthor
 
 
 _PROGRAM_NAME = "0xbtc-discord-price-bot"
-_VERSION = "0.6.8"
 
 
 old_status_string = None
@@ -424,7 +425,7 @@ class APIWrapper():
 def connect_to_discord_and_run_forever(storage, exchange_manager, token, gas_price_api, start_time):
     global client, apis
 
-    logging.info('{} v{}, discord.py v{}'.format(_PROGRAM_NAME, _VERSION, discord.__version__))
+    logging.info('{} v{}, discord.py v{}'.format(_PROGRAM_NAME, __version__, discord.__version__))
 
     while True:
         client = discord.Client()
@@ -467,7 +468,7 @@ def main():
     # TODO: make client NOT global.
     global client, apis
 
-    parser = argparse.ArgumentParser(description='{} v{}'.format(_PROGRAM_NAME, _VERSION),
+    parser = argparse.ArgumentParser(description='{} v{}'.format(_PROGRAM_NAME, __version__),
                                      epilog='<3 0x1d00ffff')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--command_test', action='store_true', default=False,
@@ -480,7 +481,7 @@ def main():
     group.add_argument('--fuzz_test', action='store_true', default=False,
                        help=("Run command processing fuzz test"))
     group.add_argument('--version', action='version',
-                       version='%(prog)s v{}'.format(_VERSION))
+                       version='%(prog)s v{}'.format(__version__))
     parser.add_argument('--verbose', action='store_true',
                         help=("Enable detailed debug messages"))
     args = parser.parse_args()

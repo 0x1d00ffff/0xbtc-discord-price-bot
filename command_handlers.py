@@ -26,6 +26,7 @@ from formatting_helpers import (prettify_decimals,
                                 unix_timestamp_to_readable_date_time)
 
 from memory_usage import rss_resource
+from version import __version__ as app_version
 
 
 _TOKENS_PEGGED_TO_USD_LIST = ['USD', 'DAI', 'USDC', 'USDT']
@@ -957,6 +958,12 @@ async def cmd_status(command_str, discord_message, apis):
         response += "+ {:<24} {:.2f} MB\n".format("Memory:", rss_resource())
     except ModuleNotFoundError:
         pass
+
+    response += "+ {:<24} {}\n".format(
+        "Uptime:",
+        seconds_to_time(time.time() - apis.start_time), granularity=2)
+
+    response += "+ {:<24} {}\n".format("Version:", app_version)
 
     return response + "```"
 
