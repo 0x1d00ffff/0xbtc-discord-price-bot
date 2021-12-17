@@ -916,6 +916,8 @@ async def get_ping_times(command_str, discord_message, apis):
     ping_times += ping_wrapper.ping_list([
         # 'mainnet.infura.io',
         'etherscan.io',
+        'ethgas.watch',
+        'data-api.defipulse.com',
         # 'rpc-mainnet.matic.network'
     ], count=2)
 
