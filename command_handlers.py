@@ -551,6 +551,7 @@ async def cmd_income(command_str, discord_message, apis):
 
 async def cmd_cost(command_str, discord_message, apis):
     response = ""
+    verbose_response = ""
     if apis.gas_price_api.gas_price == None:
         return "not sure yet... waiting on my APIs :sob:"
 
@@ -566,6 +567,14 @@ async def cmd_cost(command_str, discord_message, apis):
     response += "Token cost: **${:.2f}** gas @ {:.1f} gwei".format(
         gas_cost_per_token_usd,
         apis.gas_price_api.gas_price)
+
+    verbose_response += "Eth price: ${:.2f}, Gas price: {:.1f} gwei\n".format(
+        apis.exchanges.eth_price_usd(),
+        apis.gas_price_api.gas_price)
+
+    verbose_response += " -> ${:.2f} / {} eth per mint in gas\n".format(
+        gas_cost_per_mint_usd,
+        prettify_decimals(gas_cost_per_mint_usd / apis.exchanges.eth_price_usd()))
 
     # electricity cost
 
@@ -583,13 +592,30 @@ async def cmd_cost(command_str, discord_message, apis):
     usd_cost_per_mint = kwh_used_per_mint * usd_cost_per_kwh
     usd_cost_per_token = usd_cost_per_mint / apis.token.reward
 
-    response += " + **${:.2f}** electricity ({} diff, Blackminer F2, 5¢/kwh)".format(
+    response += " + **${:.2f}** electricity ({} diff, Blackminer F2, {}¢/kwh)".format(
         usd_cost_per_token,
         prettify_decimals(apis.token.difficulty),
-        apis.gas_price_api.gas_price)
+        apis.gas_price_api.gas_price,
+        int(100 * usd_cost_per_kwh))
 
     response += " = **${:.2f}** total".format(
         gas_cost_per_token_usd + usd_cost_per_token)
+
+    verbose_response += "Example hashrate: {}, Power: {}W, Bill: ${:.2f}/kwh\n".format(
+        to_readable_thousands(example_miner_hashrate, unit_type='hashrate'),
+        example_miner_power,
+        usd_cost_per_kwh)
+
+    verbose_response += " -> Solutions per day: {}, Power per day: {}kwh\n".format(
+        prettify_decimals(mints_per_day),
+        prettify_decimals(kwh_used_per_day))
+
+    verbose_response += " -> ${:.2f} / {} eth per mint in electricity\n".format(
+        usd_cost_per_mint,
+        prettify_decimals(usd_cost_per_mint / apis.exchanges.eth_price_usd()))
+
+    if any(x in command_str for x in ["explain", "verbose", "all", "detail"]):
+        response = verbose_response + response
 
     return response
 
