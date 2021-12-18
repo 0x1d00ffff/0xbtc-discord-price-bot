@@ -578,7 +578,7 @@ async def cmd_cost(command_str, discord_message, apis):
 
     # electricity cost
 
-    usd_cost_per_kwh = 0.05
+    usd_cost_per_kwh = 0.10
 
     # stats for blackminer f2
     # https://shop.fpga.guide/products/blackminer-f2-by-hashaltcoin?variant=35115212931235
@@ -595,16 +595,15 @@ async def cmd_cost(command_str, discord_message, apis):
     response += " + **${:.2f}** electricity ({} diff, Blackminer F2, {}¢/kwh)".format(
         usd_cost_per_token,
         prettify_decimals(apis.token.difficulty),
-        apis.gas_price_api.gas_price,
         int(100 * usd_cost_per_kwh))
 
     response += " = **${:.2f}** total".format(
         gas_cost_per_token_usd + usd_cost_per_token)
 
-    verbose_response += "Example hashrate: {}, Power: {}W, Bill: ${:.2f}/kwh\n".format(
+    verbose_response += "Example hashrate: {}, Power: {}W, Bill: {}¢/kwh\n".format(
         to_readable_thousands(example_miner_hashrate, unit_type='hashrate'),
         example_miner_power,
-        usd_cost_per_kwh)
+        int(100 * usd_cost_per_kwh))
 
     verbose_response += " -> Solutions per day: {}, Power per day: {}kwh\n".format(
         prettify_decimals(mints_per_day),
