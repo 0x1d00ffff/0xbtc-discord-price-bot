@@ -530,14 +530,14 @@ def main():
         # exchanges.HotbitAPI(config.TOKEN_SYMBOL),
         # 2/12/20 removed merklex. seems to have rebranded to nitrade.
         # exchanges.MerkleXAPI(config.TOKEN_SYMBOL),
-        # 9/22/20 added swapmatic, 11/25/21 disable due to lack of reliable polygon provider
-        #exchanges.SwapmaticAPI(config.TOKEN_SYMBOL),
-        # 4/03/21 added quickswap, 11/25/21 disable due to lack of reliable polygon provider
-        #exchanges.QuickSwapAPI(config.TOKEN_SYMBOL),
+        # 9/22/20 added swapmatic, 11/25/21 disable due to lack of reliable polygon provider, 12/21/21 re-enable - alchemyapi.io works
+        exchanges.SwapmaticAPI(config.TOKEN_SYMBOL),
+        # 4/03/21 added quickswap, 11/25/21 disable due to lack of reliable polygon provider, 12/21/21 re-enable - alchemyapi.io works
+        exchanges.QuickSwapAPI(config.TOKEN_SYMBOL),
         # 5/30/21 added uniswap v3
         exchanges.Uniswapv3API(config.TOKEN_SYMBOL),
-        # 8/18/21 added sushiswap on polygon, 11/25/21 disable due to lack of reliable polygon provider
-        #exchanges.SushiSwapPolygonAPI(config.TOKEN_SYMBOL),
+        # 8/18/21 added sushiswap on polygon, 11/25/21 disable due to lack of reliable polygon provider, 12/21/21 re-enable - alchemyapi.io works
+        exchanges.SushiSwapPolygonAPI(config.TOKEN_SYMBOL),
     ])
 
     if args.self_test or args.command_test or args.speed_test or args.fuzz_test:
