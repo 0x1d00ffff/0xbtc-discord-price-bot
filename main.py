@@ -26,6 +26,7 @@ from gas_price_api import GasPriceAPI
 import formatting_helpers
 import commands
 from command_handlers import helper_show_all_time_high_image_in_channel
+from command_handlers import RebootRequest
 
 from util import preprocess_message
 
@@ -454,6 +455,9 @@ def connect_to_discord_and_run_forever(storage, exchange_manager, token, gas_pri
             else:
                 logging.exception('Unexpected error from Discord... retrying')
                 time.sleep(10)  # wait a little time to prevent cpu spins
+        except RebootRequest:
+            logging.exception('Got reboot request, restarting in 5 seconds...')
+            time.sleep(5)
         except Exception:
             logging.exception('Unexpected error from Discord... retrying')
             time.sleep(10)  # wait a little time to prevent cpu spins

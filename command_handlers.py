@@ -29,8 +29,11 @@ from memory_usage import rss_resource
 from version import __version__ as app_version
 
 
-_TOKENS_PEGGED_TO_USD_LIST = ['USD', 'DAI', 'USDC', 'USDT']
 _MINIMUM_USD_LIQUIDITY_TO_DISPLAY = 50  # controls which exchanges are shown individually in !liquidity
+
+
+class RebootRequest(Exception):
+    pass
 
 
 async def cmd_help(command_str, discord_message, apis):
@@ -39,7 +42,7 @@ async def cmd_help(command_str, discord_message, apis):
             #+ "bot commands: `uptime ping` "
             + "token info: `supply`  `difficulty`  `hashrate`  `blocktime`  `holders`  `halvening`  `burned` `balance`\n"
             + "quick link commands: `whitepaper`  `website`  `ann`  `contract`  `stats`  `miners`  `merch`\n"
-            + "tools: `convert`  `income`  `mine`")
+            + "tools: `convert`  `income`  `cost`  `yield`  `mine`")
 
 
 async def cmd_compare_price_vs(apis, item_name="lambo", item_price=200000):
@@ -918,20 +921,25 @@ async def cmd_mod_command(command_str, discord_message, apis):
     try:
         message_parts = command_str.split()
 
-        if 'poweroff' in message_parts:
-            if 'really' in message_parts:
-                raise SystemExit('Exit requested by user {}'.format(discord_message.author.name))
-            else:
-                return "Really? If you're sure run `!modcommand poweroff really`"
+        if 'poweroff' in message_parts and 'really' in message_parts:
+            await discord_message.add_reaction("\U0001F44D")  # :thumbsup:
+            raise SystemExit('Exit requested by user {}'.format(discord_message.author.name))
+        elif 'poweroff' in message_parts:
+            return "Really? If you're sure run `!modcommand poweroff really`"
+        elif 'reboot' in message_parts and 'really' in message_parts:
+            await discord_message.add_reaction("\U0001F44D")  # :thumbsup:
+            raise RebootRequest('Reboot requested by user {}'.format(discord_message.author.name))
+        elif 'reboot' in message_parts:
+            return "Really? If you're sure run `!modcommand reboot really`"
 
-    except SystemExit:
+    except (SystemExit, RebootRequest):
         raise
     except:
         # TODO: remove this
         logging.exception('exception running mod command')
         return "Error parsing command"
     else:
-        return "modcommand (poweroff)"
+        return "modcommand poweroff|reboot"
 
 
 async def get_ping_times(command_str, discord_message, apis):

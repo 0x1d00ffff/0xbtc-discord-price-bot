@@ -269,7 +269,7 @@ TRADING_COMMANDS = [
         ['setbestshare'],
         command_handlers.cmd_set_bestshare),
     CmdDef(
-        ['mod command'],
+        ['mod command', 'admin command', 'mod cmd', 'admin cmd'],
         command_handlers.cmd_mod_command),
     CmdDef(
         ['uptime'],
