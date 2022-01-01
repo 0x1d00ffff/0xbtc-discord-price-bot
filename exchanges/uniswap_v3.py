@@ -20,10 +20,15 @@ from uniswap import Uniswap
 # list of exchange contract addresses. each pair has a unique address.
 # token0 name, token1 name, uniswap exchange address, fee amount
 # fee is in in basis points. so 3000 = 0.3%
+#
+# addresses should be checksum addresses
+# order of this list does not matter
 exchanges = (
 ("0xBTC", "WETH", "0xaFF587846a44aa086A6555Ff69055D3380fD379a", 10000),
 ("USDC", "0xBTC", "0xc01435E578eb3182cABE05F11DB2bEa493dbe7CA", 10000),
 ("USDC", "WETH", "0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8", 3000),
+("WBTC", "0xBTC", "0x87Be79368F9898DB7C1A7E411b1104BCa5c5C2F2", 10000),
+("WBTC", "WETH", "0xCBCdF9626bC03E24f779434178A73a0B4bad62eD", 3000),
 )
 
 _TIME_BETWEEN_VOLUME_UPDATES = 60 * 60  # 1 hour. WARNING: don't change this without refactoring hourly volume logic
